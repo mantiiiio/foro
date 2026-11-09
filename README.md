@@ -55,7 +55,7 @@ Los roles no se conceden por nombre de usuario ni por texto del navegador. El pr
 
 Solo el propietario/co-owner/administrador ve el apartado **Administración**. El generador requiere elegir el rol y describir el propósito de cada invitación. Los tokens se generan con aleatoriedad criptográfica, se guarda únicamente SHA-256, vencen a los 7 días y se pueden usar una sola vez. Al reclamarse, el token queda bloqueado permanentemente y el rol se vincula al UID de Firebase. El titular debe usar una cuenta cuyo correo esté verificado. **Owner no es un rol emitible por token**: existe un único propietario y se configura directamente por UID. El token anterior de verificación genérica quedó retirado y no es válido para este sistema.
 
-Para activar el propietario, copia tu UID de Firebase desde tu perfil o Firebase Console → Authentication → Users y reemplaza `PEGA_AQUI_TU_UID_ADMIN` en `index.html`, `firestore.rules` y `storage.rules`. Después despliega las reglas de Firestore. El UID no es una contraseña. Nunca guardes contraseñas, tokens privados ni claves de servicio en el HTML o en el repositorio.
+El propietario único ya está configurado por UID en `index.html`, `firestore.rules` y `storage.rules`. Si alguna vez cambias la cuenta propietaria, actualiza el mismo UID en los tres archivos y vuelve a desplegar las reglas correspondientes. El UID no es una contraseña. Nunca guardes contraseñas, tokens privados ni claves de servicio en el HTML o en el repositorio.
 
 ## GitHub Actions
 
