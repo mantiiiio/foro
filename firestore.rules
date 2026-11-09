@@ -453,6 +453,11 @@ service cloud.firestore {
         && request.resource.data.lr is int
         && (request.resource.data.b != 'reglas' || isStaff());
       allow update: if isAdmin() || (
+        isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationHidden','moderationHiddenUntil'])
+        && request.resource.data.moderationHidden is bool
+        && (request.resource.data.moderationHiddenUntil == null || request.resource.data.moderationHiddenUntil is timestamp)
+      ) || (
         isModerator()
         && resource.data.b != 'reglas'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['n'])
@@ -594,6 +599,11 @@ service cloud.firestore {
         && (request.resource.data.media == null || validChatMedia(request.resource.data.media))
         && (!containsLink(request.resource.data.x) || registered());
       allow update: if (
+        isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationHidden','moderationHiddenUntil'])
+        && request.resource.data.moderationHidden is bool
+        && (request.resource.data.moderationHiddenUntil == null || request.resource.data.moderationHiddenUntil is timestamp)
+      ) || (
         registered()
         && canParticipate()
         && resource.data.uid == request.auth.uid
