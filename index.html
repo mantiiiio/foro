@@ -124,7 +124,7 @@ import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, signOut, signInAnonymously, updateProfile,
   setPersistence, browserLocalPersistence, sendEmailVerification,
-  sendPasswordResetEmail, reload, deleteUser
+  sendPasswordResetEmail, reload, deleteUser, getIdToken
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc,
@@ -238,6 +238,7 @@ const D = {
     const user=auth.currentUser;
     if(!user||user.isAnonymous)throw new Error("No hay una cuenta registrada abierta.");
     await reload(user);
+    await getIdToken(auth.currentUser,true);
     return auth.currentUser.emailVerified;
   },
   async out(){await signOut(auth);await signInAnonymously(auth);},
@@ -368,7 +369,7 @@ function frm(m,a,r){
 async function prf(m,u){
   const [f,c]=await Promise.all([Store.prof(u),Store.cnt(u)]);if(!f)return m.innerHTML="Usuario inexistente";
   const owner=!!(auth?.currentUser&&!auth.currentUser.isAnonymous&&auth.currentUser.uid===f.uid),storageReady=!!(firebaseReady&&STORAGE_ENABLED&&storage);
-  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}</td></tr></table>`+(owner?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Personaliza tu perfil con una imagen o un GIF animado.</p><p><small>JPG, PNG, GIF o WEBP · máximo 5 MB. Los GIF conservan su animación.</small></p><div class="profilePhotoActions"><button type="button" id="avatarChoose" ${storageReady?"":"disabled"}>Cambiar imagen / GIF</button>${f.avatarUrl?`<button type="button" id="avatarRemove" ${storageReady?"":"disabled"}>Quitar foto</button>`:""}</div></div></div><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden><div class="profilePhotoStatus" id="profilePhotoStatus">${storageReady?"Tu foto será visible junto a tus mensajes.":"Para activar las fotos, configura Firebase Storage y cambia STORAGE_ENABLED a true en index.html."}</div></section>`:"");
+  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(owner?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Personaliza tu perfil con una imagen o un GIF animado.</p><p><small>JPG, PNG, GIF o WEBP · máximo 5 MB. Los GIF conservan su animación.</small></p><div class="profilePhotoActions"><button type="button" id="avatarChoose" ${storageReady?"":"disabled"}>Cambiar imagen / GIF</button>${f.avatarUrl?`<button type="button" id="avatarRemove" ${storageReady?"":"disabled"}>Quitar foto</button>`:""}</div></div></div><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden><div class="profilePhotoStatus" id="profilePhotoStatus">${storageReady?"Tu foto será visible junto a tus mensajes.":"Para activar las fotos, configura Firebase Storage y cambia STORAGE_ENABLED a true en index.html."}</div></section>`:"");
   if(owner){
     $("#avatarChoose")?.addEventListener("click",()=>$("#avatarFile").click());
     $("#avatarFile")?.addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;const status=$("#profilePhotoStatus");$("#avatarChoose").disabled=true;if($("#avatarRemove"))$("#avatarRemove").disabled=true;try{await Store.updateAvatar(file);await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarChoose").disabled=false;if($("#avatarRemove"))$("#avatarRemove").disabled=false;}finally{e.target.value="";}});
