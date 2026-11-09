@@ -274,12 +274,21 @@ const D = {
     if(oldPath&&oldPath!==path){try{await deleteObject(storageRef(storage,oldPath));}catch(e){console.warn("La foto anterior no pudo borrarse",e);}}
     return url;
   },
+  async setAvatarUrl(url){
+    if(!auth.currentUser||auth.currentUser.isAnonymous)throw new Error("Inicia sesión con una cuenta registrada.");
+    const safe=safeHttps(url);
+    if(!safe)throw new Error("Usa una URL HTTPS pública y directa de una imagen o GIF.");
+    const userRef=doc(db,"users",auth.currentUser.uid),before=await getDoc(userRef),oldPath=before.exists()?before.data().avatarPath||"":"";
+    await updateDoc(userRef,{avatarUrl:safe,avatarPath:""});
+    await updateProfile(auth.currentUser,{photoURL:safe});
+    if(oldPath&&storage){try{await deleteObject(storageRef(storage,oldPath));}catch(e){console.warn("La foto anterior no pudo borrarse",e);}}
+    return safe;
+  },
   async removeAvatar(){
-    if(!STORAGE_ENABLED||!storage)throw new Error("Firebase Storage no está activado.");
     if(!auth.currentUser||auth.currentUser.isAnonymous)throw new Error("Inicia sesión con una cuenta registrada.");
     const userRef=doc(db,"users",auth.currentUser.uid),before=await getDoc(userRef),oldPath=before.exists()?before.data().avatarPath||"":"";
     await updateDoc(userRef,{avatarUrl:"",avatarPath:""});await updateProfile(auth.currentUser,{photoURL:null});
-    if(oldPath){try{await deleteObject(storageRef(storage,oldPath));}catch(e){console.warn("La foto anterior no pudo borrarse",e);}}
+    if(oldPath&&storage){try{await deleteObject(storageRef(storage,oldPath));}catch(e){console.warn("La foto anterior no pudo borrarse",e);}}
   },
   async del(k,a,b){
     if(k==="t"){
