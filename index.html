@@ -72,8 +72,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
       <textarea id="chatText" maxlength="1500" placeholder="Escribe un mensaje... (Enter para enviar · Shift+Enter para nueva línea)" aria-label="Mensaje de chat"></textarea>
       <div class="chatActions">
         <button type="submit" id="chatSend">Enviar</button>
-        <button type="button" id="chatAttach" title="Adjuntar imagen, GIF o vídeo">📎 Adjuntar</button>
-        <input type="file" id="chatFile" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,application/pdf,text/plain,text/csv,application/zip,application/x-zip-compressed">
+        <button type="button" id="chatCatbox" title="Abrir Catbox para subir un archivo">📦 Subir a Catbox</button>
       </div>
       <div class="chatHint" id="chatHint">Enter: enviar · Shift+Enter: nueva línea · pulsa ? para ver todos los atajos.</div>
     </form>
@@ -97,7 +96,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
         <tr><td><kbd>?</kbd></td><td>Abrir esta ventana de ayuda (cuando no estás escribiendo).</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Cerrar esta ayuda o salir del chat ampliado.</td></tr>
       </table>
-      <p><b>Otros controles:</b> 📎 Adjuntar permite subir imágenes, vídeos y documentos una vez configurado ImageKit. Solo las cuentas registradas con correo verificado pueden adjuntar archivos o compartir enlaces; los invitados solo pueden enviar texto. ⛶ Ampliar abre el chat en pantalla grande.</p>
+      <p><b>Otros controles:</b> 📦 Subir a Catbox abre el alojamiento externo; copia el enlace y pégalo en el chat. Solo las cuentas registradas con correo verificado pueden compartir enlaces. Los invitados solo pueden enviar texto. ⛶ Ampliar abre el chat en pantalla grande.</p>
       <p><small>En móviles, puedes usar los botones de la pantalla. Durante la composición de texto, Enter respeta Shift+Enter y las teclas especiales del teclado.</small></p>
       <div style="text-align:right"><button type="button" id="chatShortcutDone">Entendido</button></div>
     </div>
@@ -113,8 +112,8 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
   <p><b>¿Cómo se suben los rangos?</b><br>Por mensajes: Novato, Miembro (5), Habitual (25) y Veterano (100).</p>
   <p><b>¿Quién modera?</b><br>El administrador configurado por UID puede borrar temas, respuestas y mensajes del chat. Las reglas del foro solo las publica el staff.</p>
   <p><b>¿Puedo entrar sin registrarme?</b><br>Sí. El chat permite invitados anónimos; para crear temas y responder en los foros necesitas una cuenta y verificar tu correo.</p>
-  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Cada cuenta registrada con correo verificado puede cambiar su propia foto usando una URL HTTPS o subir una imagen cuando ImageKit esté configurado.</p>
-  <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Solo las cuentas registradas con correo verificado, incluido todo el personal. Los invitados pueden enviar mensajes de texto, pero no enlaces, fotos, vídeos ni archivos. Los adjuntos requieren ImageKit configurado.</p>
+  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Cada cuenta registrada con correo verificado puede cambiar su propia foto pegando una URL HTTPS pública de imagen, por ejemplo una imagen alojada en Catbox.</p>
+  <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Solo las cuentas registradas con correo verificado, incluido todo el personal. Los invitados pueden enviar mensajes de texto, pero no enlaces. Para compartir multimedia, sube el archivo a un alojamiento externo como Catbox y pega el enlace en el chat.</p>
   <p><b>¿Cómo funcionan las invitaciones del staff?</b><br>Solo el propietario, co-owner o administrador puede generarlas desde Administración. Cada invitación concede un único rol a una cuenta con correo verificado, se usa una sola vez y queda bloqueada permanentemente. Las invitaciones vencen a los 7 días si nadie las utiliza.</p>
 </template>
 
@@ -198,7 +197,10 @@ const errText = z => ({
   "storage/project-not-found":"No se encontró el proyecto de Storage. Revisa la configuración."
 }[z?.code] || z?.message || String(z));
 let currentStaffRole = "";
-const isOwner = () => !!(auth?.currentUser && OWNER_UID && OWNER_UID !== "PEGA_AQUI_TU_UID_ADMIN" && auth.currentUser.uid === OWNER_UID);
+const isOwner = () => {
+  const user = auth?.currentUser;
+  return !!(user && !user.isAnonymous && OWNER_UID && user.uid === OWNER_UID);
+};
 const isAdmin = () => isOwner() || ["co_owner","admin"].includes(currentStaffRole) || !!(auth?.currentUser && ADMINS_UID.includes(auth.currentUser.uid));
 const isModerator = () => isAdmin() || currentStaffRole === "moderator" || !!(auth?.currentUser && MODERATORS_UID.includes(auth.currentUser.uid));
 const isStaff = () => isModerator();
@@ -314,7 +316,12 @@ const D = {
   async login(identifier,p,token=""){
     const value=identifier.trim().toLowerCase();
     const email=value.includes("@")?value:`${value}@foro.local`;
-    await signInWithEmailAndPassword(auth,email,p);
+    await setPersistence(auth,browserLocalPersistence);
+    const credential = await signInWithEmailAndPassword(auth,email,p);
+    await reload(credential.user);
+    currentUser = auth.currentUser;
+    await loadCurrentStaffRole(currentUser);
+    updateAdminUI();
     if(String(token||"").trim()){
       try{await D.claimStaffInvite(token);}
       catch(e){try{await signOut(auth);await signInAnonymously(auth);}catch{}throw e;}
@@ -558,12 +565,9 @@ async function prf(m,u){
   const [f,c]=await Promise.all([Store.prof(u),Store.cnt(u)]);if(!f)return m.innerHTML="Usuario inexistente";
   const owner=!!(auth?.currentUser&&!auth.currentUser.isAnonymous&&auth.currentUser.uid===f.uid);
   const canEditProfile=owner&&emailVerified();
-  const uploadReady=!!(firebaseReady&&(imageKitReady()||(STORAGE_ENABLED&&storage)));
-  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Personaliza tu perfil con una imagen o un GIF animado.</p><p><small>JPG, PNG, GIF o WEBP · máximo 5 MB. Los GIF conservan su animación.</small></p><div class="profilePhotoActions"><button type="button" id="avatarChoose" ${uploadReady?"":"disabled"}>Subir archivo${uploadReady?"":" (pendiente de configurar)"}</button>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden><div class="profilePhotoStatus" id="profilePhotoStatus">${uploadReady?"Puedes subir un archivo o usar una URL HTTPS.":"La subida directa requiere configurar ImageKit. Mientras tanto puedes usar una URL HTTPS directa."}</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
+  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen a <a href="https://catbox.moe/" target="_blank" rel="noopener noreferrer">Catbox</a> y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><div class="profilePhotoStatus" id="profilePhotoStatus">Solo se guarda el enlace; la imagen permanece alojada fuera del foro.</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
   if(canEditProfile){
-    $("#avatarChoose")?.addEventListener("click",()=>$("#avatarFile").click());
     $("#avatarUrlSave")?.addEventListener("click",async()=>{const status=$("#profilePhotoStatus"),button=$("#avatarUrlSave");button.disabled=true;try{await Store.setAvatarUrl($("#avatarUrlInput").value.trim());await prf(m,u);}catch(z){status.textContent=errText(z);button.disabled=false;}});
-    $("#avatarFile")?.addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;const status=$("#profilePhotoStatus");$("#avatarChoose").disabled=true;if($("#avatarRemove"))$("#avatarRemove").disabled=true;try{await Store.updateAvatar(file);await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarChoose").disabled=false;if($("#avatarRemove"))$("#avatarRemove").disabled=false;}finally{e.target.value="";}});
     $("#avatarRemove")?.addEventListener("click",async()=>{if(!confirm("¿Quitar tu foto de perfil?"))return;const status=$("#profilePhotoStatus");$("#avatarChoose").disabled=true;$("#avatarRemove").disabled=true;try{await Store.removeAvatar();await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarChoose").disabled=false;$("#avatarRemove").disabled=false;}});
   }
 }
@@ -616,7 +620,9 @@ async function staffPanel(m){
   try{await render();}catch(e){m.innerHTML=`<span class="err">${E(errText(e))}</span>`;}
 }
 function setup(m){
-  m.innerHTML=`<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>${firebaseReady?"Firebase conectado":"Firebase pendiente de configurar"}</b><br>${firebaseReady?"La aplicación ya inició sesión con Firebase. El acceso al foro depende de las reglas publicadas.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio."}</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta verificada para publicar en los foros.</li><li>El propietario se asigna por UID en <code>OWNER_UID</code> y en las reglas de Firestore. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Archivos y avatares:</b> Firebase Storage permanece desactivado para evitar facturación. Las subidas directas usan ImageKit cuando configures el Worker seguro descrito en README.md. Mientras tanto, los usuarios verificados pueden usar enlaces HTTPS para sus fotos y compartir enlaces en el chat.</p></td></tr></table>`;
+  const owner = isOwner();
+  const user = auth?.currentUser;
+  m.innerHTML=`<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>${firebaseReady?"Firebase conectado":"Firebase pendiente de configurar"}</b><br>${firebaseReady?"La aplicación ya inició sesión con Firebase. El acceso al foro depende de las reglas publicadas.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio."}</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta verificada para publicar en los foros.</li><li>El propietario se detecta automáticamente por el UID de Firebase configurado en <code>OWNER_UID</code>. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Sesión actual:</b> ${owner?"<strong>OWNER detectado correctamente.</strong>":user&&!user.isAnonymous?"Cuenta registrada, pero esta sesión no corresponde al UID Owner configurado. Entra con tu cuenta de propietario; no crees otra.":"Sesión de invitado. Pulsa Entrar para acceder con tu cuenta Owner."}</p><p><b>Enlaces multimedia y avatares:</b> el foro no aloja archivos. Para compartir imágenes, vídeos y documentos, usa un alojamiento externo como <a href="https://catbox.moe/" target="_blank" rel="noopener noreferrer">Catbox</a> y pega el enlace HTTPS. Solo las cuentas verificadas pueden compartir enlaces.</p></td></tr></table>`;
 }
 function renderAccountNotice(){
   const box=$("#accountNotice"),user=auth?.currentUser;
@@ -643,7 +649,7 @@ async function go(){
   const parts=location.hash.replace(/^#\/?/,"").split("/"),r=parts[0]||"",a=parts.slice(1).join("/");
   const m=$("#m");
   renderAccountNotice();
-  $("#nav").innerHTML=`🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> `+(Store.me()?`👤 <b><a href="#/u/${encodeURIComponent(Store.me())}">${E(Store.me())}</a></b> 🚪 <a href="#/out">Salir</a>`:`🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>`)+(canManageStaff()?` 🛡 <a href="#/staff">Administración</a>`:"")+` <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>`;
+  $("#nav").innerHTML=`🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> `+(Store.me()?`👤 <b><a href="#/u/${encodeURIComponent(Store.me())}">${E(Store.me())}</a></b> 🚪 <a href="#/out">Salir</a>`:`🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>`)+(isOwner()?` 🛡 <b>OWNER</b> <a href="#/staff">Administración</a>`:canManageStaff()?` 🛡 <a href="#/staff">Administración</a>`:"")+` <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>`;
   m.innerHTML="Cargando...";$("#ann").hidden=!!r;
   try{await (ROUTES[r]||idx)(m,a,r);}catch(z){m.innerHTML=`<span class="err">Error: ${E(errText(z))}</span><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>`;}
 }
@@ -735,10 +741,9 @@ document.addEventListener("keydown",e=>{
   if(!typing&&e.key==="?"&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();openChatShortcuts();return;}
   if(!typing&&e.altKey&&e.key.toLowerCase()==="m"){e.preventDefault();$("#chatText").focus();}
 });
-$("#chatAttach").addEventListener("click",()=>{if(!emailVerified()){alert("Solo las cuentas registradas y con correo verificado pueden subir archivos. Inicia sesión y verifica tu correo.");return;}if(!imageKitReady()&&!STORAGE_ENABLED){alert("La subida de archivos necesita configurar ImageKit. Consulta README.md.");return;}$("#chatFile").click();});
-$("#chatFile").addEventListener("change",async e=>{
-  const file=e.target.files?.[0];if(!file)return;uploadBusy=true;$("#chatAttach").disabled=true;
-  try{const media=await uploadChatFile(file);await Store.chatSend("",media);$("#chatState").textContent="ADJUNTO ENVIADO";}catch(z){alert(errText(z));$("#chatState").textContent="CHAT";}finally{uploadBusy=false;$("#chatAttach").disabled=false;e.target.value="";}
+$("#chatCatbox").addEventListener("click",()=>{
+  if(!emailVerified()){alert("Solo las cuentas registradas y con correo verificado pueden compartir multimedia. Inicia sesión y verifica tu correo.");return;}
+  window.open("https://catbox.moe/","_blank","noopener,noreferrer");
 });
 $("#chatExpand").addEventListener("click",()=>{const box=$("#chatBox"),expanded=box.classList.toggle("chat-expanded");$("#chatExpand").textContent=expanded?"✕ Cerrar":"⛶ Ampliar";$("#chatExpand").setAttribute("aria-expanded",String(expanded));});
 $("#chatClear").addEventListener("click",async()=>{if(!isAdmin())return alert("No autorizado.");if(!confirm("¿Vaciar los últimos 500 mensajes del chat? Esta acción no se puede deshacer."))return;try{await Store.chatClear();}catch(z){alert(errText(z));}});
@@ -764,14 +769,13 @@ async function startFirebase(){
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
-    $("#chatAttach").disabled=!(imageKitReady()||STORAGE_ENABLED);
-    $("#chatHint").textContent="Invitados pueden enviar texto. Enlaces y archivos: solo cuentas registradas con correo verificado. "+(imageKitReady()?"Adjuntos habilitados: imágenes, vídeos y documentos (límites 8/25/10 MB).":"Para adjuntar archivos, primero configura ImageKit siguiendo README.md; puedes compartir enlaces HTTPS si has verificado tu correo.")+" Enter envía · Shift+Enter nueva línea · ? atajos."; 
+    $("#chatHint").textContent="Invitados: solo texto. Cuentas registradas con correo verificado: pueden compartir enlaces HTTPS de Catbox u otros alojamientos. Pega el enlace en el mensaje. Enter envía · Shift+Enter nueva línea · ? atajos."; 
     subscribeChat();updateAdminUI();renderAccountNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
 function updateAdminUI(){
   const admin=isAdmin();$("#chatAdmin").hidden=!admin;
-  if(admin){$("#chatAdminInfo").textContent="Permisos administrativos verificados por UID y roles protegidos en Firestore.";}
+  if(admin){$("#chatAdminInfo").textContent=isOwner()?"OWNER detectado por UID. Tu cuenta tiene administración permanente.":"Permisos administrativos verificados por UID y roles protegidos en Firestore.";}
 }
 
 // Cabecera, reloj y routing
@@ -779,7 +783,7 @@ $("#ban").textContent=`+${"-".repeat(46)}+\n| ${NAME.padEnd(44)} |\n| ${"BBS/USE
 $("#nl").textContent=NAME;const ck=()=>$("#clk").textContent=new Date().toLocaleString("es-UY");ck();setInterval(ck,1000);
 $("#ft").innerHTML=(configured?"Modo: ONLINE (Firebase)":"Modo: LOCAL (demo, solo este navegador)")+` · <a href="#/setup">Configuración</a><br>Mejor visto con Netscape 4.7 / IE 6 a 800x600<br>MantiPobres · BBS/USENET Revival`;
 addEventListener("hashchange",go);
-if(configured){await startFirebase();}else{setNetStatus("DEMO LOCAL",false);$("#chatAttach").disabled=true;subscribeChat();}
+if(configured){await startFirebase();}else{setNetStatus("DEMO LOCAL",false);$("#chatCatbox").disabled=true;subscribeChat();}
 go();
 </script>
 </body>
