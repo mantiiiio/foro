@@ -73,7 +73,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
       <div class="chatActions">
         <button type="submit" id="chatSend">Enviar</button>
         <button type="button" id="chatAttach" title="Adjuntar imagen, GIF o vídeo">📎 Adjuntar</button>
-        <input type="file" id="chatFile" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm">
+        <input type="file" id="chatFile" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,application/pdf,text/plain,text/csv,application/zip,application/x-zip-compressed">
       </div>
       <div class="chatHint" id="chatHint">Enter: enviar · Shift+Enter: nueva línea · pulsa ? para ver todos los atajos.</div>
     </form>
@@ -113,8 +113,8 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
   <p><b>¿Cómo se suben los rangos?</b><br>Por mensajes: Novato, Miembro (5), Habitual (25) y Veterano (100).</p>
   <p><b>¿Quién modera?</b><br>El administrador configurado por UID puede borrar temas, respuestas y mensajes del chat. Las reglas del foro solo las publica el staff.</p>
   <p><b>¿Puedo entrar sin registrarme?</b><br>Sí. El chat permite invitados anónimos; para crear temas y responder en los foros necesitas una cuenta y verificar tu correo.</p>
-  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Puedes pegar una URL HTTPS directa de una imagen o GIF en tu perfil sin activar facturación. La subida de archivos desde tu dispositivo requiere Firebase Storage.</p>
-  <p><b>¿Cómo se muestran imágenes y vídeos en el chat?</b><br>Pega un enlace HTTPS directo que termine en JPG, PNG, GIF, WEBP, MP4 o WEBM. Se mostrará una vista previa cuando el servidor permita el acceso público.</p>
+  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Cada cuenta registrada con correo verificado puede cambiar su propia foto usando una URL HTTPS o subir una imagen cuando ImageKit esté configurado.</p>
+  <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Solo las cuentas registradas con correo verificado, incluido todo el personal. Los invitados pueden enviar mensajes de texto, pero no enlaces, fotos, vídeos ni archivos. Los adjuntos requieren ImageKit configurado.</p>
   <p><b>¿Cómo funcionan las invitaciones del staff?</b><br>Solo el propietario, co-owner o administrador puede generarlas desde Administración. Cada invitación concede un único rol a una cuenta con correo verificado, se usa una sola vez y queda bloqueada permanentemente. Las invitaciones vencen a los 7 días si nadie las utiliza.</p>
 </template>
 
@@ -158,9 +158,14 @@ const ADMINS_UID = []; // Compatibilidad para administradores antiguos; los nuev
 const MODERATORS_UID = []; // Compatibilidad para moderadores antiguos.
 const STAFF_ROLE_LABELS = {co_owner:"Co-owner",admin:"Administrador",moderator:"Moderador",helper:"Ayudante"};
 // Adjuntos del chat y fotos de perfil: requieren Firebase Storage (plan Blaze).
-const STORAGE_ENABLED = false; // Cambia a true SOLO después de activar Storage y pegar las reglas.
+const STORAGE_ENABLED = false; // No activar Firebase Storage: requiere Blaze.
+// ImageKit se activa al configurar el Worker seguro descrito en README.md.
+const IMAGEKIT_AUTH_ENDPOINT = ""; // URL pública del Worker, terminando en /auth.
+const IMAGEKIT_PUBLIC_KEY = ""; // Clave public_ de ImageKit; nunca pegues aquí la private_.
+const IMAGEKIT_UPLOAD_URL = "https://upload.imagekit.io/api/v2/files/upload";
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
+const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const CHAT_LIMIT = 60;
 const BOARDS = [
@@ -207,6 +212,11 @@ async function loadCurrentStaffRole(user){
   catch(e){console.warn("No se pudo leer el rol del usuario",e);}
 }
 const emailVerified = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.emailVerified);
+const containsExternalLink = value => /(?:https?:\\/\\/|www\\.)/i.test(String(value||""));
+function requireVerifiedMember(action="compartir enlaces o multimedia"){
+  if(!emailVerified())throw new Error(`Para ${action}, inicia sesión con una cuenta registrada y verifica tu correo electrónico.`);
+}
+function imageKitReady(){return /^https:\/\/\S+$/i.test(IMAGEKIT_AUTH_ENDPOINT) && IMAGEKIT_PUBLIC_KEY.startsWith("public_");}
 const me = () => auth?.currentUser && !auth.currentUser.isAnonymous ? (auth.currentUser.displayName || "Usuario") : "";
 const chatName = () => me() || `Invitado-${(auth?.currentUser?.uid || "0000").slice(0,5).toUpperCase()}`;
 const rank = (n,u,uid) => (uid && ADMINS_UID.includes(uid)) ? "Administrador" : (uid && MODERATORS_UID.includes(uid)) ? "Moderador" : n > 99 ? "Veterano" : n > 24 ? "Habitual" : n > 4 ? "Miembro" : "Novato";
@@ -217,6 +227,43 @@ async function hashAccessToken(value){
   if(!crypto?.subtle)throw new Error("Este navegador no permite comprobar el token de forma segura.");
   const bytes=new TextEncoder().encode(normalized),digest=await crypto.subtle.digest("SHA-256",bytes);
   return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+
+async function uploadToImageKit(file,folder,statusSelector){
+  requireVerifiedMember("subir archivos");
+  if(!imageKitReady())throw new Error("ImageKit todavía no está configurado. Revisa la sección de archivos del README.");
+  const idToken=await auth.currentUser.getIdToken(true);
+  const authResponse=await fetch(IMAGEKIT_AUTH_ENDPOINT,{
+    method:"POST",
+    headers:{"Authorization":`Bearer ${idToken}`,"Content-Type":"application/json"},
+    body:"{}"
+  });
+  let credentials={};try{credentials=await authResponse.json();}catch{}
+  if(!authResponse.ok||!credentials.token||!credentials.signature||!credentials.expire||!(credentials.publicKey||IMAGEKIT_PUBLIC_KEY)){
+    throw new Error(credentials.error||"No se pudo validar la cuenta para subir el archivo.");
+  }
+  const form=new FormData();
+  form.append("file",file);form.append("fileName",file.name);
+  form.append("publicKey",credentials.publicKey||IMAGEKIT_PUBLIC_KEY);
+  form.append("token",credentials.token);form.append("expire",String(credentials.expire));
+  form.append("signature",credentials.signature);form.append("folder",folder);
+  form.append("useUniqueFileName","true");
+  const status=statusSelector?document.querySelector(statusSelector):null;
+  return await new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();xhr.open("POST",IMAGEKIT_UPLOAD_URL);
+    xhr.upload.onprogress=e=>{
+      if(!e.lengthComputable)return;
+      const pct=Math.round(e.loaded/e.total*100);
+      if(status)status.textContent=statusSelector==="#chatState"?`SUBIENDO ARCHIVO · ${pct}%`:`Subiendo archivo a ImageKit: ${pct}%`;
+    };
+    xhr.onerror=()=>reject(new Error("No se pudo conectar con ImageKit."));
+    xhr.onload=()=>{
+      let result={};try{result=JSON.parse(xhr.responseText||"{}");}catch{}
+      if(xhr.status>=200&&xhr.status<300&&result.url)resolve(result);
+      else reject(new Error(result.message||result.help||"ImageKit rechazó el archivo. Revisa su formato y tamaño."));
+    };
+    xhr.send(form);
+  });
 }
 function avatar(u,size=40,url=""){const safe=safeHttps(url);if(safe)return `<img class="ava" width="${size}" height="${size}" src="${E(safe)}" alt="Avatar de ${E(u||"usuario")}" loading="lazy" style="width:${size}px;height:${size}px;object-fit:cover;border:1px solid #006699;background:#fff;flex:none">`;let h=7,s="";for(const c of String(u||"?"))h=(h*31+c.charCodeAt(0))|0;for(let i=0;i<25;i++){const x=i%5,y=i/5|0;if((h >>> (y*3+Math.min(x,4-x)))&1)s+=`<rect x="${x*8}" y="${y*8}" width="8" height="8"/>`;}return `<svg class="ava" width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true" style="background:hsl(${(h>>>0)%360},60%,40%);border:1px solid #006699;flex:none"><g fill="#fff">${s}</g></svg>`;}
 
@@ -368,11 +415,18 @@ const D = {
   async prof(n){const s=await getDocs(query(collection(db,"users"),where("u","==",n),limit(1)));return s.empty?null:{uid:s.docs[0].id,...s.docs[0].data()};},
   async profByUid(uid){const s=await getDoc(doc(db,"users",uid));return s.exists()?{uid:s.id,...s.data()}:null;},
   async updateAvatar(file){
-    if(!STORAGE_ENABLED||!storage)throw new Error("Las fotos de perfil necesitan Firebase Storage activado. Consulta Configuración.");
-    if(!auth.currentUser||auth.currentUser.isAnonymous)throw new Error("Inicia sesión con una cuenta registrada para cambiar tu foto.");
+    requireVerifiedMember("cambiar tu foto de perfil");
     if(!["image/jpeg","image/png","image/gif","image/webp"].includes(file.type))throw new Error("Formato no permitido. Usa JPG, PNG, GIF o WEBP.");
     if(file.size>MAX_AVATAR_BYTES)throw new Error("La imagen supera el máximo de 5 MB.");
     const uid=auth.currentUser.uid,userRef=doc(db,"users",uid),before=await getDoc(userRef),oldPath=before.exists()?before.data().avatarPath||"":"";
+    if(imageKitReady()){
+      const uploaded=await uploadToImageKit(file,`/avatars/${uid}`,"#profilePhotoStatus");
+      const url=safeHttps(uploaded.url);if(!url)throw new Error("ImageKit devolvió una dirección de imagen no válida.");
+      await updateDoc(userRef,{avatarUrl:url,avatarPath:""});await updateProfile(auth.currentUser,{photoURL:url});
+      if(oldPath&&storage){try{await deleteObject(storageRef(storage,oldPath));}catch(e){console.warn("La foto anterior no pudo borrarse",e);}}
+      return url;
+    }
+    if(!STORAGE_ENABLED||!storage)throw new Error("La subida de archivos necesita configurar ImageKit. Mientras tanto puedes usar una URL HTTPS directa.");
     const ext=({"image/jpeg":"jpg","image/png":"png","image/gif":"gif","image/webp":"webp"})[file.type];
     const path=`avatars/${uid}/${Date.now()}.${ext}`,r=storageRef(storage,path),task=uploadBytesResumable(r,file,{contentType:file.type});
     await new Promise((resolve,reject)=>task.on("state_changed",snap=>{const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);const status=document.querySelector("#profilePhotoStatus");if(status)status.textContent=`Subiendo foto: ${pct}%`;},reject,resolve));
@@ -383,7 +437,7 @@ const D = {
     return url;
   },
   async setAvatarUrl(url){
-    if(!auth.currentUser||auth.currentUser.isAnonymous)throw new Error("Inicia sesión con una cuenta registrada.");
+    requireVerifiedMember("cambiar tu foto de perfil");
     const safe=safeHttps(url);
     if(!safe)throw new Error("Usa una URL HTTPS pública y directa de una imagen o GIF.");
     const userRef=doc(db,"users",auth.currentUser.uid),before=await getDoc(userRef),oldPath=before.exists()?before.data().avatarPath||"":"";
@@ -393,7 +447,7 @@ const D = {
     return safe;
   },
   async removeAvatar(){
-    if(!auth.currentUser||auth.currentUser.isAnonymous)throw new Error("Inicia sesión con una cuenta registrada.");
+    requireVerifiedMember("quitar tu foto de perfil");
     const userRef=doc(db,"users",auth.currentUser.uid),before=await getDoc(userRef),oldPath=before.exists()?before.data().avatarPath||"":"";
     await updateDoc(userRef,{avatarUrl:"",avatarPath:""});await updateProfile(auth.currentUser,{photoURL:null});
     if(oldPath&&storage){try{await deleteObject(storageRef(storage,oldPath));}catch(e){console.warn("La foto anterior no pudo borrarse",e);}}
@@ -405,7 +459,11 @@ const D = {
       await deleteDoc(doc(db,"topics",a));
     }else{await deleteDoc(doc(db,"posts",a));const tr=doc(db,"topics",b),t=await getDoc(tr);if(t.exists())await updateDoc(tr,{n:Math.max(0,(t.data().n||0)-1)});}
   },
-  async chatSend(x,media=null){const uid=auth.currentUser.uid,p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid));const avatarUrl=p?.exists()?p.data().avatarUrl||"":"";return addDoc(collection(db,"chatMessages"),{uid,u:chatName(),avatarUrl,x,media,ts:Date.now()});},
+  async chatSend(x,media=null){
+    if(!auth.currentUser)throw new Error("Inicia sesión para participar en el chat.");
+    if(media||containsExternalLink(x))requireVerifiedMember("compartir enlaces o archivos en el chat");
+    const uid=auth.currentUser.uid,p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid));const avatarUrl=p?.exists()?p.data().avatarUrl||"":"";return addDoc(collection(db,"chatMessages"),{uid,u:chatName(),avatarUrl,x,media,ts:Date.now()});
+  },
   async chatDelete(id,path){await deleteDoc(doc(db,"chatMessages",id));if(path&&storage){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("No se pudo borrar el archivo asociado",e);}}},
   async chatClear(){const s=await getDocs(query(collection(db,"chatMessages"),orderBy("ts","desc"),limit(500)));if(storage){await Promise.all(s.docs.map(async d=>{const path=d.data().media?.path;if(path){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("Adjunto no encontrado o no borrable",e);}}}));}for(let i=0;i<s.docs.length;i+=400){const batch=writeBatch(db);s.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));await batch.commit();}}
 };
@@ -498,9 +556,11 @@ function frm(m,a,r){
 }
 async function prf(m,u){
   const [f,c]=await Promise.all([Store.prof(u),Store.cnt(u)]);if(!f)return m.innerHTML="Usuario inexistente";
-  const owner=!!(auth?.currentUser&&!auth.currentUser.isAnonymous&&auth.currentUser.uid===f.uid),storageReady=!!(firebaseReady&&STORAGE_ENABLED&&storage);
-  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(owner?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Personaliza tu perfil con una imagen o un GIF animado.</p><p><small>JPG, PNG, GIF o WEBP · máximo 5 MB. Los GIF conservan su animación.</small></p><div class="profilePhotoActions"><button type="button" id="avatarChoose" ${storageReady?"":"disabled"}>Subir archivo${storageReady?"":" (Storage)"}</button>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden><div class="profilePhotoStatus" id="profilePhotoStatus">${storageReady?"Puedes subir un archivo o usar una URL HTTPS.":"La subida local está desactivada para mantener el proyecto gratuito. Usa una URL HTTPS directa."}</div></section>`:"");
-  if(owner){
+  const owner=!!(auth?.currentUser&&!auth.currentUser.isAnonymous&&auth.currentUser.uid===f.uid);
+  const canEditProfile=owner&&emailVerified();
+  const uploadReady=!!(firebaseReady&&(imageKitReady()||(STORAGE_ENABLED&&storage)));
+  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Personaliza tu perfil con una imagen o un GIF animado.</p><p><small>JPG, PNG, GIF o WEBP · máximo 5 MB. Los GIF conservan su animación.</small></p><div class="profilePhotoActions"><button type="button" id="avatarChoose" ${uploadReady?"":"disabled"}>Subir archivo${uploadReady?"":" (pendiente de configurar)"}</button>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden><div class="profilePhotoStatus" id="profilePhotoStatus">${uploadReady?"Puedes subir un archivo o usar una URL HTTPS.":"La subida directa requiere configurar ImageKit. Mientras tanto puedes usar una URL HTTPS directa."}</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
+  if(canEditProfile){
     $("#avatarChoose")?.addEventListener("click",()=>$("#avatarFile").click());
     $("#avatarUrlSave")?.addEventListener("click",async()=>{const status=$("#profilePhotoStatus"),button=$("#avatarUrlSave");button.disabled=true;try{await Store.setAvatarUrl($("#avatarUrlInput").value.trim());await prf(m,u);}catch(z){status.textContent=errText(z);button.disabled=false;}});
     $("#avatarFile")?.addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;const status=$("#profilePhotoStatus");$("#avatarChoose").disabled=true;if($("#avatarRemove"))$("#avatarRemove").disabled=true;try{await Store.updateAvatar(file);await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarChoose").disabled=false;if($("#avatarRemove"))$("#avatarRemove").disabled=false;}finally{e.target.value="";}});
@@ -597,6 +657,7 @@ function externalMediaPreview(text){
   let path="";try{path=new URL(safe).pathname.toLowerCase();}catch{return "";}
   if(/\.(jpe?g|png|gif|webp)$/.test(path))return `<a href="${E(safe)}" target="_blank" rel="noopener noreferrer"><img class="cmmedia" src="${E(safe)}" alt="Imagen compartida" loading="lazy" referrerpolicy="no-referrer"></a>`;
   if(/\.(mp4|webm)$/.test(path))return `<video class="cmvideo" controls preload="metadata"><source src="${E(safe)}"></video>`;
+  if(/\.(pdf|txt|csv|zip|rar|7z|docx?|xlsx?|pptx?)$/.test(path))return `<a href="${E(safe)}" target="_blank" rel="noopener noreferrer">📎 Abrir archivo compartido</a>`;
   return "";
 }
 function renderChat(items){
@@ -618,11 +679,20 @@ function subscribeChat(){
   chatUnsub=onSnapshot(q,s=>{chatCache=s.docs.map(d=>({id:d.id,...d.data()})).reverse();renderChat(chatCache);$("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;},e=>{$("#chatState").textContent="ERROR DE CHAT · revisa reglas Firestore";console.error(e);});
 }
 async function uploadChatFile(file){
-  if(!STORAGE_ENABLED||!storage)throw new Error("Los adjuntos están desactivados. Activa Storage, configura el bucket y cambia STORAGE_ENABLED a true.");
+  requireVerifiedMember("subir archivos al chat");
   const isImage=["image/jpeg","image/png","image/gif","image/webp"].includes(file.type);
   const isVideo=["video/mp4","video/webm"].includes(file.type);
-  if(!isImage&&!isVideo)throw new Error("Formato no permitido. Usa JPG, PNG, GIF, WEBP, MP4 o WEBM.");
-  const max=isImage?MAX_IMAGE_BYTES:MAX_VIDEO_BYTES;if(file.size>max)throw new Error(`Archivo demasiado grande. Máximo: ${isImage?"8 MB":"25 MB"}.`);
+  const isDocument=["application/pdf","text/plain","text/csv","application/zip","application/x-zip-compressed"].includes(file.type);
+  if(!isImage&&!isVideo&&!isDocument)throw new Error("Formato no permitido. Usa JPG, PNG, GIF, WEBP, MP4, WEBM, PDF, TXT, CSV o ZIP.");
+  const max=isImage?MAX_IMAGE_BYTES:isVideo?MAX_VIDEO_BYTES:MAX_DOCUMENT_BYTES;
+  if(file.size>max)throw new Error(`Archivo demasiado grande. Máximo: ${isImage?"8 MB":isVideo?"25 MB":"10 MB"}.`);
+  if(imageKitReady()){
+    const uploaded=await uploadToImageKit(file,`/chat/${auth.currentUser.uid}`,"#chatState");
+    const url=safeHttps(uploaded.url);if(!url)throw new Error("ImageKit devolvió una dirección no válida.");
+    return {url,path:"",type:file.type,name:file.name,size:file.size};
+  }
+  if(!STORAGE_ENABLED||!storage)throw new Error("La subida de archivos todavía no está conectada. Configura ImageKit siguiendo README.md. Puedes compartir enlaces HTTPS mientras tanto.");
+  if(isDocument)throw new Error("Firebase Storage está limitado aquí a imágenes y vídeos; configura ImageKit para documentos.");
   const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-90),path=`chat/${auth.currentUser.uid}/${Date.now()}_${clean}`,r=storageRef(storage,path);
   const task=uploadBytesResumable(r,file,{contentType:file.type});
   await new Promise((resolve,reject)=>task.on("state_changed",s=>{$("#chatState").textContent=`SUBIENDO ADJUNTO · ${Math.round(s.bytesTransferred/s.totalBytes*100)}%`;},reject,resolve));
@@ -633,6 +703,7 @@ async function uploadChatFile(file){
 let chatSending=false;
 $("#chatForm").addEventListener("submit",async e=>{
   e.preventDefault();const x=$("#chatText").value.trim();if(!x||uploadBusy||chatSending)return;
+  if(containsExternalLink(x)&&!emailVerified()){alert("Solo las cuentas registradas y con correo verificado pueden compartir enlaces. Regístrate o inicia sesión y verifica tu correo.");return;}
   chatSending=true;$("#chatSend").disabled=true;
   try{await Store.chatSend(x,null);$("#chatText").value="";}catch(z){alert(errText(z));}
   finally{chatSending=false;$("#chatSend").disabled=false;}
@@ -664,7 +735,7 @@ document.addEventListener("keydown",e=>{
   if(!typing&&e.key==="?"&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();openChatShortcuts();return;}
   if(!typing&&e.altKey&&e.key.toLowerCase()==="m"){e.preventDefault();$("#chatText").focus();}
 });
-$("#chatAttach").addEventListener("click",()=>$("#chatFile").click());
+$("#chatAttach").addEventListener("click",()=>{if(!emailVerified()){alert("Solo las cuentas registradas y con correo verificado pueden subir archivos. Inicia sesión y verifica tu correo.");return;}if(!imageKitReady()&&!STORAGE_ENABLED){alert("La subida de archivos necesita configurar ImageKit. Consulta README.md.");return;}$("#chatFile").click();});
 $("#chatFile").addEventListener("change",async e=>{
   const file=e.target.files?.[0];if(!file)return;uploadBusy=true;$("#chatAttach").disabled=true;
   try{const media=await uploadChatFile(file);await Store.chatSend("",media);$("#chatState").textContent="ADJUNTO ENVIADO";}catch(z){alert(errText(z));$("#chatState").textContent="CHAT";}finally{uploadBusy=false;$("#chatAttach").disabled=false;e.target.value="";}
@@ -693,8 +764,8 @@ async function startFirebase(){
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
-    $("#chatAttach").disabled=!STORAGE_ENABLED;
-    $("#chatHint").textContent=STORAGE_ENABLED?"Invitados y miembros pueden chatear. Adjuntos: imágenes, GIF y vídeos (límites 8/25 MB). Enter envía · Shift+Enter nueva línea · ? atajos.":"Invitados y miembros pueden chatear. Para evitar costes, pega URLs HTTPS directas de imágenes, GIF o vídeos; aparecerá una vista previa. Enter envía · Shift+Enter nueva línea · ? atajos."; 
+    $("#chatAttach").disabled=!(imageKitReady()||STORAGE_ENABLED);
+    $("#chatHint").textContent="Invitados pueden enviar texto. Enlaces y archivos: solo cuentas registradas con correo verificado. "+(imageKitReady()?"Adjuntos habilitados: imágenes, vídeos y documentos (límites 8/25/10 MB).":"Para adjuntar archivos, primero configura ImageKit siguiendo README.md; puedes compartir enlaces HTTPS si has verificado tu correo.")+" Enter envía · Shift+Enter nueva línea · ? atajos."; 
     subscribeChat();updateAdminUI();renderAccountNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
