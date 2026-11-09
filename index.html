@@ -956,7 +956,7 @@ function watchRouteData(reference,renderId){
 async function refreshRouteContent(expectedRenderId=routeRenderId){
   const routeKey=location.hash||"#/";
   if(expectedRenderId!==routeRenderId||routeKey!==activeRouteKey)return;
-  const parts=routeKey.replace(/^#\\/?/,"").split("/");
+  const parts=routeKey.replace(/^#\/?/,"").split("/");
   const routeName=parts[0]||"",arg=parts.slice(1).join("/");
   const renderer=ROUTES[routeName]||idx,m=$("#m");
   if(!m)return;
