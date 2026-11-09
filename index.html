@@ -990,7 +990,7 @@ async function prf(m,u){
   let moderationHtml="";
   if(isStaff()&&auth?.currentUser&&auth.currentUser.uid!==f.uid&&f.uid!==OWNER_UID){
     try{
-      const [mod,targetRole]=await Promise.all([Store.moderation(f.uid),isAdmin()?"":Store.moderationMember(f.uid)]);
+      const [mod,targetRole]=await Promise.all([Store.moderation(f.uid),isAdmin()?Store.moderationMember(f.uid):Promise.resolve("")]);
       if(!targetRole||isAdmin())moderationHtml=moderationPanelHtml(f.uid,mod,u);
     }catch(error){console.warn("No se pudo cargar el panel de moderación",error);}
   }
