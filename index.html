@@ -882,11 +882,11 @@ const D = {
     return {verified:auth.currentUser.emailVerified,grantedRole};
   },
   async out(){await signOut(auth);await signInAnonymously(auth);},
-  async topics(){const s=await getDocs(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()}));},
-  async topicsByBoard(boardId){const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.lr||0)-(a.lr||0));},
-  async posts(t){const s=await getDocs(query(collection(db,"posts"),where("tp","==",t)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.ts||0)-(b.ts||0));},
-  async topic(t){const s=await getDoc(doc(db,"topics",t));return s.exists()?{id:s.id,...s.data()}:null;},
-  async ratings(t){const s=await getDocs(collection(db,"topics",t,"ratings"));return uniqueTopicRatings(s.docs.map(d=>({id:d.id,...d.data(),uid:d.data().uid||d.id})));},
+  async topics(){try{const s=await getDocs(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()}));}catch(error){throw new Error("No se pudieron leer los temas (topics): "+(error.code||error.message||"error desconocido"));}},
+  async topicsByBoard(boardId){try{const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas de la categoría "+boardId+": "+(error.code||error.message||"error desconocido"));}},
+  async posts(t){try{const s=await getDocs(query(collection(db,"posts"),where("tp","==",t)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.ts||0)-(b.ts||0));}catch(error){throw new Error("No se pudieron leer las publicaciones del tema: "+(error.code||error.message||"error desconocido"));}},
+  async topic(t){try{const s=await getDoc(doc(db,"topics",t));return s.exists()?{id:s.id,...s.data()}:null;}catch(error){throw new Error("No se pudo leer el tema: "+(error.code||error.message||"error desconocido"));}},
+  async ratings(t){try{const s=await getDocs(collection(db,"topics",t,"ratings"));return uniqueTopicRatings(s.docs.map(d=>({id:d.id,...d.data(),uid:d.data().uid||d.id})));}catch(error){console.warn("No se pudieron cargar las valoraciones; se mostrarán sin votos.",error);return []; }},
   async rateTopic(t,stars){
     requireRegisteredMember("valorar este tema");await assertCurrentUserNotBanned();
     const value=Number(stars);
@@ -1770,7 +1770,7 @@ async function go(){
   }catch(z){
     if(renderId!==routeRenderId)return;
     console.error("Error al cargar la ruta "+routeKey,z);
-    const detail=z?.code?String(z.code):z?.message?String(z.message):"Error desconocido";
+    const detail=z?.message?String(z.message):z?.code?String(z.code):"Error desconocido";
     m.innerHTML='<span class="err">Error: '+E(errText(z))+'</span><br><small>Detalle técnico: '+E(detail)+'</small><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>';
   }
 }
