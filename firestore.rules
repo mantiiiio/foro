@@ -596,7 +596,7 @@ service cloud.firestore {
         && (request.resource.data.x.size() > 0 || resource.data.media is map)
         && (!containsLink(request.resource.data.x) || registered())
       ) || (
-        signedIn()
+        registered()
         && (isAdmin() || resource.data.uid == request.auth.uid)
         && resource.data.get('deleted', false) != true
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x','media','deleted','deletedBy','deletedAt','deletedByUid'])
