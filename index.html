@@ -923,9 +923,9 @@ const D = {
     const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,staffBadge,x,ts:n});batch.update(topicRef,{lr:n,lu:u,lastStaffBadge:staffBadge,n:increment(1)});await batch.commit();
   },
   async editPost(id,x){requireVerifiedMember("editar tus publicaciones");await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
-  async members(){const s=await getCountFromServer(collection(db,"users"));return s.data().count;},
-  async cnt(n){const s=await getCountFromServer(query(collection(db,"posts"),where("u","==",n)));return s.data().count;},
-  async prof(n){const s=await getDocs(query(collection(db,"users"),where("u","==",n),limit(1)));return s.empty?null:{uid:s.docs[0].id,...s.docs[0].data()};},
+  async members(){try{const s=await getCountFromServer(collection(db,"users"));return s.data().count;}catch(error){console.warn("No se pudo cargar el contador de miembros; se muestra 0 temporalmente.",error);return 0;}},
+  async cnt(n){try{const s=await getCountFromServer(query(collection(db,"posts"),where("u","==",n)));return s.data().count;}catch(error){console.warn("No se pudo cargar el contador de mensajes de "+n,error);return 0;}},
+  async prof(n){try{const s=await getDocs(query(collection(db,"users"),where("u","==",n),limit(1)));return s.empty?null:{uid:s.docs[0].id,...s.docs[0].data()};}catch(error){console.warn("No se pudo cargar el perfil público de "+n,error);return null;}},
   async profByUid(uid){const s=await getDoc(doc(db,"users",uid));return s.exists()?{uid:s.id,...s.data()}:null;},
   async moderation(uid){const s=await getDoc(doc(db,"moderation",uid));return s.exists()?{uid,...s.data()}:{uid,warnings:[],warningCount:0,status:"active",banUntil:null,banReason:""};},
   async moderationMember(uid){const s=await getDoc(doc(db,"staff",uid));return s.exists()?s.data().role:"";},
@@ -1434,8 +1434,9 @@ function frm(m,a,r){
         if(!identity.includes("@")&&!/^[a-z0-9_]{3,16}$/i.test(identity))return er.textContent="Introduce tu correo o el usuario de una cuenta antigua.";
         const token=$("#accessToken")?.value.trim()||"";
         await Store.login(identity,p,token);
-        const ownProfile=await Store.profByUid(auth.currentUser.uid);
-        location.hash=ownProfile?.u?"#/u/"+encodeURIComponent(ownProfile.u):"#/";
+        const ownProfile=await Store.profByUid(auth.currentUser.uid).catch(error=>{console.warn("No se pudo cargar el perfil tras iniciar sesión; se usará el nombre de Firebase.",error);return null;});
+        const ownName=ownProfile?.u||auth.currentUser.displayName||"";
+        location.hash=ownName?"#/u/"+encodeURIComponent(ownName):"#/";
         if(token){const role=STAFF_ROLE_LABELS[currentStaffRole]||"personal";alert("Invitación utilizada correctamente. Tu cuenta recibió el rol: "+role+". Este token quedó bloqueado para siempre.");}
       }
     }catch(z){er.textContent=errText(z);}
@@ -1768,7 +1769,9 @@ async function go(){
     });
   }catch(z){
     if(renderId!==routeRenderId)return;
-    m.innerHTML='<span class="err">Error: '+E(errText(z))+'</span><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>';
+    console.error("Error al cargar la ruta "+routeKey,z);
+    const detail=z?.code?String(z.code):z?.message?String(z.message):"Error desconocido";
+    m.innerHTML='<span class="err">Error: '+E(errText(z))+'</span><br><small>Detalle técnico: '+E(detail)+'</small><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>';
   }
 }
 
