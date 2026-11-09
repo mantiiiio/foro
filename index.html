@@ -1195,9 +1195,11 @@ function renderChat(items){
   if(!items.length){box.innerHTML='<div class="chatEmpty">Todavía no hay mensajes.<br>¡Rompe el hielo!</div>';return;}
   box.innerHTML=items.map(m=>{
     const media=m.media? (String(m.media.type||"").startsWith("image/")?`<a href="${E(m.media.url)}" target="_blank" rel="noopener"><img class="cmmedia" src="${E(m.media.url)}" alt="Archivo adjunto" loading="lazy"></a>`:String(m.media.type||"").startsWith("video/")?`<video class="cmvideo" controls preload="metadata"><source src="${E(m.media.url)}" type="${E(m.media.type)}"></video>`:`<a href="${E(m.media.url)}" target="_blank" rel="noopener">Ver archivo adjunto</a>`):externalMediaPreview(m.x||"");
-    const canDelete=isAdmin() || (auth?.currentUser && m.uid===auth.currentUser.uid);
-    return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead"><b>${E(m.u||"Invitado")}</b> · ${dt(m.ts)}</div><div class="cmtxt">${fmt(m.x||"")}</div>${media}${canDelete?`<div class="cmtools"><button type="button" data-chat-del="${E(m.id)}">[borrar]</button></div>`:""}</div></article>`;
+    const ownMessage=configured?!!auth?.currentUser&&m.uid===auth.currentUser.uid:!!Store.me()&&m.uid===Store.me();
+    const canEdit=ownMessage,canDelete=isAdmin()||ownMessage;
+    return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead"><b>${E(m.u||"Invitado")}</b> · ${dt(m.ts)}</div><div class="cmtxt">${fmt(m.x||"")}</div>${media}${canEdit||canDelete?`<div class="cmtools">${canEdit?`<button type="button" data-chat-edit="${E(m.id)}">[editar]</button>`:""}${canDelete?`<button type="button" data-chat-del="${E(m.id)}">[borrar]</button>`:""}</div>`:""}</div></article>`;
   }).join("");
+  box.querySelectorAll("[data-chat-edit]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatEdit);if(!item)return;const edited=prompt("Edita tu mensaje del chat:",item.x||"");if(edited===null)return;if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}btn.disabled=true;try{await Store.chatEdit(item.id,edited);}catch(z){alert(errText(z));btn.disabled=false;}}));
   box.querySelectorAll("[data-chat-del]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatDel);if(!item||!confirm("¿Borrar este mensaje del chat?"))return;try{await Store.chatDelete(item.id,item.media?.path||null);}catch(z){alert(errText(z));}}));
   if(nearBottom)box.scrollTop=box.scrollHeight;
 }
