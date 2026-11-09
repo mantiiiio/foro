@@ -646,6 +646,7 @@ const isAdmin = () => isOwner() || ["co_owner","admin"].includes(currentStaffRol
 const isModerator = () => isAdmin() || currentStaffRole === "moderator" || !!(auth?.currentUser && MODERATORS_UID.includes(auth.currentUser.uid));
 const isStaff = () => isModerator();
 const hasStaffBadge = () => isOwner() || ["co_owner","admin","moderator","helper"].includes(currentStaffRole) || !!(auth?.currentUser && (ADMINS_UID.includes(auth.currentUser.uid) || MODERATORS_UID.includes(auth.currentUser.uid)));
+const canCreateTopicInBoard = boardId => boardId==="sug" ? hasStaffBadge() : boardId==="reglas" ? isStaff() : true;
 const staffTagHtml = enabled => enabled === true ? '<span class="staffBadge">[STAFF]</span>' : "";
 const canManageStaff = () => isAdmin();
 const canIssueStaffRole = role => (isOwner() && ["co_owner","admin","moderator","helper"].includes(role)) || (isAdmin() && !isOwner() && ["moderator","helper"].includes(role));
@@ -900,6 +901,7 @@ const D = {
     }
   },
   async newT(b,t,x,gallery=[]){
+    if(b==="sug"&&!hasStaffBadge())throw new Error("Solo el staff puede crear temas en Ayuda y sugerencias.");
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
     const cleanGallery=Array.isArray(gallery)?gallery.slice(0,30).map(item=>({type:item.type,url:safeHttps(item.url),caption:String(item.caption||"").slice(0,80)})):[];
@@ -1047,7 +1049,7 @@ const Demo = {
   async topic(t){return demo.t.find(x=>x.id===t)||null;},
   async ratings(t){return uniqueTopicRatings(demo.t.find(x=>x.id===t)?.ratings||[]);},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
-  async newT(b,t,x,gallery=[]){const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30):[];demo.t.push({id,b,t,u:demo.m,staffBadge:false,lastStaffBadge:false,gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:false,x,ts:n});saveDemo();return id;},
+  async newT(b,t,x,gallery=[]){if(b==="sug"&&!hasStaffBadge())throw new Error("Solo el staff puede crear temas en Ayuda y sugerencias.");const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30):[];demo.t.push({id,b,t,u:demo.m,staffBadge:hasStaffBadge(),lastStaffBadge:hasStaffBadge(),gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:hasStaffBadge(),x,ts:n});saveDemo();return id;},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
   async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
   async members(){return Object.keys(demo.u).length;},
@@ -1082,7 +1084,7 @@ async function brd(m,id){
   const B=BL.find(x=>x[0]===id);if(!B)return m.innerHTML="Foro inexistente";
   const T=await Store.topicsByBoard(id),isRules=id==="reglas";
   const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican al foro y al chat. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
-  m.innerHTML=rulesIntro+`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${isRules&&!isStaff()?"":`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`}</p><table><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${T.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>${isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:""}`;
+  m.innerHTML=rulesIntro+`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`:""}</p><table><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${T.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>${isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:""}`;
   if(configured)watchRouteData(query(collection(db,"topics"),where("b","==",id),limit(300)),routeRenderId);
 }
 function cleanTopicGallery(items){
@@ -1285,7 +1287,11 @@ function clearTopicDraft(boardId){
   try{sessionStorage.removeItem(topicDraftStorageKey(boardId));}catch{}
 }
 function neu(m,id){
-  if(!Store.me()||id==="reglas"&&!isStaff())return location.hash=Store.me()?"#/b/"+id:"#/login";
+  if(!Store.me())return location.hash="#/login";
+  if(!canCreateTopicInBoard(id)){
+    m.innerHTML=`<section class="notice"><b>Solo el staff puede crear temas aquí.</b><p>Ayuda y sugerencias está reservada para publicaciones del personal del foro.</p></section><p><a href="#/b/${E(id)}">Volver a Ayuda y sugerencias</a></p>`;
+    return;
+  }
   if(configured&&!emailVerified()){m.innerHTML=`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>`;return;}
   const savedDraft=loadTopicDraft(id);
   m.innerHTML=`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea></td></tr><tr><td colspan="2">
