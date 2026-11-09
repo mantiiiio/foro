@@ -34,6 +34,101 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
 #chatFile{display:none}.notice{border:1px solid #c9b64a;background:#fff8c6;padding:7px;margin:7px 0;color:#573d00}.accountNotice{border:1px solid #c99b35;background:#fff4cf;color:#593b00;padding:7px;margin:6px 0;font-size:11px;line-height:1.5}.accountNotice button{margin:3px 3px 0 0;padding:3px 7px}.accountNotice[hidden]{display:none!important}.setupgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.setupgrid>div{border:1px solid #9bb2bd;background:#f4f7f8;padding:8px}
 @media(max-width:1330px){.sd{position:static;width:auto;max-width:934px;margin:8px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px}.sd#sl,.sd#sr{left:auto;width:auto}.sd .ad{width:172px}#chatBox{width:min(100%,420px)}}
 @media(max-width:600px){body{margin:4px}#w{padding:4px}#nm{font-size:32px}#hd{padding:8px}#ban{font-size:9px}.setupgrid{grid-template-columns:1fr}table{font-size:11px}td,th{padding:4px}#nav a{margin-right:6px}.chat-expanded{inset:2vh 2vw!important}}
+
+/* Diseño adaptable: el foro ocupa el espacio disponible sin depender del zoom del navegador. */
+body{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  align-items:start;
+  gap:12px;
+  width:calc(100% - 16px);
+  max-width:1400px;
+  margin:8px auto;
+}
+#w{
+  grid-column:1;
+  width:100%;
+  max-width:920px;
+  min-width:0;
+  margin:0;
+  justify-self:center;
+}
+.sd{
+  position:static;
+  inset:auto;
+  display:block;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  margin:0;
+}
+.sd#sl{display:none}
+.sd#sr{
+  grid-column:1;
+  width:100%;
+  max-width:920px;
+  justify-self:center;
+}
+#chatBox{width:100%;margin:0}
+#chatMessages{height:clamp(190px,38vh,360px)}
+#m{min-width:0;overflow-x:auto}
+#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+#nav a{margin:0;white-space:normal}
+#hd>#lg{min-width:0;flex:1 1 260px}
+#ban{max-width:100%;flex:0 1 auto}
+table{max-width:100%;table-layout:auto}
+td,th{overflow-wrap:anywhere}
+input,textarea,select{max-width:100%}
+#m img,#m video,#m iframe,#chatMessages img,#chatMessages video,#chatMessages iframe{max-width:100%}
+
+@media(min-width:1024px){
+  body{grid-template-columns:minmax(0,1fr) 250px}
+  #w{grid-column:1}
+  .sd#sr{
+    grid-column:2;
+    width:250px;
+    max-width:250px;
+    justify-self:stretch;
+  }
+}
+@media(min-width:1440px){
+  body{grid-template-columns:172px minmax(0,1fr) 250px}
+  .sd#sl{
+    display:block;
+    grid-column:1;
+    width:172px;
+  }
+  #w{grid-column:2}
+  .sd#sr{grid-column:3}
+}
+@media(max-width:1023px){
+  body{grid-template-columns:minmax(0,1fr)}
+  #w{width:100%;max-width:920px}
+  .sd#sr{grid-column:1;width:100%;max-width:920px}
+  #chatBox{width:100%}
+  #chatMessages{height:clamp(170px,32vh,300px)}
+}
+@media(max-width:700px){
+  body{width:calc(100% - 8px);margin:4px auto;gap:8px}
+  #w{padding:4px}
+  #hd{padding:8px;gap:6px}
+  #nm{font-size:clamp(25px,8vw,34px)}
+  #lg i{font-size:10px}
+  #ban{font-size:8px;line-height:9px;padding:5px;max-width:100%;overflow-x:auto}
+  #nav{gap:7px 10px;font-size:11px}
+  #m table{font-size:10px}
+  #m td,#m th{padding:4px}
+  .topicRating{align-items:flex-start}
+  .chat-expanded{inset:2vh 2vw!important}
+}
+@media(max-width:420px){
+  #hd{display:block}
+  #ban{margin-top:7px}
+  #nm{font-size:28px}
+  #chatHead{flex-wrap:wrap}
+  .chatActions button{flex:1 1 auto}
+}
+
 </style>
 </head>
 <body>
