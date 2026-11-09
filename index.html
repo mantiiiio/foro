@@ -357,6 +357,7 @@ function autoModerationReason(text,channel="chat"){
   const recent=state.filter(item=>now-item.at<60000);
   if(recent.some(item=>item.channel===channel&&item.text===norm))return "duplicate";
   if(channel==="chat"&&recent.filter(item=>item.channel==="chat"&&now-item.at<12000).length>=5)return "flood";
+  if(channel!=="chat"&&recent.filter(item=>item.channel===channel&&now-item.at<30000).length>=3)return "flood";
   return "";
 }
 async function assertCurrentUserNotBanned(){
@@ -415,6 +416,8 @@ const errText = z => ({
   "auth/weak-password":"La clave debe tener al menos 6 caracteres.",
   "auth/too-many-requests":"Demasiados intentos. Prueba más tarde.",
   "permission-denied":"Firebase rechazó la operación. Revisa las reglas de Firestore/Storage.",
+  "CHAT_RATE_LIMIT":"Espera al menos 2 segundos entre mensajes del chat.",
+  "POST_RATE_LIMIT":"Espera al menos 3 segundos entre publicaciones o respuestas.",
   "storage/unauthorized":"No tienes permiso para subir ese archivo.",
   "storage/bucket-not-found":"No se encontró el bucket de Storage. Revisa firebaseConfig.",
   "storage/project-not-found":"No se encontró el proyecto de Storage. Revisa la configuración."
@@ -650,8 +653,16 @@ const D = {
     const uid=auth.currentUser.uid;
     await setDoc(doc(db,"topics",t,"ratings",uid),{uid,stars:value,ts:Date.now()});
   },
-  async newT(b,t,x){await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),batch=writeBatch(db);batch.set(topicRef,{b,t,u,uid,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,x,ts:n});await batch.commit();return topicRef.id;},
-  async reply(t,x){await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),batch=writeBatch(db);batch.set(postRef,{tp:t,u,uid,x,ts:n});batch.update(topicRef,{lr:n,lu:u,n:increment(1)});await batch.commit();},
+  async newT(b,t,x){
+    await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
+    if(lastMs&&Date.now()-lastMs<3000)throw new Error("POST_RATE_LIMIT");
+    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,x,ts:n});await batch.commit();return topicRef.id;
+  },
+  async reply(t,x){
+    await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
+    if(lastMs&&Date.now()-lastMs<3000)throw new Error("POST_RATE_LIMIT");
+    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,x,ts:n});batch.update(topicRef,{lr:n,lu:u,n:increment(1)});await batch.commit();
+  },
   async editPost(id,x){requireVerifiedMember("editar tus publicaciones");await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
   async members(){const s=await getDocs(collection(db,"users"));return s.size;},
   async cnt(n){const s=await getDocs(query(collection(db,"posts"),where("u","==",n)));return s.size;},
@@ -762,7 +773,13 @@ const D = {
   async chatSend(x,media=null){
     if(!auth.currentUser)throw new Error("Inicia sesión para participar en el chat.");await assertCurrentUserNotBanned();
     if(media||containsExternalLink(x))requireRegisteredMember("compartir enlaces o archivos en el chat");
-    const uid=auth.currentUser.uid,p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid));const avatarUrl=p?.exists()?p.data().avatarUrl||"":"";return addDoc(collection(db,"chatMessages"),{uid,u:chatName(),avatarUrl,x,media,ts:Date.now()});
+    const uid=auth.currentUser.uid,rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(rateRef),last=rateSnap.exists()?rateSnap.data().lastChatAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
+    if(lastMs&&Date.now()-lastMs<2000)throw new Error("CHAT_RATE_LIMIT");
+    const p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid)),avatarUrl=p?.exists()?p.data().avatarUrl||"":"";
+    const messageRef=doc(collection(db,"chatMessages")),batch=writeBatch(db);
+    batch.set(rateRef,{lastChatAt:serverTimestamp(),lastChatMessageId:messageRef.id},{merge:true});
+    batch.set(messageRef,{uid,u:chatName(),avatarUrl,x,media,ts:Date.now()});
+    await batch.commit();return {id:messageRef.id};
   },
   async chatEdit(id,x){await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>1500)throw new Error("El mensaje supera el máximo de 1500 caracteres.");await updateDoc(doc(db,"chatMessages",id),{x:value});},
   async chatDelete(id,path){const ref=doc(db,"chatMessages",id),snapshot=await getDoc(ref);if(!snapshot.exists()||snapshot.data().deleted)return;await updateDoc(ref,{x:"",media:null,deleted:true,deletedBy:isAdmin()?"administrador":"usuario",deletedAt:Date.now(),deletedByUid:auth.currentUser.uid});if(path&&storage){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("No se pudo borrar el archivo asociado",e);}}},
