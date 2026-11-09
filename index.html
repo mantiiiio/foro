@@ -212,7 +212,7 @@ async function loadCurrentStaffRole(user){
   catch(e){console.warn("No se pudo leer el rol del usuario",e);}
 }
 const emailVerified = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.emailVerified);
-const containsExternalLink = value => /(?:https?:\\/\\/|www\\.)/i.test(String(value||""));
+const containsExternalLink = value => /(?:https?:\/\/|www\.)/i.test(String(value||""));
 function requireVerifiedMember(action="compartir enlaces o multimedia"){
   if(!emailVerified())throw new Error(`Para ${action}, inicia sesión con una cuenta registrada y verifica tu correo electrónico.`);
 }
