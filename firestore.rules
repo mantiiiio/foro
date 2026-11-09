@@ -123,6 +123,9 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(['warnings','warningCount','status','banUntil','banReason','updatedAt','lastActionBy'])
         && request.resource.data.warnings is list
         && request.resource.data.warnings.size() <= 3
+        && (request.resource.data.warnings.size() < 1 || validModerationEntry(request.resource.data.warnings[0]))
+        && (request.resource.data.warnings.size() < 2 || validModerationEntry(request.resource.data.warnings[1]))
+        && (request.resource.data.warnings.size() < 3 || validModerationEntry(request.resource.data.warnings[2]))
         && request.resource.data.warningCount is int
         && request.resource.data.warningCount == request.resource.data.warnings.size()
         && request.resource.data.status in ['active','temporary','permanent']
@@ -147,6 +150,11 @@ service cloud.firestore {
     }
     function containsLink(value) {
       return value.matches('(?s).*(https?://|www\\.).*');
+    }
+    // Filtro adicional en servidor para amenazas explícitas e insultos dirigidos.
+    function automodSafe(value) {
+      return value is string
+        && !value.matches('(?is).*(te voy a matar|voy a matarte|te voy a pegar|voy a golpearte|ojala te mueras|ojalá te mueras|i will kill you|i am going to kill you|sos un idiota|eres un idiota|sois un idiota|sos un imbecil|eres un imbecil|sos un imbécil|eres un imbécil|sos un retrasado|eres un retrasado).*');
     }
     function validChatMedia(media) {
       return media is map
@@ -293,6 +301,7 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
         && shortString(request.resource.data.b, 24)
         && shortString(request.resource.data.t, 100)
+        && automodSafe(request.resource.data.t)
         && shortString(request.resource.data.u, 16)
         && request.resource.data.n == 0
         && request.resource.data.ts is int
@@ -365,6 +374,7 @@ service cloud.firestore {
         && request.resource.data.x is string
         && request.resource.data.x.size() > 0
         && request.resource.data.x.size() <= 6000
+        && automodSafe(request.resource.data.x)
         && request.resource.data.ts is int
         && existsAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp))
         && (getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas' || isStaff());
@@ -413,6 +423,7 @@ service cloud.firestore {
         && request.resource.data.avatarUrl.size() <= 2048
         && request.resource.data.x is string
         && request.resource.data.x.size() <= 1500
+        && automodSafe(request.resource.data.x)
         && request.resource.data.ts is int
         && (
           (request.auth.token.firebase.sign_in_provider == 'anonymous'
@@ -435,6 +446,7 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x'])
         && request.resource.data.x is string
         && request.resource.data.x.size() <= 1500
+        && automodSafe(request.resource.data.x)
         && (request.resource.data.x.size() > 0 || resource.data.media is map)
         && (!containsLink(request.resource.data.x) || registered())
       ) || (
