@@ -825,10 +825,19 @@ async function go(){
   activeRouteKey=routeKey;
   try{localStorage.setItem(ROUTE_MEMORY_KEY,routeKey);}catch{}
   const renderId=++routeRenderId;
-  const parts=routeKey.replace(/^#\/?/,"").split("/"),r=parts[0]||"",a=parts.slice(1).join("/");
+  const parts=routeKey.replace(/^#\/?/,"").split("/");
+  const r=parts[0]||"",a=parts.slice(1).join("/");
   const m=$("#m");
   renderAccountNotice();
-  $("#nav").innerHTML=\`🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> \`+(Store.me()?\`👤 <b><a href="#/u/\${encodeURIComponent(Store.me())}">\${E(Store.me())}</a></b> 🚪 <a href="#/out">Salir</a>\`:\`🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>\`)+(isOwner()?\` 🛡 <b>OWNER</b> <a href="#/staff">Administración</a>\`:canManageStaff()?\` 🛡 <a href="#/staff">Administración</a>\`:"")+ \` <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>\`;
+  $("#nav").innerHTML=
+    '🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> '+
+    (Store.me()
+      ? '👤 <b><a href="#/u/'+encodeURIComponent(Store.me())+'">'+E(Store.me())+'</a></b> 🚪 <a href="#/out">Salir</a>'
+      : '🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>')+
+    (isOwner()
+      ? ' 🛡 <b>OWNER</b> <a href="#/staff">Administración</a>'
+      : canManageStaff()?' 🛡 <a href="#/staff">Administración</a>':'')+
+    ' <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>';
   m.innerHTML="Cargando...";
   $("#ann").hidden=!!r;
   try{
@@ -843,7 +852,7 @@ async function go(){
     });
   }catch(z){
     if(renderId!==routeRenderId)return;
-    m.innerHTML=\`<span class="err">Error: \${E(errText(z))}</span><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>\`;
+    m.innerHTML='<span class="err">Error: '+E(errText(z))+'</span><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>';
   }
 }
 
