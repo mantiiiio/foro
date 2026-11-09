@@ -233,8 +233,7 @@ service cloud.firestore {
           (
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastChatAt','lastChatMessageId'])
             && request.resource.data.diff(resource.data).affectedKeys().hasAll(['lastChatAt','lastChatMessageId'])
-            && resource.data.lastChatAt is timestamp
-            && resource.data.lastChatAt + duration.value(2, 's') <= request.time
+            && (!('lastChatAt' in resource.data) || (resource.data.lastChatAt is timestamp && resource.data.lastChatAt + duration.value(2, 's') <= request.time))
             && request.resource.data.lastChatAt == request.time
             && request.resource.data.lastChatMessageId is string
             && request.resource.data.lastChatMessageId.size() > 0
@@ -243,8 +242,7 @@ service cloud.firestore {
           || (
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastPostAt','lastPostId'])
             && request.resource.data.diff(resource.data).affectedKeys().hasAll(['lastPostAt','lastPostId'])
-            && resource.data.lastPostAt is timestamp
-            && resource.data.lastPostAt + duration.value(3, 's') <= request.time
+            && (!('lastPostAt' in resource.data) || (resource.data.lastPostAt is timestamp && resource.data.lastPostAt + duration.value(3, 's') <= request.time))
             && request.resource.data.lastPostAt == request.time
             && request.resource.data.lastPostId is string
             && request.resource.data.lastPostId.size() > 0
