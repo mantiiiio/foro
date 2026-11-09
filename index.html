@@ -969,16 +969,40 @@ const D = {
     return result;
   },
   async setModeratedContentVisibility(uid,hidden,until=null){
-    const collections=["topics","posts","chatMessages"];
+    const collections=["topics","posts","chatMessages"],wantedUntil=hidden?(until||null):null;
     for(const collectionName of collections){
       const snapshot=await getDocs(query(collection(db,collectionName),where("uid","==",uid)));
-      for(let offset=0;offset<snapshot.docs.length;offset+=400){
+      const changed=snapshot.docs.filter(item=>{
+        const data=item.data(),raw=data.moderationHiddenUntil;
+        const currentUntil=raw?.toDate?raw.toDate():raw==null?null:new Date(raw);
+        const wantedDate=wantedUntil?.toDate?wantedUntil.toDate():wantedUntil instanceof Date?wantedUntil:wantedUntil?new Date(wantedUntil):null;
+        const sameUntil=currentUntil===null&&wantedDate===null
+          || currentUntil instanceof Date&&wantedDate instanceof Date&&currentUntil.getTime()===wantedDate.getTime();
+        return data.moderationHidden!==!!hidden||!sameUntil;
+      });
+      for(let offset=0;offset<changed.length;offset+=400){
         const batch=writeBatch(db);
-        snapshot.docs.slice(offset,offset+400).forEach(item=>{
-          batch.update(item.ref,{moderationHidden:!!hidden,moderationHiddenUntil:hidden?(until||null):null});
+        changed.slice(offset,offset+400).forEach(item=>{
+          batch.update(item.ref,{moderationHidden:!!hidden,moderationHiddenUntil:wantedUntil});
         });
         await batch.commit();
       }
+    }
+  },
+  async syncModerationVisibility(){
+    if(!isStaff())return;
+    const snapshot=await getDocs(collection(db,"moderation"));
+    for(const item of snapshot.docs){
+      const data=item.data();
+      let hidden=false,until=null;
+      if(data.status==="permanent")hidden=true;
+      else if(data.status==="temporary"){
+        const raw=data.banUntil,parsed=raw?.toDate?raw.toDate():raw?new Date(raw):null;
+        if(!parsed||!Number.isFinite(parsed.getTime())||parsed.getTime()>Date.now()){
+          hidden=true;until=parsed;
+        }
+      }
+      await D.setModeratedContentVisibility(item.id,hidden,until);
     }
   },
   async banUser(uid,type,reason,durationMs=0){
@@ -2164,6 +2188,7 @@ async function startFirebase(){
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
     $("#chatHint").textContent="Inicia sesión con una cuenta registrada para ver el chat, temas, enlaces y archivos. La sesión de invitado no tiene acceso al contenido. Para publicar temas y respuestas sí se necesita verificarlo. Enter envía · Shift+Enter nueva línea · ? atajos."; 
+    if(isStaff())D.syncModerationVisibility().catch(error=>console.error("No se pudo sincronizar la visibilidad del contenido moderado:",error));
     subscribeChat();updateAdminUI();renderAccountNotice();watchCurrentModeration(auth.currentUser);renderModerationNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
