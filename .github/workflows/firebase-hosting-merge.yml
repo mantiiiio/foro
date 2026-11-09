@@ -37,5 +37,5 @@ jobs:
       - name: Install Firebase CLI
         run: npm install --global firebase-tools
 
-      - name: Deploy Firestore and Storage rules automatically
-        run: firebase deploy --only firestore:rules,storage --project foro-66dd5 --non-interactive
+      - name: Deploy Firestore rules automatically
+        run: firebase deploy --only firestore:rules --project foro-66dd5 --non-interactive
