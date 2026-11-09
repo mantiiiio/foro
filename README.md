@@ -25,7 +25,7 @@ El proyecto Firebase ya está asociado en `.firebaserc`. Instala Node.js LTS, Gi
 ```cmd
 firebase login
 firebase use foro-66dd5
-firebase deploy --only auth,firestore:rules,hosting
+firebase deploy --only auth,firestore,hosting
 ```
 
 La configuración de `firebase.json` habilita Email/Password y Anonymous y vincula `firestore.rules`. Antes de desplegar reglas, crea la base de datos Cloud Firestore (modo Production) en Firebase Console si todavía no existe.
