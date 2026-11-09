@@ -205,7 +205,7 @@ service cloud.firestore {
     }
     function validTopicGallery(gallery) {
       return gallery is list
-        && gallery.size() <= 10
+        && gallery.size() <= 30
         && (gallery.size() < 1 || validTopicGalleryItem(gallery[0]))
         && (gallery.size() < 2 || validTopicGalleryItem(gallery[1]))
         && (gallery.size() < 3 || validTopicGalleryItem(gallery[2]))
@@ -215,9 +215,28 @@ service cloud.firestore {
         && (gallery.size() < 7 || validTopicGalleryItem(gallery[6]))
         && (gallery.size() < 8 || validTopicGalleryItem(gallery[7]))
         && (gallery.size() < 9 || validTopicGalleryItem(gallery[8]))
-        && (gallery.size() < 10 || validTopicGalleryItem(gallery[9]));
+        && (gallery.size() < 10 || validTopicGalleryItem(gallery[9]))
+        && (gallery.size() < 11 || validTopicGalleryItem(gallery[10]))
+        && (gallery.size() < 12 || validTopicGalleryItem(gallery[11]))
+        && (gallery.size() < 13 || validTopicGalleryItem(gallery[12]))
+        && (gallery.size() < 14 || validTopicGalleryItem(gallery[13]))
+        && (gallery.size() < 15 || validTopicGalleryItem(gallery[14]))
+        && (gallery.size() < 16 || validTopicGalleryItem(gallery[15]))
+        && (gallery.size() < 17 || validTopicGalleryItem(gallery[16]))
+        && (gallery.size() < 18 || validTopicGalleryItem(gallery[17]))
+        && (gallery.size() < 19 || validTopicGalleryItem(gallery[18]))
+        && (gallery.size() < 20 || validTopicGalleryItem(gallery[19]))
+        && (gallery.size() < 21 || validTopicGalleryItem(gallery[20]))
+        && (gallery.size() < 22 || validTopicGalleryItem(gallery[21]))
+        && (gallery.size() < 23 || validTopicGalleryItem(gallery[22]))
+        && (gallery.size() < 24 || validTopicGalleryItem(gallery[23]))
+        && (gallery.size() < 25 || validTopicGalleryItem(gallery[24]))
+        && (gallery.size() < 26 || validTopicGalleryItem(gallery[25]))
+        && (gallery.size() < 27 || validTopicGalleryItem(gallery[26]))
+        && (gallery.size() < 28 || validTopicGalleryItem(gallery[27]))
+        && (gallery.size() < 29 || validTopicGalleryItem(gallery[28]))
+        && (gallery.size() < 30 || validTopicGalleryItem(gallery[29]));
     }
-
     function validChatMedia(media) {
       return media is map
         && media.keys().hasOnly(['url','path','type','name','size'])
