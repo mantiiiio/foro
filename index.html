@@ -122,8 +122,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
 // ============================================================================
 // MantiPobres — CONFIGURACIÓN
 // 1) Reemplaza los valores de FB por el firebaseConfig de tu app web.
-// 2) Después de crear tu cuenta administradora, pega tu UID en ADMINS_UID.
-// El UID no es una contraseña; los permisos reales se verifican en Firebase Rules.
+// 2) El propietario único está configurado por UID; los permisos reales se verifican en Firebase Rules.
 // NUNCA pongas aquí contraseñas, tokens privados ni claves de servicio.
 // ============================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
@@ -154,7 +153,7 @@ const FB = {
   measurementId: "G-NC7LRR4M1F"
 };
 // Configura tu UID como propietario del foro. No uses tokens para conceder el rol de propietario.
-const OWNER_UID = "PEGA_AQUI_TU_UID_ADMIN";
+const OWNER_UID = "YgTAVFNclBgScVybW82xE0jKJg32";
 const ADMINS_UID = []; // Compatibilidad para administradores antiguos; los nuevos roles se guardan en Firestore.
 const MODERATORS_UID = []; // Compatibilidad para moderadores antiguos.
 const STAFF_ROLE_LABELS = {co_owner:"Co-owner",admin:"Administrador",moderator:"Moderador",helper:"Ayudante"};
