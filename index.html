@@ -105,7 +105,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
 </div>
 
 <template id="faqt">
-  <p><b>¿Cómo me registro?</b><br>Elige un nombre de usuario, introduce un correo real, crea una contraseña y acepta las reglas. Te enviaremos un enlace para verificar el correo.</p>
+  <p><b>¿Cómo me registro?</b><br>Elige un nombre de usuario, introduce un correo real, crea una contraseña y acepta las reglas. Si tienes una invitación del staff, puedes pegarla también en el campo opcional. Te enviaremos un enlace para verificar el correo; la invitación se activa al verificarlo.</p>
   <p><b>¿Cómo inicio sesión?</b><br>Usa el correo electrónico y la contraseña con los que te registraste. Las cuentas antiguas pueden intentar entrar con su nombre de usuario.</p>
   <p><b>¿Cómo verifico mi correo?</b><br>Abre el enlace que te enviamos. Si no llegó, usa el botón «Reenviar correo» que aparece arriba. Después pulsa «Ya verifiqué».</p>
   <p><b>¿Puedo recuperar mi clave?</b><br>Sí. En la pantalla Entrar, escribe tu correo y pulsa «Recuperar contraseña por correo».</p>
@@ -237,9 +237,10 @@ const D = {
     const cred=await createUserWithEmailAndPassword(auth,email,p);
     try{
       const cleanToken=String(inviteToken||"").trim();
+      let pendingInviteHash="";
       if(cleanToken){
-        const inviteHash=await hashAccessToken(cleanToken);
-        const inviteSnap=await getDoc(doc(db,"staffInvites",inviteHash));
+        pendingInviteHash=await hashAccessToken(cleanToken);
+        const inviteSnap=await getDoc(doc(db,"staffInvites",pendingInviteHash));
         if(!inviteSnap.exists())throw new Error("La invitación no existe o fue revocada.");
         const invite=inviteSnap.data();
         const expires=invite.expiresAt?.toDate?invite.expiresAt.toDate().getTime():new Date(invite.expiresAt||0).getTime();
@@ -255,8 +256,8 @@ const D = {
         tx.set(userRef,{u:n,ts:now,rulesAcceptedAt:now});
         tx.set(handleRef,{u:n,uid:cred.user.uid,ts:now});
       });
-      if(cleanToken){
-        try{sessionStorage.setItem("mp_pending_staff_invite_"+cred.user.uid,cleanToken);}
+      if(pendingInviteHash){
+        try{sessionStorage.setItem("mp_pending_staff_invite_"+cred.user.uid,pendingInviteHash);}
         catch(e){console.warn("No se pudo conservar la invitación en esta pestaña; podrás volver a pegarla al entrar.",e);}
       }
     }catch(e){
@@ -273,11 +274,11 @@ const D = {
       catch(e){try{await signOut(auth);await signInAnonymously(auth);}catch{}throw e;}
     }
   },
-  async claimStaffInvite(raw){
+  async claimStaffInvite(raw,alreadyHashed=false){
     const user=auth.currentUser;
     if(!user||user.isAnonymous)throw new Error("Inicia sesión con tu cuenta para usar la invitación.");
     if(!user.emailVerified)throw new Error("Primero verifica el correo de tu cuenta; después podrás usar la invitación.");
-    const hash=await hashAccessToken(raw);
+    const hash=alreadyHashed?String(raw):await hashAccessToken(raw);
     const inviteRef=doc(db,"staffInvites",hash),staffRef=doc(db,"staff",user.uid);
     let grantedRole="";
     await runTransaction(db,async tx=>{
@@ -350,7 +351,7 @@ const D = {
       let pending="";
       try{pending=sessionStorage.getItem(key)||"";}catch{}
       if(pending){
-        grantedRole=await D.claimStaffInvite(pending);
+        grantedRole=await D.claimStaffInvite(pending,true);
         try{sessionStorage.removeItem(key);}catch{}
         await loadCurrentStaffRole(auth.currentUser);
       }
@@ -556,7 +557,7 @@ async function staffPanel(m){
   try{await render();}catch(e){m.innerHTML=`<span class="err">${E(errText(e))}</span>`;}
 }
 function setup(m){
-  m.innerHTML=`<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>${firebaseReady?"Firebase conectado":"Firebase pendiente de configurar"}</b><br>${firebaseReady?"La aplicación ya inició sesión con Firebase. El acceso al foro depende de las reglas publicadas.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio."}</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta verificada para publicar en los foros.</li><li>El administrador se asigna de forma segura por UID en <code>ADMINS_UID</code> y en las reglas de Firestore.</li></ol><p><b>Archivos y avatares:</b> actualmente están desactivados. Para habilitarlos debes crear el bucket de Firebase Storage, publicar <code>storage.rules</code> y activar <code>STORAGE_ENABLED</code>. Firebase requiere el plan Blaze para utilizar Storage; puede generar cargos según el uso.</p></td></tr></table>`;
+  m.innerHTML=`<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>${firebaseReady?"Firebase conectado":"Firebase pendiente de configurar"}</b><br>${firebaseReady?"La aplicación ya inició sesión con Firebase. El acceso al foro depende de las reglas publicadas.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio."}</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta verificada para publicar en los foros.</li><li>El propietario se asigna por UID en <code>OWNER_UID</code> y en las reglas de Firestore. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Archivos y avatares:</b> actualmente están desactivados. Para habilitarlos debes crear el bucket de Firebase Storage, publicar <code>storage.rules</code> y activar <code>STORAGE_ENABLED</code>. Firebase requiere el plan Blaze para utilizar Storage; puede generar cargos según el uso.</p></td></tr></table>`;
 }
 function renderAccountNotice(){
   const box=$("#accountNotice"),user=auth?.currentUser;
