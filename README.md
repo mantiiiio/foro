@@ -16,9 +16,10 @@ MantiPobres es un foro retro en español alojado en Firebase Hosting, con cuenta
 - Chat en tiempo real con mensajes de texto y borrado de mensajes propios.
 - Herramientas de administración por UID.
 - Anuncios y panel lateral editables directamente en `index.html`.
-- Perfiles editables por su propio titular con correo verificado; las fotos se guardan como enlaces HTTPS externos.
-- Chat abierto para texto; compartir enlaces externos queda reservado a cuentas registradas con correo verificado (incluye al staff).
-- Multimedia compartida mediante enlaces externos, sin almacenamiento ni costes de subida para el foro.
+- Cada cuenta registrada puede editar su propio avatar inmediatamente después de iniciar sesión; las fotos se guardan como enlaces HTTPS externos.
+- Invitados anónimos: chat de texto. Cualquier cuenta registrada puede compartir enlaces y archivos aunque todavía no haya verificado el correo.
+- La verificación del correo sigue siendo obligatoria para publicar temas y respuestas en los foros.
+- Los archivos se suben desde el selector integrado del foro a Catbox; no se activa Firebase Storage ni se necesita un plan de pago.
 
 ## Configuración y despliegue
 
@@ -71,19 +72,20 @@ Selecciona `mantiiiio/foro` y la rama `main`. Si pregunta si debe sobrescribir l
 
 ## Multimedia y permisos
 
-Los invitados anónimos pueden enviar mensajes de texto en el chat, pero **no pueden** compartir enlaces. Compartir enlaces externos requiere una cuenta registrada y correo verificado. El staff también puede hacerlo porque sus invitaciones solo se activan después de verificar el correo.
+Los invitados anónimos pueden enviar mensajes de texto en el chat, pero **no pueden** compartir enlaces. Cualquier cuenta registrada con sesión iniciada puede compartir enlaces y subir archivos, incluso antes de verificar el correo. La verificación sigue siendo obligatoria para crear temas y respuestas. El staff también puede usar estas funciones desde su sesión.
 
-Cada usuario puede editar únicamente su propio avatar. Los cambios de perfil también requieren correo verificado. Las reglas de Firestore aplican estos controles en el backend.
+Cada usuario puede editar únicamente su propio avatar y puede hacerlo apenas inicia sesión. Las reglas de Firestore aplican estos controles en el backend.
 
 ### Alojamiento externo
 
-El foro no sube ni almacena archivos. Para compartir multimedia:
+El foro no sube ni almacena archivos. Para compartir multimedia desde el foro:
 
-1. Abre [Catbox](https://catbox.moe/).
-2. Sube el archivo y copia el enlace que devuelve.
-3. Vuelve a MantiPobres y pega el enlace en el chat. Para el avatar, pega la URL directa en tu perfil.
+1. Inicia sesión con tu cuenta.
+2. En el chat, pulsa **Adjuntar archivo**, selecciona un archivo y pulsa **Subir archivo**. También encontrarás un selector en Configuración y en el editor de tu avatar.
+3. El formulario envía el archivo directamente a la API de Catbox y abre otra pestaña con la URL que devuelve. Copia esa URL y pégala en el chat; para el avatar, pégala en el campo de URL del perfil y pulsa **Guardar URL**.
+4. Los enlaces de imágenes y vídeos se previsualizan en el chat; los documentos aparecen como enlaces para abrir.
 
-Catbox indica un máximo de **200 MB por archivo**. Su FAQ dice que los archivos subidos de forma anónima se eliminan después de dos años sin accesos; los vinculados a una cuenta se conservan permanentemente. Catbox no publica una cuota total ilimitada garantizada. Revisa siempre sus [FAQ y condiciones](https://catbox.moe/faq.php), no subas documentos privados ni material que no tengas derecho a compartir y guarda una copia propia de lo importante.
+La carga usa un formulario HTML normal, así que no depende de permisos CORS ni de claves privadas en el navegador. Catbox indica un máximo de **200 MB por archivo**. Su FAQ dice que los archivos subidos de forma anónima se eliminan después de dos años sin accesos; los vinculados a una cuenta se conservan permanentemente. Catbox no publica una cuota total ilimitada garantizada. Revisa siempre sus [FAQ y condiciones](https://catbox.moe/faq.php), no subas documentos privados ni material que no tengas derecho a compartir y guarda una copia propia de lo importante.
 
 Firebase Storage permanece desactivado (`STORAGE_ENABLED=false`), así que no hace falta activar Blaze. Los enlaces de imágenes, GIF, vídeos y documentos compatibles se muestran o abren desde el chat cuando la URL permite identificar el tipo de archivo.
 
