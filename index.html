@@ -1243,7 +1243,8 @@ function saveTopicDraft(boardId){
   }catch{}
 }
 function saveTopicDraftForRoute(route){
-  const parts=String(route||"").replace(/^#\\/?/,"").split("/");
+  const routeText=String(route||"");
+  const parts=(routeText.startsWith("#/")?routeText.slice(2):routeText).split("/");
   if(parts[0]!=="n"||!parts[1])return;
   let boardId=parts.slice(1).join("/");
   try{boardId=decodeURIComponent(boardId);}catch{}
