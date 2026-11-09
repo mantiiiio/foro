@@ -330,6 +330,7 @@ function renderTopicPostBody(post,allPosts){
   }
   flush();return output;
 }
+let currentModerationData=null,moderationUnsub=null,moderationUid="";
 const AUTO_MODERATION_REASONS = {
   threat:"amenazas directas",
   harassment:"insultos dirigidos",
@@ -653,6 +654,7 @@ const D = {
   async prof(n){const s=await getDocs(query(collection(db,"users"),where("u","==",n),limit(1)));return s.empty?null:{uid:s.docs[0].id,...s.docs[0].data()};},
   async profByUid(uid){const s=await getDoc(doc(db,"users",uid));return s.exists()?{uid:s.id,...s.data()}:null;},
   async moderation(uid){const s=await getDoc(doc(db,"moderation",uid));return s.exists()?{uid,...s.data()}:{uid,warnings:[],warningCount:0,status:"active",banUntil:null,banReason:""};},
+  async moderationMember(uid){const s=await getDoc(doc(db,"staff",uid));return s.exists()?s.data().role:"";},
   async autoWarn(reason,channel="chat"){
     const uid=auth.currentUser.uid,ref=doc(db,"moderation",uid),allowed=Object.keys(AUTO_MODERATION_REASONS);
     if(!allowed.includes(reason))throw new Error("Motivo automático no válido.");
@@ -786,7 +788,12 @@ const Demo = {
   async chatSend(x,media=null){demo.chat.push({id:String(Date.now()),uid:demo.m||"anon",u:demo.m||"Invitado-DEMO",x,media,ts:Date.now()});demo.chat=demo.chat.slice(-60);saveDemo();renderChat(demo.chat);},
   async chatEdit(id,x){const message=demo.chat.find(m=>m.id===id);if(!message||message.uid!==demo.m)throw new Error("Solo puedes editar tus propios mensajes.");message.x=String(x||"").trim();saveDemo();renderChat(demo.chat);},
   async chatDelete(id){const message=demo.chat.find(x=>x.id===id);if(message&&!message.deleted){message.x="";message.media=null;message.deleted=true;message.deletedBy="usuario";}saveDemo();renderChat(demo.chat);},
-  async chatClear(){demo.chat.forEach(m=>{if(!m.deleted){m.x="";m.media=null;m.deleted=true;m.deletedBy="administrador";}});saveDemo();renderChat(demo.chat);}
+  async chatClear(){demo.chat.forEach(m=>{if(!m.deleted){m.x="";m.media=null;m.deleted=true;m.deletedBy="administrador";}});saveDemo();renderChat(demo.chat);},
+  async moderation(uid){return demo.moderation?.[uid]||{uid,warnings:[],warningCount:0,status:"active"};},
+  async autoWarn(reason,channel){demo.moderation=demo.moderation||{};const uid=demo.m||"guest",data=demo.moderation[uid]||{warnings:[],status:"active"};data.warnings.push({reason:AUTO_MODERATION_REASONS[reason],source:"automod",at:Date.now()});data.warnings=data.warnings.slice(0,3);data.warningCount=data.warnings.length;if(data.warningCount>=3){data.status="permanent";data.banReason="Tres avisos automáticos";}demo.moderation[uid]=data;saveDemo();return data;},
+  async warnUser(uid,reason){if(!isStaff())throw new Error("No autorizado.");demo.moderation=demo.moderation||{};const data=demo.moderation[uid]||{warnings:[],status:"active"};data.warnings.push({reason,source:"staff",at:Date.now()});data.warnings=data.warnings.slice(0,3);data.warningCount=data.warnings.length;if(data.warningCount>=3){data.status="permanent";data.banReason="Tercer aviso: ban permanente";}demo.moderation[uid]=data;saveDemo();return data;},
+  async banUser(uid,type,reason,durationMs=0){if(!isStaff()||(type==="permanent"&&!isAdmin()))throw new Error("No autorizado.");demo.moderation=demo.moderation||{};const data=demo.moderation[uid]||{warnings:[]};data.status=type;data.banReason=reason;data.banUntil=type==="temporary"?Date.now()+durationMs:null;demo.moderation[uid]=data;saveDemo();},
+  async unbanUser(uid){if(!isAdmin())throw new Error("No autorizado.");demo.moderation=demo.moderation||{};demo.moderation[uid]={warnings:[],warningCount:0,status:"active",banReason:""};saveDemo();}
 };
 let Store = configured ? D : Demo;
 
@@ -886,7 +893,7 @@ async function thr(m,id){
       const x=$("#rx").value.trim();
       if(!x)return;
       const button=$("#rf button");button.disabled=true;
-      try{await Store.reply(id,x);if($("#rx"))$("#rx").value="";if(!configured)await refreshRouteContent();}
+      try{if(await autoModerationGate(x,"comentario")){button.disabled=false;return;}await Store.reply(id,x);if($("#rx"))$("#rx").value="";if(!configured)await refreshRouteContent();}
       catch(z){$("#er").textContent=errText(z);button.disabled=false;}
     };
   }
@@ -900,7 +907,7 @@ function neu(m,id){
   if(!Store.me()||id==="reglas"&&!isStaff())return location.hash=Store.me()?"#/b/"+id:"#/login";
   if(configured&&!emailVerified()){m.innerHTML=`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>`;return;}
   m.innerHTML=`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea></td></tr><tr><td colspan="2" class="c"><button class="bt">Publicar</button> <span id="er" class="err"></span></td></tr></table></form>`;
-  $("#nf").onsubmit=async e=>{e.preventDefault();const t=$("#ti").value.trim(),x=$("#tx").value.trim();if(!t||!x)return $("#er").textContent="Faltan asunto o mensaje";try{location.hash="#/t/"+await Store.newT(id,t,x);}catch(z){$("#er").textContent=errText(z);}};
+  $("#nf").onsubmit=async e=>{e.preventDefault();const t=$("#ti").value.trim(),x=$("#tx").value.trim();if(!t||!x)return $("#er").textContent="Faltan asunto o mensaje";try{if(await autoModerationGate(t+"\n"+x,"tema"))return;location.hash="#/t/"+await Store.newT(id,t,x);}catch(z){$("#er").textContent=errText(z);}};
 }
 function frm(m,a,r){
   const rg=r==="reg";
@@ -980,12 +987,33 @@ async function prf(m,u){
   const [f,c]=await Promise.all([Store.prof(u),Store.cnt(u)]);if(!f)return m.innerHTML="Usuario inexistente";
   const owner=!!(auth?.currentUser&&!auth.currentUser.isAnonymous&&auth.currentUser.uid===f.uid);
   const canEditProfile=owner;
-  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen con el alojamiento alternativo o Catbox original y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><form class="catboxUploadPanel" id="avatarCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank"><input type="hidden" name="reqtype" value="fileupload"><label for="avatarCatboxFile">O sube una imagen desde tu PC (mirror alternativo o Catbox):</label><input id="avatarCatboxFile" type="file" name="fileToUpload" accept="image/jpeg,image/png,image/gif,image/webp" required><button type="submit">Subir imagen</button></form><div class="profilePhotoStatus" id="profilePhotoStatus">Si Catbox falla, usa «Abrir mirror alternativo». Copia el enlace resultante, pégalo arriba y pulsa «Guardar URL».</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
+  let moderationHtml="";
+  if(isStaff()&&auth?.currentUser&&auth.currentUser.uid!==f.uid&&f.uid!==OWNER_UID){
+    try{
+      const [mod,targetRole]=await Promise.all([Store.moderation(f.uid),isAdmin()?"":Store.moderationMember(f.uid)]);
+      if(!targetRole||isAdmin())moderationHtml=moderationPanelHtml(f.uid,mod,u);
+    }catch(error){console.warn("No se pudo cargar el panel de moderación",error);}
+  }
+  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+moderationHtml+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen con el alojamiento alternativo o Catbox original y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><form class="catboxUploadPanel" id="avatarCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank"><input type="hidden" name="reqtype" value="fileupload"><label for="avatarCatboxFile">O sube una imagen desde tu PC (mirror alternativo o Catbox):</label><input id="avatarCatboxFile" type="file" name="fileToUpload" accept="image/jpeg,image/png,image/gif,image/webp" required><button type="submit">Subir imagen</button></form><div class="profilePhotoStatus" id="profilePhotoStatus">Si Catbox falla, usa «Abrir mirror alternativo». Copia el enlace resultante, pégalo arriba y pulsa «Guardar URL».</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
+  if(moderationHtml){
+    $("#modWarn")?.addEventListener("click",async()=>{const reason=prompt("Motivo del aviso:");if(reason===null)return;try{await Store.warnUser(f.uid,reason);await prf(m,u);}catch(error){alert(errText(error));}});
+    $("#modTempBan")?.addEventListener("click",async()=>{const reason=prompt("Motivo del ban temporal:");if(reason===null)return;const duration=Number($("#modDuration")?.value||86400000);if(!confirm("¿Aplicar una suspensión temporal a "+u+"?"))return;try{await Store.banUser(f.uid,"temporary",reason,duration);await prf(m,u);}catch(error){alert(errText(error));}});
+    $("#modPermanentBan")?.addEventListener("click",async()=>{const reason=prompt("Motivo del ban permanente:");if(reason===null)return;if(!confirm("¿Confirmas el BAN PERMANENTE de "+u+"?"))return;try{await Store.banUser(f.uid,"permanent",reason);await prf(m,u);}catch(error){alert(errText(error));}});
+    $("#modUnban")?.addEventListener("click",async()=>{if(!confirm("¿Levantar el ban y reiniciar sus tres avisos?"))return;try{await Store.unbanUser(f.uid);await prf(m,u);}catch(error){alert(errText(error));}});
+  }
   if(canEditProfile){
     $("#avatarUrlSave")?.addEventListener("click",async()=>{const status=$("#profilePhotoStatus"),button=$("#avatarUrlSave");button.disabled=true;try{await Store.setAvatarUrl($("#avatarUrlInput").value.trim());await prf(m,u);}catch(z){status.textContent=errText(z);button.disabled=false;}});
     $("#avatarRemove")?.addEventListener("click",async()=>{if(!confirm("¿Quitar tu foto de perfil?"))return;const status=$("#profilePhotoStatus");$("#avatarRemove").disabled=true;try{await Store.removeAvatar();await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarRemove").disabled=false;}});
     bindCatboxUpload("#avatarCatboxForm","#avatarCatboxFile","#profilePhotoStatus",true);
   }
+}
+function moderationPanelHtml(uid,data,username){
+  const warnings=Array.isArray(data.warnings)?data.warnings:[];
+  const until=data.banUntil?.toDate?data.banUntil.toDate():data.banUntil?new Date(data.banUntil):null;
+  const activeTemp=data.status==="temporary"&&until&&until.getTime()>Date.now();
+  const status=data.status==="permanent"?"BAN PERMANENTE":activeTemp?"SUSPENDIDO HASTA "+dt(until):"ACTIVO";
+  const history=warnings.map((item,index)=>`<li><b>Aviso ${index+1}/3:</b> ${E(item.reason||"Incumplimiento")} <small>(${E(item.source==="automod"?"AutoMod":"Staff")} · ${dt(item.at)})</small></li>`).join("");
+  return `<section class="moderationPanel"><h3>🛡 Moderación de ${E(username)}</h3><p>Estado: <b>${E(status)}</b> · Avisos: <b>${warnings.length}/3</b></p>${data.banReason?`<p>Motivo de sanción: ${E(data.banReason)}</p>`:""}${history?`<ol class="moderationHistory">${history}</ol>`:"<p><small>Sin avisos registrados.</small></p>"}${warnings.length>=3?`<p><b>Se alcanzó el máximo de 3 avisos.</b></p>`:""}<label for="modDuration">Duración de suspensión:</label> <select id="modDuration"><option value="3600000">1 hora</option><option value="86400000" selected>24 horas</option><option value="604800000">7 días</option><option value="2592000000">30 días</option></select><div class="modActions"><button type="button" id="modWarn" ${warnings.length>=3?"disabled":""}>Dar aviso (${warnings.length}/3)</button><button type="button" id="modTempBan">Ban temporal</button>${isAdmin()?`<button type="button" id="modPermanentBan">Ban permanente</button><button type="button" id="modUnban">Levantar ban y reiniciar avisos</button>`:""}</div><small>El tercer aviso provoca un ban permanente. Moderadores pueden dar avisos y suspensiones temporales; solo administradores pueden aplicar o levantar bans permanentes.</small></section>`;
 }
 function faq(m){m.innerHTML=`<table><tr><th>FAQ / Ayuda</th></tr><tr><td>${$("#faqt").innerHTML}</td></tr></table>`;}
 async function staffPanel(m){
@@ -1360,7 +1388,8 @@ function renderChat(items){
     const ownMessage=configured?!!auth?.currentUser&&m.uid===auth.currentUser.uid:!!Store.me()&&m.uid===Store.me();
     const canEdit=!m.deleted&&ownMessage,canDelete=!m.deleted&&(isAdmin()||ownMessage);
     const messageText=m.deleted?deletedMessageText(m):(m.x||"");
-    return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead"><b>${E(m.u||"Invitado")}</b> · ${dt(m.ts)}</div><div class="cmtxt">${m.deleted?'<span class="deletedMessage">'+E(messageText)+'</span>':fmt(messageText)}</div>${media}${canEdit||canDelete?`<div class="cmtools">${canEdit?`<button type="button" data-chat-edit="${E(m.id)}">[editar]</button>`:""}${canDelete?`<button type="button" data-chat-del="${E(m.id)}">[borrar]</button>`:""}</div>`:""}</div></article>`;
+    const profileName=String(m.u||"Invitado"),profileLink=!profileName.startsWith("Invitado-")?`<a class="cmprofile" href="#/u/${encodeURIComponent(profileName)}">${E(profileName)}</a>`:`<b>${E(profileName)}</b>`;
+    return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead">${profileLink} · ${dt(m.ts)}</div><div class="cmtxt">${m.deleted?'<span class="deletedMessage">'+E(messageText)+'</span>':fmt(messageText)}</div>${media}${canEdit||canDelete?`<div class="cmtools">${canEdit?`<button type="button" data-chat-edit="${E(m.id)}">[editar]</button>`:""}${canDelete?`<button type="button" data-chat-del="${E(m.id)}">[borrar]</button>`:""}</div>`:""}</div></article>`;
   }).join("");
   box.querySelectorAll("[data-chat-edit]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatEdit);if(!item)return;const edited=prompt("Edita tu mensaje del chat:",item.x||"");if(edited===null)return;if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}btn.disabled=true;try{await Store.chatEdit(item.id,edited);}catch(z){alert(errText(z));btn.disabled=false;}}));
   box.querySelectorAll("[data-chat-del]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatDel);if(!item||!confirm("¿Borrar este mensaje del chat?"))return;try{await Store.chatDelete(item.id,item.media?.path||null);}catch(z){alert(errText(z));}}));
@@ -1412,7 +1441,7 @@ $("#chatForm").addEventListener("submit",async e=>{
   e.preventDefault();const x=$("#chatText").value.trim();if(!x||uploadBusy||chatSending)return;
   if(containsExternalLink(x)&&!isRegisteredMember()){alert("Inicia sesión con una cuenta registrada para compartir enlaces. Los invitados solo pueden enviar texto.");return;}
   chatSending=true;$("#chatSend").disabled=true;
-  try{await Store.chatSend(x,null);$("#chatText").value="";}catch(z){alert(errText(z));}
+  try{if(await autoModerationGate(x,"chat"))return;await Store.chatSend(x,null);$("#chatText").value="";}catch(z){alert(errText(z));}
   finally{chatSending=false;$("#chatSend").disabled=false;}
 });
 
@@ -1468,13 +1497,14 @@ async function startFirebase(){
           return;
         }
         await loadCurrentStaffRole(user);
+        watchCurrentModeration(user);
         if(!resolved){resolved=true;resolve();}
-        if(firebaseReady){updateAdminUI();renderAccountNotice();renderChat(chatCache);go();$("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;}
+        if(firebaseReady){updateAdminUI();renderAccountNotice();renderModerationNotice();renderChat(chatCache);go();$("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;}
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
     $("#chatHint").textContent="Invitados: solo texto. Cuentas con sesión iniciada: pueden adjuntar archivos o pegar enlaces HTTPS, aunque no hayan verificado el correo. Para publicar temas y respuestas sí se necesita verificarlo. Enter envía · Shift+Enter nueva línea · ? atajos."; 
-    subscribeChat();updateAdminUI();renderAccountNotice();
+    subscribeChat();updateAdminUI();renderAccountNotice();watchCurrentModeration(auth.currentUser);renderModerationNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
 addEventListener("online",()=>{
@@ -1483,6 +1513,18 @@ addEventListener("online",()=>{
 document.addEventListener("visibilitychange",()=>{
   if(firebaseReady&&document.visibilityState==="visible"){subscribeChat();go();}
 });
+function watchCurrentModeration(user){
+  const uid=user?.uid||"";
+  if(moderationUid===uid&&moderationUnsub)return;
+  if(moderationUnsub){moderationUnsub();moderationUnsub=null;}
+  moderationUid=uid;currentModerationData=null;renderModerationNotice();
+  if(!user||!db)return;
+  moderationUnsub=onSnapshot(doc(db,"moderation",uid),snapshot=>{
+    currentModerationData=snapshot.exists()?snapshot.data():null;
+    renderModerationNotice();
+    if(location.hash.startsWith("#/u/")&&firebaseReady)refreshRouteContent();
+  },error=>console.warn("No se pudo cargar el estado de moderación:",error));
+}
 function updateAdminUI(){
   const admin=isAdmin();$("#chatAdmin").hidden=!admin;
   if(admin){$("#chatAdminInfo").textContent=isOwner()?"OWNER detectado por UID. Tu cuenta tiene administración permanente.":"Permisos administrativos verificados por UID y roles protegidos en Firestore.";}
