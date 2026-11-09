@@ -5,6 +5,10 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn() && request.auth.uid in ['PEGA_AQUI_TU_UID_ADMIN'];
     }
+    function isModerator() {
+      return signedIn() && request.auth.uid in ['PEGA_AQUI_TU_UID_MODERADOR'];
+    }
+    function isStaff() { return isAdmin() || isModerator(); }
     function registered() {
       return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
@@ -69,8 +73,13 @@ service cloud.firestore {
         && request.resource.data.n == 0
         && request.resource.data.ts is int
         && request.resource.data.lr is int
-        && (request.resource.data.b != 'reglas' || isAdmin());
+        && (request.resource.data.b != 'reglas' || isStaff());
       allow update: if isAdmin() || (
+        isModerator()
+        && resource.data.b != 'reglas'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['n'])
+        && request.resource.data.n == resource.data.n - 1
+      ) || (
         verifiedMember()
         && resource.data.b != 'reglas'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lr','lu','n'])
@@ -80,7 +89,7 @@ service cloud.firestore {
         && request.resource.data.lu == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u
         && shortString(request.resource.data.lu, 16)
       );
-      allow delete: if isAdmin();
+      allow delete: if isStaff();
     }
 
     match /posts/{postId} {
@@ -98,7 +107,7 @@ service cloud.firestore {
         && request.resource.data.ts is int
         && existsAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp))
         && (getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas' || isAdmin());
-      allow update, delete: if isAdmin();
+      allow update, delete: if isStaff();
     }
 
     match /chatMessages/{messageId} {
@@ -124,7 +133,7 @@ service cloud.firestore {
         )
         && (request.resource.data.x.size() > 0 || request.resource.data.media is map);
       allow update: if false;
-      allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow delete: if isStaff() || (signedIn() && resource.data.uid == request.auth.uid);
     }
   }
 }
