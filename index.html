@@ -97,7 +97,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
         <tr><td><kbd>?</kbd></td><td>Abrir esta ventana de ayuda (cuando no estás escribiendo).</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Cerrar esta ayuda o salir del chat ampliado.</td></tr>
       </table>
-      <p><b>Otros controles:</b> 📎 Adjuntar permite seleccionar una imagen, GIF o vídeo. ⛶ Ampliar abre el chat en pantalla grande.</p>
+      <p><b>Otros controles:</b> 📎 Adjuntar permite subir archivos cuando el administrador habilita Storage. Para mantener el proyecto gratis, pega enlaces HTTPS directos a imágenes, GIF o vídeos en el mensaje y aparecerá una vista previa. ⛶ Ampliar abre el chat en pantalla grande.</p>
       <p><small>En móviles, puedes usar los botones de la pantalla. Durante la composición de texto, Enter respeta Shift+Enter y las teclas especiales del teclado.</small></p>
       <div style="text-align:right"><button type="button" id="chatShortcutDone">Entendido</button></div>
     </div>
@@ -113,7 +113,8 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
   <p><b>¿Cómo se suben los rangos?</b><br>Por mensajes: Novato, Miembro (5), Habitual (25) y Veterano (100).</p>
   <p><b>¿Quién modera?</b><br>El administrador configurado por UID puede borrar temas, respuestas y mensajes del chat. Las reglas del foro solo las publica el staff.</p>
   <p><b>¿Puedo entrar sin registrarme?</b><br>Sí. El chat permite invitados anónimos; para crear temas y responder en los foros necesitas una cuenta y verificar tu correo.</p>
-  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>El soporte para imágenes y GIF de perfil, además de adjuntos en el chat, requiere activar Firebase Storage y el plan Blaze.</p>
+  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Puedes pegar una URL HTTPS directa de una imagen o GIF en tu perfil sin activar facturación. La subida de archivos desde tu dispositivo requiere Firebase Storage.</p>
+  <p><b>¿Cómo se muestran imágenes y vídeos en el chat?</b><br>Pega un enlace HTTPS directo que termine en JPG, PNG, GIF, WEBP, MP4 o WEBM. Se mostrará una vista previa cuando el servidor permita el acceso público.</p>
 </template>
 
 <script type="module">
@@ -387,9 +388,10 @@ function frm(m,a,r){
 async function prf(m,u){
   const [f,c]=await Promise.all([Store.prof(u),Store.cnt(u)]);if(!f)return m.innerHTML="Usuario inexistente";
   const owner=!!(auth?.currentUser&&!auth.currentUser.isAnonymous&&auth.currentUser.uid===f.uid),storageReady=!!(firebaseReady&&STORAGE_ENABLED&&storage);
-  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(owner?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Personaliza tu perfil con una imagen o un GIF animado.</p><p><small>JPG, PNG, GIF o WEBP · máximo 5 MB. Los GIF conservan su animación.</small></p><div class="profilePhotoActions"><button type="button" id="avatarChoose" ${storageReady?"":"disabled"}>Cambiar imagen / GIF</button>${f.avatarUrl?`<button type="button" id="avatarRemove" ${storageReady?"":"disabled"}>Quitar foto</button>`:""}</div></div></div><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden><div class="profilePhotoStatus" id="profilePhotoStatus">${storageReady?"Tu foto será visible junto a tus mensajes.":"Para activar las fotos, configura Firebase Storage y cambia STORAGE_ENABLED a true en index.html."}</div></section>`:"");
+  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(owner?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Personaliza tu perfil con una imagen o un GIF animado.</p><p><small>JPG, PNG, GIF o WEBP · máximo 5 MB. Los GIF conservan su animación.</small></p><div class="profilePhotoActions"><button type="button" id="avatarChoose" ${storageReady?"":"disabled"}>Subir archivo${storageReady?"":" (Storage)"}</button>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden><div class="profilePhotoStatus" id="profilePhotoStatus">${storageReady?"Puedes subir un archivo o usar una URL HTTPS.":"La subida local está desactivada para mantener el proyecto gratuito. Usa una URL HTTPS directa."}</div></section>`:"");
   if(owner){
     $("#avatarChoose")?.addEventListener("click",()=>$("#avatarFile").click());
+    $("#avatarUrlSave")?.addEventListener("click",async()=>{const status=$("#profilePhotoStatus"),button=$("#avatarUrlSave");button.disabled=true;try{await Store.setAvatarUrl($("#avatarUrlInput").value.trim());await prf(m,u);}catch(z){status.textContent=errText(z);button.disabled=false;}});
     $("#avatarFile")?.addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file)return;const status=$("#profilePhotoStatus");$("#avatarChoose").disabled=true;if($("#avatarRemove"))$("#avatarRemove").disabled=true;try{await Store.updateAvatar(file);await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarChoose").disabled=false;if($("#avatarRemove"))$("#avatarRemove").disabled=false;}finally{e.target.value="";}});
     $("#avatarRemove")?.addEventListener("click",async()=>{if(!confirm("¿Quitar tu foto de perfil?"))return;const status=$("#profilePhotoStatus");$("#avatarChoose").disabled=true;$("#avatarRemove").disabled=true;try{await Store.removeAvatar();await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarChoose").disabled=false;$("#avatarRemove").disabled=false;}});
   }
@@ -429,12 +431,22 @@ async function go(){
 }
 
 // Chat: suscripción Firestore en vivo, con invitado anónimo y cuenta registrada.
+function externalMediaPreview(text){
+  const match=String(text||"").match(/https:\/\/[^\s<>"]+/i);
+  if(!match)return "";
+  const safe=safeHttps(match[0].replace(/[),.!?]+$/,""));
+  if(!safe)return "";
+  let path="";try{path=new URL(safe).pathname.toLowerCase();}catch{return "";}
+  if(/\.(jpe?g|png|gif|webp)$/.test(path))return `<a href="${E(safe)}" target="_blank" rel="noopener noreferrer"><img class="cmmedia" src="${E(safe)}" alt="Imagen compartida" loading="lazy" referrerpolicy="no-referrer"></a>`;
+  if(/\.(mp4|webm)$/.test(path))return `<video class="cmvideo" controls preload="metadata"><source src="${E(safe)}"></video>`;
+  return "";
+}
 function renderChat(items){
   const box=$("#chatMessages");if(!box)return;
   const nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<70;
   if(!items.length){box.innerHTML='<div class="chatEmpty">Todavía no hay mensajes.<br>¡Rompe el hielo!</div>';return;}
   box.innerHTML=items.map(m=>{
-    const media=m.media? (String(m.media.type||"").startsWith("image/")?`<a href="${E(m.media.url)}" target="_blank" rel="noopener"><img class="cmmedia" src="${E(m.media.url)}" alt="Archivo adjunto" loading="lazy"></a>`:String(m.media.type||"").startsWith("video/")?`<video class="cmvideo" controls preload="metadata"><source src="${E(m.media.url)}" type="${E(m.media.type)}"></video>`:`<a href="${E(m.media.url)}" target="_blank" rel="noopener">Ver archivo adjunto</a>`):"";
+    const media=m.media? (String(m.media.type||"").startsWith("image/")?`<a href="${E(m.media.url)}" target="_blank" rel="noopener"><img class="cmmedia" src="${E(m.media.url)}" alt="Archivo adjunto" loading="lazy"></a>`:String(m.media.type||"").startsWith("video/")?`<video class="cmvideo" controls preload="metadata"><source src="${E(m.media.url)}" type="${E(m.media.type)}"></video>`:`<a href="${E(m.media.url)}" target="_blank" rel="noopener">Ver archivo adjunto</a>`):externalMediaPreview(m.x||"");
     const canDelete=isAdmin() || (auth?.currentUser && m.uid===auth.currentUser.uid);
     return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead"><b>${E(m.u||"Invitado")}</b> · ${dt(m.ts)}</div><div class="cmtxt">${fmt(m.x||"")}</div>${media}${canDelete?`<div class="cmtools"><button type="button" data-chat-del="${E(m.id)}">[borrar]</button></div>`:""}</div></article>`;
   }).join("");
@@ -522,7 +534,7 @@ async function startFirebase(){
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
     $("#chatAttach").disabled=!STORAGE_ENABLED;
-    $("#chatHint").textContent=STORAGE_ENABLED?"Invitados y miembros pueden chatear. Adjuntos: imágenes, GIF y vídeos (límites 8/25 MB). Enter envía · Shift+Enter nueva línea · ? atajos.":"Invitados y miembros pueden chatear. Adjuntos y fotos de perfil desactivados hasta configurar Firebase Storage. Enter envía · Shift+Enter nueva línea · ? atajos.";
+    $("#chatHint").textContent=STORAGE_ENABLED?"Invitados y miembros pueden chatear. Adjuntos: imágenes, GIF y vídeos (límites 8/25 MB). Enter envía · Shift+Enter nueva línea · ? atajos.":"Invitados y miembros pueden chatear. Para evitar costes, pega URLs HTTPS directas de imágenes, GIF o vídeos; aparecerá una vista previa. Enter envía · Shift+Enter nueva línea · ? atajos."; 
     subscribeChat();updateAdminUI();renderAccountNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
