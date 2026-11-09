@@ -666,7 +666,7 @@ const D = {
       warnings.push({reason:AUTO_MODERATION_REASONS[reason],code:reason,channel,source:"automod",actorUid:uid,actorName:"AutoModeración",at:Date.now()});
       const permanent=warnings.length>=3;
       const data={warnings,warningCount:warnings.length,status:permanent?"permanent":(before.status||"active"),banUntil:permanent?null:(before.banUntil||null),banReason:permanent?"Tres avisos automáticos":(before.banReason||""),updatedAt:Date.now(),lastActionBy:"automod"};
-      if(snap.exists())tx.set(ref,data);else tx.create(ref,data);
+      tx.set(ref,data);
       result=data;
     });
     currentModerationData=result;renderModerationNotice();return result;
@@ -877,7 +877,7 @@ async function thr(m,id){
     if(edited===null)return;
     if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}
     a.textContent="[guardando…]";
-    try{await Store.editPost(post.id,edited);if(!configured)await refreshRouteContent();}
+    try{if(await autoModerationGate(edited,"comentario"))return;await Store.editPost(post.id,edited);if(!configured)await refreshRouteContent();}
     catch(z){alert(errText(z));a.textContent="[editar]";}
   });
   m.querySelectorAll("[data-d]").forEach(a=>a.onclick=async e=>{
@@ -1391,7 +1391,7 @@ function renderChat(items){
     const profileName=String(m.u||"Invitado"),profileLink=!profileName.startsWith("Invitado-")?`<a class="cmprofile" href="#/u/${encodeURIComponent(profileName)}">${E(profileName)}</a>`:`<b>${E(profileName)}</b>`;
     return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead">${profileLink} · ${dt(m.ts)}</div><div class="cmtxt">${m.deleted?'<span class="deletedMessage">'+E(messageText)+'</span>':fmt(messageText)}</div>${media}${canEdit||canDelete?`<div class="cmtools">${canEdit?`<button type="button" data-chat-edit="${E(m.id)}">[editar]</button>`:""}${canDelete?`<button type="button" data-chat-del="${E(m.id)}">[borrar]</button>`:""}</div>`:""}</div></article>`;
   }).join("");
-  box.querySelectorAll("[data-chat-edit]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatEdit);if(!item)return;const edited=prompt("Edita tu mensaje del chat:",item.x||"");if(edited===null)return;if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}btn.disabled=true;try{await Store.chatEdit(item.id,edited);}catch(z){alert(errText(z));btn.disabled=false;}}));
+  box.querySelectorAll("[data-chat-edit]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatEdit);if(!item)return;const edited=prompt("Edita tu mensaje del chat:",item.x||"");if(edited===null)return;if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}btn.disabled=true;try{if(await autoModerationGate(edited,"chat")){btn.disabled=false;return;}await Store.chatEdit(item.id,edited);}catch(z){alert(errText(z));btn.disabled=false;}}));
   box.querySelectorAll("[data-chat-del]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatDel);if(!item||!confirm("¿Borrar este mensaje del chat?"))return;try{await Store.chatDelete(item.id,item.media?.path||null);}catch(z){alert(errText(z));}}));
   if(nearBottom)box.scrollTop=box.scrollHeight;
 }
@@ -1415,7 +1415,7 @@ function subscribeChat(){
   });
 }
 async function uploadChatFile(file){
-  requireVerifiedMember("subir archivos al chat");
+  requireVerifiedMember("subir archivos al chat");await assertCurrentUserNotBanned();
   const isImage=["image/jpeg","image/png","image/gif","image/webp"].includes(file.type);
   const isVideo=["video/mp4","video/webm"].includes(file.type);
   const isDocument=["application/pdf","text/plain","text/csv","application/zip","application/x-zip-compressed"].includes(file.type);
