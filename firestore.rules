@@ -187,8 +187,18 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && request.resource.data.lu == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u
         && shortString(request.resource.data.lu, 16)
+      ) || (
+        registered()
+        && resource.data.b != 'reglas'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['n'])
+        && resource.data.n > 0
+        && request.resource.data.n == resource.data.n - 1
       );
-      allow delete: if isStaff();
+      allow delete: if isStaff() || (
+        registered()
+        && resource.data.uid == request.auth.uid
+        && resource.data.b != 'reglas'
+      );
 
       match /ratings/{ratingUid} {
         allow read: if true;
@@ -228,7 +238,23 @@ service cloud.firestore {
         && request.resource.data.ts is int
         && existsAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp))
         && (getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas' || isStaff());
-      allow update, delete: if isStaff();
+      allow update: if isStaff() || (
+        verifiedMember()
+        && resource.data.uid == request.auth.uid
+        && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x'])
+        && request.resource.data.x is string
+        && request.resource.data.x.size() > 0
+        && request.resource.data.x.size() <= 6000
+      );
+      allow delete: if isStaff() || (
+        registered()
+        && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
+        && (
+          resource.data.uid == request.auth.uid
+          || get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.uid == request.auth.uid
+        )
+      );
     }
 
     match /chatMessages/{messageId} {
@@ -255,7 +281,13 @@ service cloud.firestore {
         && (request.resource.data.x.size() > 0 || request.resource.data.media is map)
         && (request.resource.data.media == null || validChatMedia(request.resource.data.media))
         && (!containsLink(request.resource.data.x) || registered());
-      allow update: if false;
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x'])
+        && request.resource.data.x is string
+        && request.resource.data.x.size() <= 1500
+        && (request.resource.data.x.size() > 0 || resource.data.media is map)
+        && (!containsLink(request.resource.data.x) || registered());
       allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
   }
