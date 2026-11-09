@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function isOwner() { return signedIn() && request.auth.uid == 'PEGA_AQUI_TU_UID_ADMIN'; }
+    function isOwner() { return signedIn() && request.auth.uid == 'YgTAVFNclBgScVybW82xE0jKJg32'; }
     function hasStaffRole(role) {
       return signedIn()
         && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
