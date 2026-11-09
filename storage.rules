@@ -1,48 +1,10 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() { return request.auth != null; }
-    function registered() {
-      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
-    }
-    function verifiedMember() {
-      return registered() && request.auth.token.email_verified == true;
-    }
-    function isOwner() {
-      return signedIn() && request.auth.uid == 'YgTAVFNclBgScVybW82xE0jKJg32';
-    }
-    function hasStaffRole(role) {
-      return signedIn()
-        && firestore.exists(/databases/(default)/documents/staff/$(request.auth.uid))
-        && firestore.get(/databases/(default)/documents/staff/$(request.auth.uid)).data.role == role;
-    }
-    function isAdmin() { return isOwner() || hasStaffRole('co_owner') || hasStaffRole('admin'); }
-    function isModerator() { return isAdmin() || hasStaffRole('moderator'); }
-    function isStaff() { return isModerator(); }
-
-    match /chat/{uid}/{fileName} {
+    // MantiPobres usa enlaces externos (Catbox). No se permiten subidas a Firebase Storage.
+    match /{allPaths=**} {
       allow read: if true;
-      allow create: if verifiedMember()
-        && request.auth.uid == uid
-        && (
-          (request.resource.contentType.matches('image/(jpeg|png|gif|webp)')
-            && request.resource.size <= 8 * 1024 * 1024)
-          ||
-          (request.resource.contentType.matches('video/(mp4|webm)')
-            && request.resource.size <= 25 * 1024 * 1024)
-        );
-      allow update: if false;
-      allow delete: if isStaff() || (signedIn() && request.auth.uid == uid);
-    }
-
-    match /avatars/{uid}/{fileName} {
-      allow read: if true;
-      allow create: if verifiedMember()
-        && request.auth.uid == uid
-        && request.resource.contentType.matches('image/(jpeg|png|gif|webp)')
-        && request.resource.size <= 5 * 1024 * 1024;
-      allow update: if false;
-      allow delete: if isStaff() || (signedIn() && request.auth.uid == uid);
+      allow write: if false;
     }
   }
 }
