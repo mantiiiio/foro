@@ -25,6 +25,123 @@ service cloud.firestore {
     function verifiedMember() {
       return registered() && request.auth.token.email_verified == true;
     }
+    function moderationPath(uid) {
+      return /databases/$(database)/documents/moderation/$(uid);
+    }
+    function canParticipate() {
+      return signedIn() && (
+        isOwner()
+        || !exists(moderationPath(request.auth.uid))
+        || get(moderationPath(request.auth.uid)).data.get('status', 'active') == 'active'
+        || (
+          get(moderationPath(request.auth.uid)).data.get('status', 'active') == 'temporary'
+          && get(moderationPath(request.auth.uid)).data.get('banUntil', request.time) is timestamp
+          && get(moderationPath(request.auth.uid)).data.banUntil <= request.time
+        )
+      );
+    }
+    function canModerateTarget(uid) {
+      return isStaff()
+        && uid != request.auth.uid
+        && uid != 'YgTAVFNclBgScVybW82xE0jKJg32'
+        && (!exists(/databases/$(database)/documents/staff/$(uid)) || isAdmin());
+    }
+    function validAutoWarningEntry(entry, uid) {
+      return entry is map
+        && entry.keys().hasOnly(['reason','code','channel','source','actorUid','actorName','at'])
+        && entry.reason is string
+        && entry.reason.size() >= 1
+        && entry.reason.size() <= 240
+        && entry.code in ['threat','harassment','link_spam','duplicate','flood','caps','repeated']
+        && entry.channel in ['chat','tema','comentario']
+        && entry.source == 'automod'
+        && entry.actorUid == uid
+        && entry.actorName == 'AutoModeración'
+        && entry.at is int;
+    }
+    function validAutoWarningCreate(uid) {
+      return signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['warnings','warningCount','status','banUntil','banReason','updatedAt','lastActionBy'])
+        && request.resource.data.warnings is list
+        && request.resource.data.warnings.size() == 1
+        && request.resource.data.warningCount == 1
+        && validAutoWarningEntry(request.resource.data.warnings[0], uid)
+        && request.resource.data.status == 'active'
+        && request.resource.data.banUntil == null
+        && request.resource.data.banReason == ''
+        && request.resource.data.updatedAt is int
+        && request.resource.data.lastActionBy == 'automod';
+    }
+    function validAutoWarningUpdate(uid) {
+      let oldCount = resource.data.get('warningCount', 0);
+      return signedIn()
+        && request.auth.uid == uid
+        && oldCount is int
+        && oldCount >= 1
+        && oldCount < 3
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['warnings','warningCount','status','banUntil','banReason','updatedAt','lastActionBy'])
+        && request.resource.data.warnings is list
+        && request.resource.data.warnings.size() == oldCount + 1
+        && request.resource.data.warningCount == oldCount + 1
+        && validAutoWarningEntry(request.resource.data.warnings[oldCount], uid)
+        && (oldCount < 1 || request.resource.data.warnings[0] == resource.data.warnings[0])
+        && (oldCount < 2 || request.resource.data.warnings[1] == resource.data.warnings[1])
+        && request.resource.data.updatedAt is int
+        && request.resource.data.lastActionBy == 'automod'
+        && (
+          (request.resource.data.warningCount == 3
+            && request.resource.data.status == 'permanent'
+            && request.resource.data.banUntil == null
+            && request.resource.data.banReason == 'Tres avisos automáticos')
+          || (
+            request.resource.data.warningCount < 3
+            && request.resource.data.status == resource.data.get('status', 'active')
+            && request.resource.data.banUntil == resource.data.get('banUntil', null)
+            && request.resource.data.banReason == resource.data.get('banReason', '')
+          )
+        );
+    }
+    function validModerationEntry(entry) {
+      return entry is map
+        && entry.keys().hasOnly(['reason','code','channel','source','actorUid','actorName','at'])
+        && entry.reason is string
+        && entry.reason.size() >= 1
+        && entry.reason.size() <= 240
+        && entry.source in ['automod','staff']
+        && entry.actorUid is string
+        && entry.actorName is string
+        && entry.at is int
+        && (
+          (entry.source == 'automod'
+            && entry.code in ['threat','harassment','link_spam','duplicate','flood','caps','repeated']
+            && entry.channel in ['chat','tema','comentario'])
+          || entry.source == 'staff'
+        );
+    }
+    function validModerationRecord() {
+      return request.resource.data.keys().hasOnly(['warnings','warningCount','status','banUntil','banReason','updatedAt','lastActionBy'])
+        && request.resource.data.warnings is list
+        && request.resource.data.warnings.size() <= 3
+        && request.resource.data.warningCount is int
+        && request.resource.data.warningCount == request.resource.data.warnings.size()
+        && request.resource.data.status in ['active','temporary','permanent']
+        && (request.resource.data.banUntil == null || request.resource.data.banUntil is timestamp)
+        && request.resource.data.banReason is string
+        && request.resource.data.banReason.size() <= 240
+        && request.resource.data.updatedAt is int
+        && request.resource.data.lastActionBy is string
+        && (request.resource.data.warningCount != 3 || request.resource.data.status == 'permanent')
+        && (request.resource.data.status != 'permanent' || isAdmin() || request.resource.data.warningCount == 3)
+        && (
+          request.resource.data.status != 'temporary'
+          || (request.resource.data.banUntil is timestamp && request.resource.data.banUntil > request.time)
+        )
+        && (
+          request.resource.data.status != 'active'
+          || request.resource.data.banUntil == null
+        );
+    }
     function shortString(value, max) {
       return value is string && value.size() > 0 && value.size() <= max;
     }
@@ -46,6 +163,14 @@ service cloud.firestore {
         && media.size is int
         && media.size > 0
         && media.size <= 25 * 1024 * 1024;
+    }
+
+    match /moderation/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isStaff());
+      allow list: if isStaff();
+      allow create: if (canModerateTarget(uid) && validModerationRecord()) || validAutoWarningCreate(uid);
+      allow update: if (canModerateTarget(uid) && validModerationRecord()) || validAutoWarningUpdate(uid);
+      allow delete: if false;
     }
 
     match /users/{uid} {
@@ -161,6 +286,7 @@ service cloud.firestore {
     match /topics/{topicId} {
       allow read: if true;
       allow create: if verifiedMember()
+        && canParticipate()
         && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n'])
         && request.resource.data.uid == request.auth.uid
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -180,6 +306,7 @@ service cloud.firestore {
         && request.resource.data.n == resource.data.n - 1
       ) || (
         verifiedMember()
+        && canParticipate()
         && resource.data.b != 'reglas'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lr','lu','n'])
         && request.resource.data.n == resource.data.n + 1
@@ -203,6 +330,7 @@ service cloud.firestore {
       match /ratings/{ratingUid} {
         allow read: if true;
         allow create: if registered()
+          && canParticipate()
           && request.auth.uid == ratingUid
           && get(/databases/$(database)/documents/topics/$(topicId)).data.b != 'reglas'
           && request.resource.data.keys().hasOnly(['uid','stars','ts'])
@@ -212,6 +340,7 @@ service cloud.firestore {
           && request.resource.data.stars <= 5
           && request.resource.data.ts is int;
         allow update: if registered()
+          && canParticipate()
           && request.auth.uid == ratingUid
           && resource.data.uid == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stars','ts'])
@@ -226,6 +355,7 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if true;
       allow create: if verifiedMember()
+        && canParticipate()
         && request.resource.data.keys().hasOnly(['tp','u','uid','x','ts'])
         && request.resource.data.uid == request.auth.uid
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -240,6 +370,7 @@ service cloud.firestore {
         && (getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas' || isStaff());
       allow update: if isStaff() || (
         verifiedMember()
+        && canParticipate()
         && resource.data.uid == request.auth.uid
         && resource.data.get('deleted', false) != true
         && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
@@ -274,6 +405,7 @@ service cloud.firestore {
     match /chatMessages/{messageId} {
       allow read: if true;
       allow create: if signedIn()
+        && canParticipate()
         && request.resource.data.keys().hasOnly(['uid','u','avatarUrl','x','media','ts'])
         && request.resource.data.uid == request.auth.uid
         && shortString(request.resource.data.u, 32)
@@ -297,6 +429,7 @@ service cloud.firestore {
         && (!containsLink(request.resource.data.x) || registered());
       allow update: if (
         signedIn()
+        && canParticipate()
         && resource.data.uid == request.auth.uid
         && resource.data.get('deleted', false) != true
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x'])
