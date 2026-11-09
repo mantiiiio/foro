@@ -1021,12 +1021,31 @@ const D = {
     if(oldPath&&storage){try{await deleteObject(storageRef(storage,oldPath));}catch(e){console.warn("La foto anterior no pudo borrarse",e);}}
   },
   async del(k,a,b,isOriginal=false){
-    if(k==="t")throw new Error("Los temas se conservan; marca su publicación original como eliminada.");
+    if(k==="t")return D.deleteTopic(a);
     const ref=doc(db,"posts",a),snapshot=await getDoc(ref);if(!snapshot.exists())return;
     const post=snapshot.data();if(post.deleted)return;
     const actor=isAdmin()?"administrador":isStaff()?"moderador":"usuario";
     await updateDoc(ref,{x:"",deleted:true,deletedBy:actor,deletedByUid:auth.currentUser.uid,deletedAt:Date.now(),deletedQuoteHash:quoteFingerprint(post.u||"",post.x||"")});
     if(!isOriginal){const topicRef=doc(db,"topics",b),topicSnap=await getDoc(topicRef);if(topicSnap.exists())await updateDoc(topicRef,{n:Math.max(0,(topicSnap.data().n||0)-1)});}
+  },
+  async deleteTopic(id){
+    requireRegisteredMember("eliminar un tema");await assertCurrentUserNotBanned();
+    const topicRef=doc(db,"topics",id),topicSnap=await getDoc(topicRef);
+    if(!topicSnap.exists())return;
+    const topic=topicSnap.data();
+    if(!isStaff()&&topic.uid!==auth.currentUser.uid)throw new Error("Solo puedes eliminar tus propios temas.");
+    if(topic.b==="reglas"&&!isStaff())throw new Error("Solo el staff puede eliminar temas de Reglas.");
+    const [postsSnap,ratingsSnap]=await Promise.all([
+      getDocs(query(collection(db,"posts"),where("tp","==",id))),
+      getDocs(collection(db,"topics",id,"ratings"))
+    ]);
+    const children=[...postsSnap.docs,...ratingsSnap.docs];
+    for(let offset=0;offset<children.length;offset+=400){
+      const batch=writeBatch(db);
+      children.slice(offset,offset+400).forEach(item=>batch.delete(item.ref));
+      await batch.commit();
+    }
+    await deleteDoc(topicRef);
   },
   async chatSend(x,media=null){
     requireRegisteredMember("usar el chat");await assertCurrentUserNotBanned();
@@ -1066,7 +1085,8 @@ const Demo = {
   async profByUid(){return null;},
   async updateAvatar(){throw new Error("Para subir una foto de perfil necesitas conectar Firebase y activar Storage.");},
   async removeAvatar(){throw new Error("Para cambiar la foto necesitas conectar Firebase y activar Storage.");},
-  async del(k,a,b,isOriginal=false){if(k==="t")throw new Error("Los temas se conservan.");const post=demo.p.find(p=>p.id===a);if(post&&!post.deleted){post.deletedQuoteHash=quoteFingerprint(post.u||"",post.x||"");post.x="";post.deleted=true;post.deletedBy="usuario";if(!isOriginal){const t=demo.t.find(x=>x.id===b);if(t)t.n=Math.max(0,t.n-1);}}saveDemo();},
+  async del(k,a,b,isOriginal=false){if(k==="t")return this.deleteTopic(a);const post=demo.p.find(p=>p.id===a);if(post&&!post.deleted){post.deletedQuoteHash=quoteFingerprint(post.u||"",post.x||"");post.x="";post.deleted=true;post.deletedBy="usuario";if(!isOriginal){const t=demo.t.find(x=>x.id===b);if(t)t.n=Math.max(0,t.n-1);}}saveDemo();},
+  async deleteTopic(id){const topic=demo.t.find(x=>x.id===id);if(!topic)return;if(!hasStaffBadge()&&topic.u!==demo.m)throw new Error("Solo puedes eliminar tus propios temas.");demo.t=demo.t.filter(x=>x.id!==id);demo.p=demo.p.filter(x=>x.tp!==id);saveDemo();},
   async chatSend(x,media=null){demo.chat.push({id:String(Date.now()),uid:demo.m||"anon",u:demo.m||"Invitado-DEMO",staffBadge:false,x,media,ts:Date.now()});demo.chat=demo.chat.slice(-60);saveDemo();renderChat(demo.chat);},
   async chatEdit(id,x){const message=demo.chat.find(m=>m.id===id);if(!message||message.uid!==demo.m)throw new Error("Solo puedes editar tus propios mensajes.");message.x=String(x||"").trim();saveDemo();renderChat(demo.chat);},
   async chatDelete(id){const message=demo.chat.find(x=>x.id===id);if(message&&!message.deleted){message.x="";message.media=null;message.deleted=true;message.deletedBy="usuario";}saveDemo();renderChat(demo.chat);},
@@ -1194,7 +1214,7 @@ async function thr(m,id){
        const ownPost=configured?!!auth?.currentUser&&p.uid===auth.currentUser.uid:!!Store.me()&&p.u===Store.me();
         const canEditPost=!p.deleted&&(isStaff()||ownPost),canDeletePost=!p.deleted&&(isStaff()||ownPost);
         const body=p.deleted?renderTopicPostBody(p,P):renderTopicPostBody(p,P)+externalMediaPreview(p.x||"");
-        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b><a href="#/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a></b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+'<br>Mensajes: '+(counts[p.u]||0)+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>'+(i===0&&galleryHtml?'<tr><td colspan="2">'+galleryHtml+'</td></tr>':"");
+        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b><a href="#/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a></b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+'<br>Mensajes: '+(counts[p.u]||0)+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost?'<a href="#" data-d="'+i+'">'+(i===0?'[eliminar tema]':'[borrar]')+'</a>':"")+'</small></td></tr>'+(i===0&&galleryHtml?'<tr><td colspan="2">'+galleryHtml+'</td></tr>':"");
      }).join("")+
     '</table>'+
     (canReply
@@ -1229,8 +1249,15 @@ async function thr(m,id){
   m.querySelectorAll("[data-d]").forEach(a=>a.onclick=async e=>{
     e.preventDefault();
     const i=Number(a.dataset.d);
-    if(!confirm(i?"¿Marcar este comentario como eliminado?":"¿Marcar la publicación original como eliminada? El tema y sus respuestas se conservarán."))return;
-    try{await Store.del("p",P[i].id,id,i===0);if(!configured)await refreshRouteContent();}
+    if(i===0){
+      if(!confirm("¿Eliminar definitivamente este tema, su publicación inicial, todos sus comentarios y sus valoraciones? Esta acción no se puede deshacer."))return;
+      a.textContent="[eliminando tema…]";a.style.pointerEvents="none";
+      try{await Store.deleteTopic(id);location.hash="#/b/"+encodeURIComponent(t.b);}
+      catch(z){alert(errText(z));a.textContent="[eliminar tema]";a.style.pointerEvents="";}
+      return;
+    }
+    if(!confirm("¿Marcar este comentario como eliminado?"))return;
+    try{await Store.del("p",P[i].id,id,false);if(!configured)await refreshRouteContent();}
     catch(z){alert(errText(z));}
   });
   if(canReply){
