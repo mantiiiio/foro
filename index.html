@@ -655,7 +655,7 @@ const D = {
   },
   async newT(b,t,x){
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
-    if(lastMs&&Date.now()-lastMs<3000)throw new Error("POST_RATE_LIMIT");
+    const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
     const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,x,ts:n});await batch.commit();return topicRef.id;
   },
   async reply(t,x){
@@ -774,7 +774,7 @@ const D = {
     if(!auth.currentUser)throw new Error("Inicia sesión para participar en el chat.");await assertCurrentUserNotBanned();
     if(media||containsExternalLink(x))requireRegisteredMember("compartir enlaces o archivos en el chat");
     const uid=auth.currentUser.uid,rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(rateRef),last=rateSnap.exists()?rateSnap.data().lastChatAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
-    if(lastMs&&Date.now()-lastMs<2000)throw new Error("CHAT_RATE_LIMIT");
+    const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<2000)throw new Error("CHAT_RATE_LIMIT");
     const p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid)),avatarUrl=p?.exists()?p.data().avatarUrl||"":"";
     const messageRef=doc(collection(db,"chatMessages")),batch=writeBatch(db);
     batch.set(rateRef,{lastChatAt:serverTimestamp(),lastChatMessageId:messageRef.id},{merge:true});
