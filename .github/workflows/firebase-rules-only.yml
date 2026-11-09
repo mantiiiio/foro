@@ -1,0 +1,35 @@
+name: Deploy moderation Firestore rules only
+
+on:
+  push:
+    branches:
+      - backup-before-temporary-maintenance-2026-11-09
+    paths:
+      - firestore.rules
+      - .github/workflows/firebase-rules-only.yml
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout moderation branch
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORO_66DD5 }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Deploy Firestore rules only
+        run: firebase deploy --only firestore:rules --project foro-66dd5 --non-interactive
