@@ -70,7 +70,7 @@ body{
   justify-self:center;
 }
 #chatBox{width:100%;margin:0}
-#chatMessages{height:clamp(190px,38vh,360px)}
+#chatMessages{height:clamp(190px,38vh,360px)}.cmprofile{color:#005b86;text-decoration:underline;cursor:pointer}.moderationPanel{margin:9px 0;padding:9px;border:1px solid #b77;background:#fff4f0;color:#512d26}.moderationPanel h3{margin:0 0 7px;color:#8a2e22}.moderationPanel .modActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px}.moderationPanel input,.moderationPanel select{max-width:100%}.moderationHistory{font-size:10px;margin:5px 0;padding-left:20px}.moderationNotice{border:1px solid #b77;background:#fff0ed;color:#702a20;padding:8px;margin:6px 0;font-size:11px;line-height:1.5}.moderationNotice[hidden]{display:none!important}.moderationNotice strong{color:#8a1c12}
 #m{min-width:0;overflow-x:auto}
 #nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
 #nav a{margin:0;white-space:normal}
@@ -140,6 +140,7 @@ input,textarea,select{max-width:100%}
   <div id="st">NODO 1 :: 56000 bps :: <span id="clk"></span> :: <b id="netState">CONECTANDO...</b></div>
   <nav id="nav"></nav>
   <div id="accountNotice" class="accountNotice" role="status" aria-live="polite" hidden></div>
+  <div id="moderationNotice" class="moderationNotice" role="alert" aria-live="assertive" hidden></div>
   <!-- CARTEL: edita este texto directamente en el HTML -->
   <marquee id="tk" scrollamount="4">&#9733; Bienvenido a MantiPobres &#9733; Regístrate para publicar &#9733; Respeta las reglas &#9733; Chat en vivo en la columna derecha &#9733;</marquee>
 
@@ -329,6 +330,75 @@ function renderTopicPostBody(post,allPosts){
   }
   flush();return output;
 }
+const AUTO_MODERATION_REASONS = {
+  threat:"amenazas directas",
+  harassment:"insultos dirigidos",
+  link_spam:"spam de enlaces",
+  duplicate:"mensaje repetido",
+  flood:"envío masivo de mensajes",
+  caps:"uso abusivo de mayúsculas",
+  repeated:"texto repetitivo"
+};
+const autoModActivity = new Map();
+function autoModerationReason(text,channel="chat"){
+  const content=String(text||"").split("\n").filter(line=>!line.trimStart().startsWith(">")).join("\n").replace(/\u2063MPQ:[A-Za-z0-9_-]+\u2063/g,"").trim();
+  if(!content)return "";
+  if(/\b(te voy a matar|voy a matarte|te voy a pegar|voy a golpearte|ojala te mueras|ojalá te mueras|i will kill you|i am going to kill you)\b/i.test(content))return "threat";
+  if(/\b(sos|eres|sois|you are)\s+(un[oa]?\s+)?(idiota|imb[eé]cil|retrasad[oa]|basura|in[uú]til|est[uú]pid[oa]|scum|moron)\b/i.test(content))return "harassment";
+  const links=(content.match(/(?:https?:\/\/|www\.)\S+/gi)||[]).length;
+  if(links>3)return "link_spam";
+  const letters=content.match(/\p{L}/gu)||[],upper=content.match(/\p{Lu}/gu)||[];
+  if(letters.length>=28&&upper.length/letters.length>=0.88)return "caps";
+  if(/(.)\1{11,}/u.test(content))return "repeated";
+  const uid=auth?.currentUser?.uid||"guest",now=Date.now(),norm=content.toLowerCase().replace(/\s+/g," ").slice(0,500);
+  const state=autoModActivity.get(uid)||[];
+  const recent=state.filter(item=>now-item.at<60000);
+  if(recent.some(item=>item.text===norm))return "duplicate";
+  if(channel==="chat"&&recent.filter(item=>now-item.at<12000).length>=5)return "flood";
+  autoModActivity.set(uid,recent);
+  return "";
+}
+async function assertCurrentUserNotBanned(){
+  const user=auth?.currentUser;if(!user)return;
+  const snapshot=await getDoc(doc(db,"moderation",user.uid));
+  if(!snapshot.exists())return;
+  const mod=snapshot.data(),until=mod.banUntil?.toDate?mod.banUntil.toDate():mod.banUntil?new Date(mod.banUntil):null;
+  if(mod.status==="permanent")throw new Error("Tu cuenta tiene un ban permanente. Motivo: "+(mod.banReason||"incumplimiento de las normas."));
+  if(mod.status==="temporary"&&until&&until.getTime()>Date.now())throw new Error("Tu cuenta está suspendida hasta "+dt(until)+". Motivo: "+(mod.banReason||"incumplimiento de las normas."));
+}
+async function autoModerationGate(text,channel="chat"){
+  await assertCurrentUserNotBanned();
+  const issue=autoModerationReason(text,channel),uid=auth?.currentUser?.uid||"guest",now=Date.now();
+  if(!issue){const norm=String(text||"").toLowerCase().replace(/\s+/g," ").trim().slice(0,500),recent=(autoModActivity.get(uid)||[]).filter(item=>now-item.at<60000);recent.push({text:norm,at:now});autoModActivity.set(uid,recent.slice(-12));return false;}
+  const description=AUTO_MODERATION_REASONS[issue]||"contenido no permitido";
+  let result;
+  try{result=await Store.autoWarn(issue,channel);}
+  catch(error){console.error("No se pudo registrar el aviso automático:",error);alert("AutoModeración bloqueó el contenido, pero no pudo guardar el aviso. No se publicó. "+errText(error));return true;}
+  const count=result.warningCount||0;
+  alert(count>=3?"AutoModeración: "+description+". Llegaste a 3/3 avisos; tu cuenta recibió un ban permanente.":"AutoModeración: "+description+". Se registró tu aviso "+count+"/3. Al tercer aviso se aplicará un ban permanente.");
+  return true;
+}
+function renderModerationNotice(){
+  const box=$("#moderationNotice"),user=auth?.currentUser;
+  if(!box)return;
+  if(!user){box.hidden=true;box.innerHTML="";return;}
+  const data=currentModerationData||null;
+  if(!data){box.hidden=true;box.innerHTML="";return;}
+  const until=data.banUntil?.toDate?data.banUntil.toDate():data.banUntil?new Date(data.banUntil):null;
+  const activeTemp=data.status==="temporary"&&until&&until.getTime()>Date.now();
+  const expiredTemp=data.status==="temporary"&&until&&until.getTime()<=Date.now();
+  const warnings=Array.isArray(data.warnings)?data.warnings:[];
+  if(data.status==="permanent"){
+    box.hidden=false;box.innerHTML="<strong>⛔ BAN PERMANENTE</strong><br>Motivo: "+E(data.banReason||"Incumplimiento de las normas.")+"<br>Avisos acumulados: "+warnings.length+"/3. Contacta con el staff si crees que fue un error.";
+  }else if(activeTemp){
+    box.hidden=false;box.innerHTML="<strong>⏳ CUENTA SUSPENDIDA TEMPORALMENTE</strong><br>Hasta: "+E(dt(until))+"<br>Motivo: "+E(data.banReason||"Incumplimiento de las normas.")+"<br>Avisos: "+warnings.length+"/3.";
+  }else if(warnings.length){
+    box.hidden=false;box.innerHTML="<strong>⚠ AVISOS DE MODERACIÓN: "+warnings.length+"/3</strong><br>"+(expiredTemp?"Tu suspensión temporal terminó. ":"")+"El tercer aviso genera un ban permanente. Último motivo: "+E(warnings[warnings.length-1].reason||"Normas del foro")+".";
+  }else{
+    box.hidden=true;box.innerHTML="";
+  }
+}
+
 const errText = z => ({
   "auth/email-already-in-use":"Ese correo ya está registrado.",
   "auth/invalid-email":"El correo electrónico no tiene un formato válido.",
@@ -569,19 +639,72 @@ const D = {
   async topic(t){const s=await getDoc(doc(db,"topics",t));return s.exists()?{id:s.id,...s.data()}:null;},
   async ratings(t){const s=await getDocs(collection(db,"topics",t,"ratings"));return s.docs.map(d=>({id:d.id,...d.data()}));},
   async rateTopic(t,stars){
-    requireRegisteredMember("valorar este tema");
+    requireRegisteredMember("valorar este tema");await assertCurrentUserNotBanned();
     const value=Number(stars);
     if(!Number.isInteger(value)||value<1||value>5)throw new Error("Elige entre 1 y 5 estrellas.");
     const uid=auth.currentUser.uid;
     await setDoc(doc(db,"topics",t,"ratings",uid),{uid,stars:value,ts:Date.now()});
   },
-  async newT(b,t,x){const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),batch=writeBatch(db);batch.set(topicRef,{b,t,u,uid,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,x,ts:n});await batch.commit();return topicRef.id;},
-  async reply(t,x){const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),batch=writeBatch(db);batch.set(postRef,{tp:t,u,uid,x,ts:n});batch.update(topicRef,{lr:n,lu:u,n:increment(1)});await batch.commit();},
-  async editPost(id,x){requireVerifiedMember("editar tus publicaciones");const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
+  async newT(b,t,x){await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),batch=writeBatch(db);batch.set(topicRef,{b,t,u,uid,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,x,ts:n});await batch.commit();return topicRef.id;},
+  async reply(t,x){await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),batch=writeBatch(db);batch.set(postRef,{tp:t,u,uid,x,ts:n});batch.update(topicRef,{lr:n,lu:u,n:increment(1)});await batch.commit();},
+  async editPost(id,x){requireVerifiedMember("editar tus publicaciones");await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
   async members(){const s=await getDocs(collection(db,"users"));return s.size;},
   async cnt(n){const s=await getDocs(query(collection(db,"posts"),where("u","==",n)));return s.size;},
   async prof(n){const s=await getDocs(query(collection(db,"users"),where("u","==",n),limit(1)));return s.empty?null:{uid:s.docs[0].id,...s.docs[0].data()};},
   async profByUid(uid){const s=await getDoc(doc(db,"users",uid));return s.exists()?{uid:s.id,...s.data()}:null;},
+  async moderation(uid){const s=await getDoc(doc(db,"moderation",uid));return s.exists()?{uid,...s.data()}:{uid,warnings:[],warningCount:0,status:"active",banUntil:null,banReason:""};},
+  async autoWarn(reason,channel="chat"){
+    const uid=auth.currentUser.uid,ref=doc(db,"moderation",uid),allowed=Object.keys(AUTO_MODERATION_REASONS);
+    if(!allowed.includes(reason))throw new Error("Motivo automático no válido.");
+    let result=null;
+    await runTransaction(db,async tx=>{
+      const snap=await tx.get(ref),before=snap.exists()?snap.data():{warnings:[],warningCount:0,status:"active",banUntil:null,banReason:""};
+      const warnings=Array.isArray(before.warnings)?before.warnings.slice(0,3):[];
+      if(warnings.length>=3||before.status==="permanent")throw new Error("Tu cuenta ya tiene 3 avisos y está baneada permanentemente.");
+      warnings.push({reason:AUTO_MODERATION_REASONS[reason],code:reason,channel,source:"automod",actorUid:uid,actorName:"AutoModeración",at:Date.now()});
+      const permanent=warnings.length>=3;
+      const data={warnings,warningCount:warnings.length,status:permanent?"permanent":(before.status||"active"),banUntil:permanent?null:(before.banUntil||null),banReason:permanent?"Tres avisos automáticos":(before.banReason||""),updatedAt:Date.now(),lastActionBy:"automod"};
+      if(snap.exists())tx.set(ref,data);else tx.create(ref,data);
+      result=data;
+    });
+    currentModerationData=result;renderModerationNotice();return result;
+  },
+  async warnUser(uid,reason){
+    if(!isStaff())throw new Error("No tienes permiso para dar avisos.");
+    if(uid===OWNER_UID||uid===auth.currentUser.uid)throw new Error("No puedes sancionar esta cuenta.");
+    const staffSnap=await getDoc(doc(db,"staff",uid));if(staffSnap.exists()&&!isAdmin())throw new Error("Solo un administrador puede sancionar a otro miembro del staff.");
+    const clean=String(reason||"").trim().slice(0,240);if(clean.length<3)throw new Error("Escribe un motivo de al menos 3 caracteres.");
+    const ref=doc(db,"moderation",uid);let result=null;
+    await runTransaction(db,async tx=>{
+      const snap=await tx.get(ref),before=snap.exists()?snap.data():{warnings:[],warningCount:0,status:"active",banUntil:null,banReason:""};
+      const warnings=Array.isArray(before.warnings)?before.warnings.slice(0,3):[];
+      if(warnings.length>=3||before.status==="permanent")throw new Error("La cuenta ya tiene 3 avisos y un ban permanente.");
+      warnings.push({reason:clean,source:"staff",actorUid:auth.currentUser.uid,actorName:me()||"Staff",at:Date.now()});
+      const permanent=warnings.length>=3;
+      result={warnings,warningCount:warnings.length,status:permanent?"permanent":(before.status||"active"),banUntil:permanent?null:(before.banUntil||null),banReason:permanent?"Tercer aviso: ban permanente":(before.banReason||""),updatedAt:Date.now(),lastActionBy:auth.currentUser.uid};
+      tx.set(ref,result);
+    });
+    return result;
+  },
+  async banUser(uid,type,reason,durationMs=0){
+    if(!isStaff())throw new Error("No tienes permiso para banear.");
+    if(uid===OWNER_UID||uid===auth.currentUser.uid)throw new Error("No puedes banear esta cuenta.");
+    const targetStaff=await getDoc(doc(db,"staff",uid));if(targetStaff.exists()&&!isAdmin())throw new Error("Solo un administrador puede banear a otro miembro del staff.");
+    if(type==="permanent"&&!isAdmin())throw new Error("Solo un administrador puede aplicar un ban permanente manual.");
+    const clean=String(reason||"").trim().slice(0,240);if(clean.length<3)throw new Error("Escribe un motivo de al menos 3 caracteres.");
+    if(type==="temporary"&&(!Number.isFinite(durationMs)||durationMs<60000||durationMs>30*86400000))throw new Error("Duración temporal no válida.");
+    const ref=doc(db,"moderation",uid);
+    await runTransaction(db,async tx=>{
+      const snap=await tx.get(ref),before=snap.exists()?snap.data():{warnings:[],warningCount:0};
+      const data={warnings:Array.isArray(before.warnings)?before.warnings.slice(0,3):[],warningCount:Math.min(3,Number(before.warningCount)||0),status:type,banUntil:type==="temporary"?new Date(Date.now()+durationMs):null,banReason:clean,updatedAt:Date.now(),lastActionBy:auth.currentUser.uid};
+      tx.set(ref,data);
+    });
+  },
+  async unbanUser(uid){
+    if(!isAdmin())throw new Error("Solo un administrador puede levantar un ban.");
+    if(uid===OWNER_UID||uid===auth.currentUser.uid)throw new Error("No puedes modificar esta cuenta.");
+    await setDoc(doc(db,"moderation",uid),{warnings:[],warningCount:0,status:"active",banUntil:null,banReason:"",updatedAt:Date.now(),lastActionBy:auth.currentUser.uid});
+  },
   async updateAvatar(file){
     requireVerifiedMember("cambiar tu foto de perfil");
     if(!["image/jpeg","image/png","image/gif","image/webp"].includes(file.type))throw new Error("Formato no permitido. Usa JPG, PNG, GIF o WEBP.");
@@ -629,11 +752,11 @@ const D = {
     if(!isOriginal){const topicRef=doc(db,"topics",b),topicSnap=await getDoc(topicRef);if(topicSnap.exists())await updateDoc(topicRef,{n:Math.max(0,(topicSnap.data().n||0)-1)});}
   },
   async chatSend(x,media=null){
-    if(!auth.currentUser)throw new Error("Inicia sesión para participar en el chat.");
+    if(!auth.currentUser)throw new Error("Inicia sesión para participar en el chat.");await assertCurrentUserNotBanned();
     if(media||containsExternalLink(x))requireRegisteredMember("compartir enlaces o archivos en el chat");
     const uid=auth.currentUser.uid,p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid));const avatarUrl=p?.exists()?p.data().avatarUrl||"":"";return addDoc(collection(db,"chatMessages"),{uid,u:chatName(),avatarUrl,x,media,ts:Date.now()});
   },
-  async chatEdit(id,x){const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>1500)throw new Error("El mensaje supera el máximo de 1500 caracteres.");await updateDoc(doc(db,"chatMessages",id),{x:value});},
+  async chatEdit(id,x){await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>1500)throw new Error("El mensaje supera el máximo de 1500 caracteres.");await updateDoc(doc(db,"chatMessages",id),{x:value});},
   async chatDelete(id,path){const ref=doc(db,"chatMessages",id),snapshot=await getDoc(ref);if(!snapshot.exists()||snapshot.data().deleted)return;await updateDoc(ref,{x:"",media:null,deleted:true,deletedBy:isAdmin()?"administrador":"usuario",deletedAt:Date.now(),deletedByUid:auth.currentUser.uid});if(path&&storage){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("No se pudo borrar el archivo asociado",e);}}},
   async chatClear(){if(!isAdmin())throw new Error("No autorizado.");const s=await getDocs(query(collection(db,"chatMessages"),orderBy("ts","desc"),limit(500))),paths=[],now=Date.now(),uid=auth.currentUser.uid;for(let i=0;i<s.docs.length;i+=400){const batch=writeBatch(db);s.docs.slice(i,i+400).forEach(d=>{const data=d.data();if(data.deleted)return;if(data.media?.path)paths.push(data.media.path);batch.update(d.ref,{x:"",media:null,deleted:true,deletedBy:"administrador",deletedAt:now,deletedByUid:uid});});await batch.commit();}if(storage&&paths.length)await Promise.all(paths.map(async path=>{try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("Adjunto no encontrado o no borrable",e);}}));}
 };
