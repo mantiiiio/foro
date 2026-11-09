@@ -107,7 +107,7 @@ service cloud.firestore {
         && request.resource.data.x.size() <= 6000
         && request.resource.data.ts is int
         && existsAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp))
-        && (getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas' || isAdmin());
+        && (getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas' || isStaff());
       allow update, delete: if isStaff();
     }
 
