@@ -488,7 +488,7 @@ service cloud.firestore {
           && request.resource.data.stars >= 1
           && request.resource.data.stars <= 5
           && request.resource.data.ts is int;
-        allow delete: if isAdmin() || (registered() && request.auth.uid == ratingUid);
+        allow delete: if isAdmin() || (registered() && (request.auth.uid == ratingUid || resource.data.get('uid', '') == request.auth.uid));
       }
     }
 
