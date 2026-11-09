@@ -994,9 +994,10 @@ const D = {
     const snapshot=await getDocs(collection(db,"moderation"));
     for(const item of snapshot.docs){
       const data=item.data();
+      if(data.status!=="permanent"&&data.status!=="temporary")continue;
       let hidden=false,until=null;
       if(data.status==="permanent")hidden=true;
-      else if(data.status==="temporary"){
+      else{
         const raw=data.banUntil,parsed=raw?.toDate?raw.toDate():raw?new Date(raw):null;
         if(!parsed||!Number.isFinite(parsed.getTime())||parsed.getTime()>Date.now()){
           hidden=true;until=parsed;
