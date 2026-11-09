@@ -11,7 +11,8 @@ MantiPobres es un foro retro en español alojado en Firebase Hosting, con cuenta
 - Registro con nombre de usuario único, correo real y contraseña.
 - Verificación por correo y recuperación de contraseña.
 - Invitados anónimos en el chat.
-- Categorías, temas y respuestas; el foro de reglas es de solo lectura para miembros.
+- Categorías, temas y respuestas/comentarios; cada tema tiene valoración de 1 a 5 estrellas por cuenta registrada.
+- Al volver a cargar una página se conserva la sección, el tema abierto y la posición de lectura; el inicio muestra los temas recientes.
 - Perfiles, rangos y contador de mensajes.
 - Chat en tiempo real con mensajes de texto y borrado de mensajes propios.
 - Herramientas de administración por UID.
@@ -74,7 +75,7 @@ Selecciona `mantiiiio/foro` y la rama `main`. Si pregunta si debe sobrescribir l
 
 Los invitados anónimos pueden enviar mensajes de texto en el chat, pero **no pueden** compartir enlaces. Cualquier cuenta registrada con sesión iniciada puede compartir enlaces y subir archivos, incluso antes de verificar el correo. La verificación sigue siendo obligatoria para crear temas y respuestas. El staff también puede usar estas funciones desde su sesión.
 
-Cada usuario puede editar únicamente su propio avatar y puede hacerlo apenas inicia sesión. Las reglas de Firestore aplican estos controles en el backend.
+Cada usuario puede editar únicamente su propio avatar y puede hacerlo apenas inicia sesión. Cada cuenta registrada puede puntuar un tema con 1–5 estrellas y modificar su voto. Las respuestas dentro de cada tema son sus comentarios. Las reglas de Firestore protegen los votos por UID.
 
 ### Alojamiento externo
 
