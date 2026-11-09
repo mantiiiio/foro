@@ -1,62 +1,78 @@
-# FORO.EXE — GitHub Pages + Firebase
+# MantiPobres — comunidad BBS / Usenet
 
-Repositorio de foro retro estilo BBS/Usenet, con registro/login, perfiles, chat en vivo y subida opcional de archivos.
+MantiPobres es un foro retro en español alojado en Firebase Hosting, con cuentas, perfiles, categorías, temas, respuestas y chat en directo.
 
-## Archivos
-- `index.html`: sitio web.
-- `firestore.rules`: reglas de base de datos.
-- `storage.rules`: reglas de avatares y adjuntos.
-- `.nojekyll`: configuración para GitHub Pages.
+- Web pública: https://foro-66dd5.web.app/
+- Repositorio: https://github.com/mantiiiio/foro
+- Firebase Project ID: `foro-66dd5`
 
-## GitHub Pages
-1. Repositorio `mantiiiio/foro` → Settings → Pages.
-2. Selecciona Deploy from a branch, branch `main`, folder `/(root)`.
-3. URL esperada: https://mantiiiio.github.io/foro/
-4. En Firebase Authentication → Settings → Authorized domains añade `mantiiiio.github.io`.
+## Funciones
 
-## Firebase básico
-1. Crea un proyecto en https://console.firebase.google.com/ y registra una app web.
-2. Copia `firebaseConfig` y reemplaza los valores de `const FB` en `index.html`.
-3. Authentication → Sign-in method: activa Email/Password y Anonymous.
-4. Crea Firestore Database y publica `firestore.rules`.
-5. El registro usa un alias interno `usuario@foro.local`, no un correo real; no hay recuperación por email.
+- Registro con nombre de usuario único, correo real y contraseña.
+- Verificación por correo y recuperación de contraseña.
+- Invitados anónimos en el chat.
+- Categorías, temas y respuestas; el foro de reglas es de solo lectura para miembros.
+- Perfiles, rangos y contador de mensajes.
+- Chat en tiempo real con mensajes de texto y borrado de mensajes propios.
+- Herramientas de administración por UID.
+- Anuncios y panel lateral editables directamente en `index.html`.
+- Adjuntos JPG/PNG/GIF/WEBP, vídeo MP4/WEBM y fotos de perfil preparados, pero desactivados hasta configurar Firebase Storage.
+
+## Configuración y despliegue
+
+El proyecto Firebase ya está asociado en `.firebaserc`. Instala Node.js LTS, Git y Firebase CLI. Desde la carpeta clonada:
+
+```cmd
+firebase login
+firebase use foro-66dd5
+firebase deploy --only auth,firestore:rules,hosting
+```
+
+La configuración de `firebase.json` habilita Email/Password y Anonymous y vincula `firestore.rules`. Antes de desplegar reglas, crea la base de datos Cloud Firestore (modo Production) en Firebase Console si todavía no existe.
+
+### Dominios autorizados
+
+En Firebase Console → Authentication → Settings → Authorized domains, comprueba que estén autorizados:
+
+- `foro-66dd5.web.app`
+- `foro-66dd5.firebaseapp.com`
+
+## Registro y acceso
+
+El registro pide un nombre de usuario (3–16 caracteres: letras, números o guion bajo), correo real y contraseña (mínimo 6 caracteres), y exige aceptar las reglas. Se envía un correo de verificación. Los usuarios deben verificarlo para publicar temas y respuestas. Se puede solicitar restablecer la contraseña desde la pantalla Entrar.
+
+Las cuentas antiguas que se crearon con alias `@foro.local` no tienen una dirección real a la que enviar verificación o recuperación. Para publicar con la nueva versión, crea una cuenta nueva con tu correo real.
 
 ## Administrador
-1. Registra tu cuenta de staff en el foro.
-2. Firebase Authentication → Users: copia el UID.
-3. En `index.html`, reemplaza `const ADMINS_UID = [];` por `const ADMINS_UID = ["TU_UID_REAL"];`.
-4. Reemplaza `PEGA_AQUI_TU_UID_ADMIN` en `firestore.rules` y `storage.rules` con el mismo UID.
-5. Publica las reglas actualizadas.
 
-El UID no es una contraseña. Los permisos reales los verifican las reglas Firebase. Nunca pongas claves privadas ni tokens en el HTML.
+El rol de administrador se configura por UID; no se concede por nombre de usuario ni por el contenido del navegador.
 
-## Fotos de perfil: imagen o GIF
-El usuario puede cambiar y quitar su propia foto desde su perfil. JPG, PNG, GIF animado y WEBP, hasta 5 MB. Los avatares se muestran en perfiles, junto a temas y en los nuevos mensajes del chat.
-1. Activa Firebase Cloud Storage y crea el bucket.
-2. Vincula Blaze si Firebase lo requiere. Storage tiene cobro por uso; revisa precios y cuotas antes de habilitarlo.
-3. Publica `storage.rules`, sustituyendo el UID de administrador.
-4. En `index.html`, cambia `const STORAGE_ENABLED = false;` a `true`.
-5. Verifica que `FB.storageBucket` coincida exactamente con el bucket de Firebase.
+1. Registra la cuenta de administrador con un correo real y verifica el correo.
+2. Firebase Console → Authentication → Users: copia el UID de esa cuenta.
+3. En `index.html`, cambia `const ADMINS_UID = [];` por `const ADMINS_UID = ["UID_REAL"];`.
+4. En `firestore.rules` (y en `storage.rules`, cuando se active Storage), sustituye `PEGA_AQUI_TU_UID_ADMIN` por el mismo UID.
+5. Vuelve a desplegar: `firebase deploy --only hosting,firestore:rules`.
 
-## Adjuntos en chat
-- JPG, PNG, GIF, WEBP: hasta 8 MB.
-- MP4, WEBM: hasta 25 MB.
-Usan el mismo Storage. Los archivos tienen lectura pública para que otros usuarios puedan verlos; no subas material privado.
+El UID no es una contraseña. Nunca guardes contraseñas, tokens privados ni claves de servicio en el HTML o en el repositorio.
 
-## Atajos
-- Enter: enviar.
-- Shift+Enter: nueva línea.
-- Ctrl+Enter / Cmd+Enter: enviar.
-- Alt+M: enfocar el cuadro de escritura.
-- ?: abrir ayuda.
-- Esc: cerrar ayuda o salir del chat ampliado.
+## GitHub Actions
 
-## Seguridad
-- GitHub Pages es hosting estático; Firebase aporta autenticación, base de datos y almacenamiento.
-- Las reglas validan usuario, tipo MIME y tamaño. No realizan análisis antivirus del contenido.
-- Los archivos subidos son públicos. No los uses para contenido privado o sensible.
-- GitHub Pages no es un WAF ni una defensa anti-DDoS.
-- Configura alertas de presupuesto antes de activar servicios facturados.
+Para preparar despliegue automático, desde la carpeta del repositorio ejecuta:
+
+```cmd
+firebase init hosting:github
+```
+
+Selecciona `mantiiiio/foro` y la rama `main`. Firebase configurará el secreto de servicio y los workflows. No reemplaces `index.html` si el CLI pregunta si debe sobrescribirlo.
+
+## Firebase Storage: fotos y archivos
+
+El código incluye soporte para avatares JPG/PNG/GIF/WEBP (máximo 5 MB) y adjuntos del chat (imágenes hasta 8 MB, vídeos MP4/WEBM hasta 25 MB), pero `STORAGE_ENABLED` permanece en `false` de forma intencional.
+
+Cloud Storage for Firebase requiere el plan Blaze para crear o utilizar buckets. Antes de activarlo, vincula una cuenta de facturación, elige una ubicación y configura alertas de presupuesto. Después crea el bucket, despliega `storage.rules`, comprueba que `FB.storageBucket` coincida con el bucket real y recién entonces cambia `STORAGE_ENABLED` a `true`.
+
+Los adjuntos se sirven públicamente para que los participantes puedan verlos; no subas material privado o sensible. Las reglas validan la identidad, el tipo MIME y el tamaño, pero no analizan archivos en busca de malware.
 
 ## Personalización
-Edita el nombre en `const NAME = "FORO.EXE";` y en la cabecera HTML. Los anuncios se editan directamente en `index.html`.
+
+El nombre de marca está en `const NAME = "MantiPobres";` y en el título HTML. Los anuncios del staff y del proyecto destacado se editan directamente en `index.html`.
