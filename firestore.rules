@@ -565,7 +565,7 @@ service cloud.firestore {
 
     match /chatMessages/{messageId} {
       allow read: if canReadCommunity();
-      allow create: if signedIn()
+      allow create: if registered()
         && canParticipate()
         && hasFreshChatRateLimit(request.auth.uid, messageId)
         && request.resource.data.keys().hasOnly(['uid','u','avatarUrl','x','media','ts','staffBadge'])
@@ -578,21 +578,14 @@ service cloud.firestore {
         && request.resource.data.x.size() <= 1500
         && automodSafe(request.resource.data.x)
         && request.resource.data.ts is int
-        && (
-          (request.auth.token.firebase.sign_in_provider == 'anonymous'
-            && request.resource.data.u.matches('Invitado-[A-Z0-9]{5}')
-            && request.resource.data.avatarUrl == '')
-          ||
-          (request.auth.token.firebase.sign_in_provider != 'anonymous'
-            && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('avatarUrl', '') == request.resource.data.avatarUrl)
-        )
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('avatarUrl', '') == request.resource.data.avatarUrl
         && (request.resource.data.x.size() > 0 || request.resource.data.media is map)
         && (request.resource.data.media == null || validChatMedia(request.resource.data.media))
         && (!containsLink(request.resource.data.x) || registered());
       allow update: if (
-        signedIn()
+        registered()
         && canParticipate()
         && resource.data.uid == request.auth.uid
         && resource.data.get('deleted', false) != true
@@ -614,7 +607,7 @@ service cloud.firestore {
         && request.resource.data.deletedAt is int
         && request.resource.data.deletedByUid == request.auth.uid
       );
-      allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow delete: if isAdmin() || (registered() && resource.data.uid == request.auth.uid);
     }
   }
 }
