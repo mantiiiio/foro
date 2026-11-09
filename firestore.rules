@@ -136,7 +136,7 @@ service cloud.firestore {
         && request.resource.data.revokedBy == request.auth.uid
         && request.resource.data.revokedAt == request.time
       );
-      allow delete: if canManageInviteRole(resource.data.role);
+      allow delete: if false; // Registro permanente: una invitación usada o revocada nunca se elimina.
     }
 
     match /topics/{topicId} {
