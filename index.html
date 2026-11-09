@@ -76,13 +76,13 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
       </div>
       <div class="chatHint" id="chatHint">Enter: enviar · Shift+Enter: nueva línea · pulsa ? para ver todos los atajos.</div>
     </form>
-    <form class="catboxUploadPanel" id="chatCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank" hidden>
-      <input type="hidden" name="reqtype" value="fileupload">
+    <form class="catboxUploadPanel" id="chatCatboxForm" action="https://remote.catbox.tech/user/api.php" method="post" enctype="multipart/form-data" target="_blank" hidden>
+      <input type="hidden" name="reqtype" value="fileupload"><label for="uploadProvider">Alojamiento:</label><select name="uploadProvider" aria-label="Alojamiento de archivos"><option value="https://remote.catbox.tech/user/api.php" selected>Mirror alternativo</option><option value="https://catbox.moe/user/api.php">Catbox original</option></select>
       <label for="chatCatboxFile">Archivo para compartir:</label>
       <input id="chatCatboxFile" type="file" name="fileToUpload" required>
       <button type="submit">Subir archivo</button>
       <button type="button" id="chatCatboxCancel">Cancelar</button>
-      <p class="profilePhotoStatus" id="chatCatboxStatus">El archivo se sube a Catbox. Copia el enlace que aparecerá en la otra pestaña y pégalo en el chat.</p>
+      <p class="profilePhotoStatus" id="chatCatboxStatus">Se sube al mirror alternativo. Si falla, selecciona Catbox original. Copia el enlace de la otra pestaña y pégalo en el chat.</p>
     </form>
     <details class="chatAdmin" id="chatAdmin" hidden>
       <summary>⚙ Panel de administración</summary>
@@ -538,12 +538,14 @@ async function idx(m){
   BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"📌":"📁"}</td><td><a href="#/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="#/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}`:"&mdash;"}</small></td></tr>`;});});
   const recent=T.slice(0,15);
   m.innerHTML=h+`</table><table><tr><th colspan="3">🕘 TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td>💬 <a href="#/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}</small></td><td><a href="#/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. Hay <b>${n}</b> miembros registrados.</small></td></tr></table>`;
+  if(configured)watchRouteData(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)),routeRenderId);
 }
 async function brd(m,id){
   const B=BL.find(x=>x[0]===id);if(!B)return m.innerHTML="Foro inexistente";
   const T=(await Store.topics()).filter(t=>t.b===id),isRules=id==="reglas";
   const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican al foro y al chat. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
   m.innerHTML=rulesIntro+`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${isRules&&!isStaff()?"":`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`}</p><table><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${T.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>${isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:""}`;
+  if(configured)watchRouteData(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)),routeRenderId);
 }
 async function thr(m,id){
   const t=await Store.topic(id);
@@ -586,7 +588,7 @@ async function thr(m,id){
   m.querySelectorAll("[data-rating]").forEach(button=>button.addEventListener("click",async()=>{
     const stars=Number(button.dataset.rating);
     m.querySelectorAll("[data-rating]").forEach(b=>b.disabled=true);
-    try{await Store.rateTopic(id,stars);await thr(m,id);}
+    try{await Store.rateTopic(id,stars);await go();}
     catch(e){alert(errText(e));m.querySelectorAll("[data-rating]").forEach(b=>b.disabled=false);}
   }));
   m.querySelectorAll("[data-q]").forEach(a=>a.onclick=e=>{
@@ -600,7 +602,7 @@ async function thr(m,id){
     e.preventDefault();
     const i=Number(a.dataset.d);
     if(!confirm(i?"¿Borrar este comentario?":"¿Borrar la publicación y todo el tema?"))return;
-    try{if(i>0){await Store.del("p",P[i].id,id);await thr(m,id);}else{await Store.del("t",id);location.hash="#/b/"+t.b;}}
+    try{if(i>0){await Store.del("p",P[i].id,id);await go();}else{await Store.del("t",id);location.hash="#/b/"+t.b;}}
     catch(z){alert(errText(z));}
   });
   if(canReply){
@@ -609,9 +611,14 @@ async function thr(m,id){
       const x=$("#rx").value.trim();
       if(!x)return;
       const button=$("#rf button");button.disabled=true;
-      try{await Store.reply(id,x);await thr(m,id);}
+      try{await Store.reply(id,x);if($("#rx"))$("#rx").value="";await go();}
       catch(z){$("#er").textContent=errText(z);button.disabled=false;}
     };
+  }
+  if(configured){
+    watchRouteData(doc(db,"topics",id),routeRenderId);
+    watchRouteData(query(collection(db,"posts"),where("tp","==",id)),routeRenderId);
+    watchRouteData(collection(db,"topics",id,"ratings"),routeRenderId);
   }
 }
 function neu(m,id){
@@ -657,7 +664,16 @@ function frm(m,a,r){
 function bindCatboxUpload(formSelector,fileSelector,statusSelector,imageOnly=false){
   const form=$(formSelector),fileInput=$(fileSelector);
   if(!form||!fileInput)return;
+  const endpointSelect=form.querySelector('[name="uploadProvider"]');
+  const allowedEndpoints=["https://remote.catbox.tech/user/api.php","https://catbox.moe/user/api.php"];
+  const applyUploadEndpoint=()=>{
+    const chosen=endpointSelect?.value||allowedEndpoints[0];
+    form.action=allowedEndpoints.includes(chosen)?chosen:allowedEndpoints[0];
+  };
+  endpointSelect?.addEventListener("change",applyUploadEndpoint);
+  applyUploadEndpoint();
   form.addEventListener("submit",event=>{
+    applyUploadEndpoint();
     const file=fileInput.files?.[0];
     if(!isRegisteredMember()){
       event.preventDefault();
@@ -671,7 +687,7 @@ function bindCatboxUpload(formSelector,fileSelector,statusSelector,imageOnly=fal
     }
     if(file.size>200*1024*1024){
       event.preventDefault();
-      alert("Catbox admite archivos de hasta 200 MB por archivo.");
+      alert("El límite de este alojamiento es 200 MB por archivo.");
       return;
     }
     if(imageOnly&&!["image/jpeg","image/png","image/gif","image/webp"].includes(file.type)){
@@ -680,7 +696,7 @@ function bindCatboxUpload(formSelector,fileSelector,statusSelector,imageOnly=fal
       return;
     }
     const status=statusSelector?$(statusSelector):null;
-    if(status)status.textContent="Enviando el archivo a Catbox. Se abrirá otra pestaña con el enlace; cópialo y pégalo aquí.";
+    if(status)status.textContent="Enviando el archivo a "+(form.action.includes("remote.catbox.tech")?"el mirror alternativo":"Catbox original")+". Se abrirá otra pestaña con el enlace; cópialo y pégalo aquí.";
   });
 }
 
@@ -688,7 +704,7 @@ async function prf(m,u){
   const [f,c]=await Promise.all([Store.prof(u),Store.cnt(u)]);if(!f)return m.innerHTML="Usuario inexistente";
   const owner=!!(auth?.currentUser&&!auth.currentUser.isAnonymous&&auth.currentUser.uid===f.uid);
   const canEditProfile=owner;
-  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen a <a href="https://catbox.moe/" target="_blank" rel="noopener noreferrer">Catbox</a> y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><form class="catboxUploadPanel" id="avatarCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank"><input type="hidden" name="reqtype" value="fileupload"><label for="avatarCatboxFile">O sube una imagen desde tu PC:</label><input id="avatarCatboxFile" type="file" name="fileToUpload" accept="image/jpeg,image/png,image/gif,image/webp" required><button type="submit">Subir imagen</button></form><div class="profilePhotoStatus" id="profilePhotoStatus">Después de subirla, copia el enlace que aparece en la otra pestaña, pégalo arriba y pulsa «Guardar URL».</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
+  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen con el alojamiento alternativo o Catbox original y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><form class="catboxUploadPanel" id="avatarCatboxForm" action="https://remote.catbox.tech/user/api.php" method="post" enctype="multipart/form-data" target="_blank"><input type="hidden" name="reqtype" value="fileupload"><label for="uploadProvider">Alojamiento:</label><select name="uploadProvider" aria-label="Alojamiento de archivos"><option value="https://remote.catbox.tech/user/api.php" selected>Mirror alternativo</option><option value="https://catbox.moe/user/api.php">Catbox original</option></select><label for="avatarCatboxFile">O sube una imagen desde tu PC (mirror alternativo o Catbox):</label><input id="avatarCatboxFile" type="file" name="fileToUpload" accept="image/jpeg,image/png,image/gif,image/webp" required><button type="submit">Subir imagen</button></form><div class="profilePhotoStatus" id="profilePhotoStatus">Después de subirla, copia el enlace que aparece en la otra pestaña, pégalo arriba y pulsa «Guardar URL».</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
   if(canEditProfile){
     $("#avatarUrlSave")?.addEventListener("click",async()=>{const status=$("#profilePhotoStatus"),button=$("#avatarUrlSave");button.disabled=true;try{await Store.setAvatarUrl($("#avatarUrlInput").value.trim());await prf(m,u);}catch(z){status.textContent=errText(z);button.disabled=false;}});
     $("#avatarRemove")?.addEventListener("click",async()=>{if(!confirm("¿Quitar tu foto de perfil?"))return;const status=$("#profilePhotoStatus");$("#avatarRemove").disabled=true;try{await Store.removeAvatar();await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarRemove").disabled=false;}});
@@ -759,12 +775,12 @@ async function setup(m){
       '<p><a class="bt" href="'+E(profileHref)+'">👤 Editar mi perfil y foto</a> <a class="bt" href="#/">Volver al foro y chat</a></p>'+
       '</td></tr></table>'+
       '<table><tr><th>SUBIR ARCHIVOS</th></tr><tr><td>'+
-      '<p>Elige un archivo de tu PC. Catbox lo subirá y abrirá otra pestaña con el enlace directo. Copia ese enlace para pegarlo en el chat o en el editor de tu foto de perfil. Máximo 200 MB por archivo.</p>'+
-      '<form class="catboxUploadPanel" id="setupCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank">'+
-      '<input type="hidden" name="reqtype" value="fileupload">'+
+      '<p>Elige un archivo de tu PC. el alojamiento elegido subirá el archivo y abrirá otra pestaña con el enlace directo. Copia ese enlace para pegarlo en el chat o en el editor de tu foto de perfil. Máximo 200 MB por archivo.</p>'+
+      '<form class="catboxUploadPanel" id="setupCatboxForm" action="https://remote.catbox.tech/user/api.php" method="post" enctype="multipart/form-data" target="_blank">'+
+      '<input type="hidden" name="reqtype" value="fileupload"><label for="uploadProvider">Alojamiento:</label><select name="uploadProvider" aria-label="Alojamiento de archivos"><option value="https://remote.catbox.tech/user/api.php" selected>Mirror alternativo</option><option value="https://catbox.moe/user/api.php">Catbox original</option></select>'+
       '<label for="setupCatboxFile">Seleccionar archivo:</label>'+
       '<input id="setupCatboxFile" type="file" name="fileToUpload" required>'+
-      '<button type="submit">📦 Subir archivo a Catbox</button>'+
+      '<button type="submit">📦 Subir archivo</button>'+
       '</form><p class="profilePhotoStatus" id="setupCatboxStatus">No necesitas verificar el correo para editar tu perfil ni para compartir enlaces. La verificación sí es necesaria para publicar en los foros.</p>'+
       '</td></tr></table>';
     bindCatboxUpload("#setupCatboxForm","#setupCatboxFile","#setupCatboxStatus",false);
@@ -801,6 +817,26 @@ async function out(){await Store.out();location.hash="#/";}
 const ROUTES={"":idx,b:brd,t:thr,n:neu,login:frm,reg:frm,out,setup,faq,u:prf,staff:staffPanel};
 const ROUTE_MEMORY_KEY="mantipobres_last_route_v2";
 const routeScrollKey=route=> "mantipobres_scroll_v2:"+route;
+let routeLiveUnsubs=[];
+let routeRefreshTimer=null;
+function clearRouteLive(){
+  routeLiveUnsubs.splice(0).forEach(unsubscribe=>{try{unsubscribe();}catch{}});
+  if(routeRefreshTimer){clearTimeout(routeRefreshTimer);routeRefreshTimer=null;}
+}
+function watchRouteData(reference,renderId){
+  let firstSnapshot=true;
+  const unsubscribe=onSnapshot(reference,()=>{
+    if(firstSnapshot){firstSnapshot=false;return;}
+    if(renderId!==routeRenderId)return;
+    if(routeRefreshTimer)clearTimeout(routeRefreshTimer);
+    routeRefreshTimer=setTimeout(()=>{
+      routeRefreshTimer=null;
+      if(renderId===routeRenderId)go();
+    },120);
+  },error=>console.error("No se pudo actualizar la vista en vivo:",error));
+  if(renderId===routeRenderId)routeLiveUnsubs.push(unsubscribe);
+  else unsubscribe();
+}
 let activeRouteKey=location.hash||"#/";
 let routeRenderId=0;
 function saveRouteScroll(route=location.hash||"#/"){
@@ -821,7 +857,14 @@ function restoreLastRoute(){
 }
 async function go(){
   const routeKey=location.hash||"#/";
-  if(activeRouteKey!==routeKey)saveRouteScroll(activeRouteKey);
+  const sameRoute=activeRouteKey===routeKey;
+  if(sameRoute)saveRouteScroll(routeKey);
+  else saveRouteScroll(activeRouteKey);
+  const drafts={};
+  if(sameRoute){
+    ["rx","ti","tx"].forEach(id=>{const field=$("#"+id);if(field)drafts[id]=field.value;});
+  }
+  clearRouteLive();
   activeRouteKey=routeKey;
   try{localStorage.setItem(ROUTE_MEMORY_KEY,routeKey);}catch{}
   const renderId=++routeRenderId;
@@ -843,6 +886,7 @@ async function go(){
   try{
     await (ROUTES[r]||idx)(m,a,r);
     if(renderId!==routeRenderId)return;
+    Object.entries(drafts).forEach(([id,value])=>{const field=$("#"+id);if(field)field.value=value;});
     requestAnimationFrame(()=>{
       if(renderId!==routeRenderId)return;
       let saved=null;
@@ -975,6 +1019,12 @@ function renderExternalUrlPreview(rawUrl){
   try{url=new URL(safe);}catch{return "";}
   const host=E(url.hostname.replace(/^www\./i,""));
   const href=E(safe);
+  const legacyCatboxMirror=url.hostname.toLowerCase()==="files.catbox.moe"
+    ?"https://files.pixstash.moe"+url.pathname+url.search
+    :"";
+  const imageErrorHandler=legacyCatboxMirror
+    ? "onerror=\"if(!this.dataset.mirrorTried){this.dataset.mirrorTried='1';this.src='"+E(legacyCatboxMirror)+"';}else{this.closest(&#39;.cmImageLink&#39;).classList.add(&#39;cmImageFailed&#39;);this.remove();}\""
+    : "onerror=\"this.closest(&#39;.cmImageLink&#39;).classList.add(&#39;cmImageFailed&#39;);this.remove()\"";
   const embed=getProviderEmbed(url);
   if(embed){
     return '<figure class="cmEmbed"><iframe src="'+E(embed.src)+'" title="Reproductor de '+E(embed.name)+'" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="height:'+embed.height+'px"></iframe><figcaption><a href="'+href+'" target="_blank" rel="nofollow noopener noreferrer">Abrir en '+E(embed.name)+'</a></figcaption></figure>';
@@ -982,7 +1032,7 @@ function renderExternalUrlPreview(rawUrl){
 
   const kind=inferExternalMediaKind(url);
   if(kind==="image"&&url.protocol==="https:"){
-    return '<a class="cmImageLink" href="'+href+'" target="_blank" rel="nofollow noopener noreferrer"><img class="cmmedia" src="'+href+'" alt="Imagen o GIF externo · '+host+'" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest(&#39;.cmImageLink&#39;).classList.add(&#39;cmImageFailed&#39;);this.remove()"></a>';
+    return '<a class="cmImageLink" href="'+href+'" target="_blank" rel="nofollow noopener noreferrer"><img class="cmmedia" src="'+href+'" alt="Imagen o GIF externo · '+host+'" loading="lazy" referrerpolicy="no-referrer" '+imageErrorHandler+'></a>';
   }
   if(kind==="video"&&url.protocol==="https:"){
     return '<video class="cmvideo" controls playsinline preload="metadata"><source src="'+href+'"></video><div class="cmExternalLink"><a href="'+href+'" target="_blank" rel="nofollow noopener noreferrer">Abrir vídeo en '+host+'</a></div>';
