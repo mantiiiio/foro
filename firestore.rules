@@ -28,6 +28,25 @@ service cloud.firestore {
     function shortString(value, max) {
       return value is string && value.size() > 0 && value.size() <= max;
     }
+    function containsLink(value) {
+      return value.matches('(?s).*(https?://|www\\.).*');
+    }
+    function validChatMedia(media) {
+      return media is map
+        && media.keys().hasOnly(['url','path','type','name','size'])
+        && media.url is string
+        && media.url.matches('https://.*')
+        && media.path is string
+        && media.path.size() <= 300
+        && media.type is string
+        && media.type.matches('(image/(jpeg|png|gif|webp)|video/(mp4|webm)|application/(pdf|zip|x-zip-compressed)|text/(plain|csv))')
+        && media.name is string
+        && media.name.size() > 0
+        && media.name.size() <= 120
+        && media.size is int
+        && media.size > 0
+        && media.size <= 25 * 1024 * 1024;
+    }
 
     match /users/{uid} {
       allow read: if true;
@@ -39,8 +58,8 @@ service cloud.firestore {
         && request.resource.data.rulesAcceptedAt is int
         && existsAfter(/databases/$(database)/documents/usernames/$(request.resource.data.u))
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.u)).data.uid == request.auth.uid;
-      allow update: if isAdmin() || (
-        registered()
+      allow update: if (
+        verifiedMember()
         && request.auth.uid == uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avatarUrl', 'avatarPath'])
         && request.resource.data.avatarUrl is string
@@ -211,7 +230,12 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('avatarUrl', '') == request.resource.data.avatarUrl)
         )
-        && (request.resource.data.x.size() > 0 || request.resource.data.media is map);
+        && (request.resource.data.x.size() > 0 || request.resource.data.media is map)
+        && (
+          (request.resource.data.media == null && !containsLink(request.resource.data.x))
+          || (verifiedMember() && request.resource.data.media == null && containsLink(request.resource.data.x))
+          || (verifiedMember() && validChatMedia(request.resource.data.media))
+        );
       allow update: if false;
       allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
