@@ -371,7 +371,7 @@ service cloud.firestore {
     }
 
     match /topics/{topicId} {
-      allow read: if true;
+      allow read: if canParticipate();
       allow create: if verifiedMember()
         && canParticipate()
         && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n'])
@@ -416,7 +416,7 @@ service cloud.firestore {
       );
 
       match /ratings/{ratingUid} {
-        allow read: if true;
+        allow read: if canParticipate();
         allow create: if registered()
           && canParticipate()
           && request.auth.uid == ratingUid
@@ -441,7 +441,7 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if true;
+      allow read: if canParticipate();
       allow create: if verifiedMember()
         && canParticipate()
         && hasFreshPostRateLimit(request.auth.uid, postId)
@@ -494,7 +494,7 @@ service cloud.firestore {
     }
 
     match /chatMessages/{messageId} {
-      allow read: if true;
+      allow read: if canParticipate();
       allow create: if signedIn()
         && canParticipate()
         && hasFreshChatRateLimit(request.auth.uid, messageId)
