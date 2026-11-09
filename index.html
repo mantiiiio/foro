@@ -76,13 +76,13 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
       </div>
       <div class="chatHint" id="chatHint">Enter: enviar · Shift+Enter: nueva línea · pulsa ? para ver todos los atajos.</div>
     </form>
-    <form class="catboxUploadPanel" id="chatCatboxForm" action="https://remote.catbox.tech/user/api.php" method="post" enctype="multipart/form-data" target="_blank" hidden>
-      <input type="hidden" name="reqtype" value="fileupload"><label for="uploadProvider">Alojamiento:</label><select name="uploadProvider" aria-label="Alojamiento de archivos"><option value="https://remote.catbox.tech/user/api.php" selected>Mirror alternativo</option><option value="https://catbox.moe/user/api.php">Catbox original</option></select>
+    <form class="catboxUploadPanel" id="chatCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank" hidden>
+      <input type="hidden" name="reqtype" value="fileupload">
       <label for="chatCatboxFile">Archivo para compartir:</label>
       <input id="chatCatboxFile" type="file" name="fileToUpload" required>
       <button type="submit">Subir archivo</button>
       <button type="button" id="chatCatboxCancel">Cancelar</button>
-      <p class="profilePhotoStatus" id="chatCatboxStatus">Se sube al mirror alternativo. Si falla, selecciona Catbox original. Copia el enlace de la otra pestaña y pégalo en el chat.</p>
+      <p class="profilePhotoStatus" id="chatCatboxStatus">Se sube a Catbox. Si está caído, pulsa «Abrir mirror alternativo», sube el archivo allí y pega aquí el enlace que te devuelva.</p>
     </form>
     <details class="chatAdmin" id="chatAdmin" hidden>
       <summary>⚙ Panel de administración</summary>
@@ -664,16 +664,17 @@ function frm(m,a,r){
 function bindCatboxUpload(formSelector,fileSelector,statusSelector,imageOnly=false){
   const form=$(formSelector),fileInput=$(fileSelector);
   if(!form||!fileInput)return;
-  const endpointSelect=form.querySelector('[name="uploadProvider"]');
-  const allowedEndpoints=["https://remote.catbox.tech/user/api.php","https://catbox.moe/user/api.php"];
-  const applyUploadEndpoint=()=>{
-    const chosen=endpointSelect?.value||allowedEndpoints[0];
-    form.action=allowedEndpoints.includes(chosen)?chosen:allowedEndpoints[0];
-  };
-  endpointSelect?.addEventListener("change",applyUploadEndpoint);
-  applyUploadEndpoint();
+  const mirrorButton=document.createElement("button");
+  mirrorButton.type="button";
+  mirrorButton.textContent="Abrir mirror alternativo";
+  mirrorButton.title="Abrir la copia de Catbox en otra pestaña para subir el archivo allí";
+  mirrorButton.addEventListener("click",()=>{
+    window.open("https://remote.catbox.tech/","_blank","noopener,noreferrer");
+    const status=statusSelector?$(statusSelector):null;
+    if(status)status.textContent="Se abrió el mirror alternativo. Sube allí el archivo, copia el enlace que te dé y pégalo en el chat o en la URL del avatar.";
+  });
+  form.appendChild(mirrorButton);
   form.addEventListener("submit",event=>{
-    applyUploadEndpoint();
     const file=fileInput.files?.[0];
     if(!isRegisteredMember()){
       event.preventDefault();
@@ -696,7 +697,7 @@ function bindCatboxUpload(formSelector,fileSelector,statusSelector,imageOnly=fal
       return;
     }
     const status=statusSelector?$(statusSelector):null;
-    if(status)status.textContent="Enviando el archivo a "+(form.action.includes("remote.catbox.tech")?"el mirror alternativo":"Catbox original")+". Se abrirá otra pestaña con el enlace; cópialo y pégalo aquí.";
+    if(status)status.textContent="Enviando el archivo a Catbox. Si falla, pulsa «Abrir mirror alternativo», súbelo allí y copia el enlace que te devuelva.";
   });
 }
 
@@ -704,7 +705,7 @@ async function prf(m,u){
   const [f,c]=await Promise.all([Store.prof(u),Store.cnt(u)]);if(!f)return m.innerHTML="Usuario inexistente";
   const owner=!!(auth?.currentUser&&!auth.currentUser.isAnonymous&&auth.currentUser.uid===f.uid);
   const canEditProfile=owner;
-  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen con el alojamiento alternativo o Catbox original y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><form class="catboxUploadPanel" id="avatarCatboxForm" action="https://remote.catbox.tech/user/api.php" method="post" enctype="multipart/form-data" target="_blank"><input type="hidden" name="reqtype" value="fileupload"><label for="uploadProvider">Alojamiento:</label><select name="uploadProvider" aria-label="Alojamiento de archivos"><option value="https://remote.catbox.tech/user/api.php" selected>Mirror alternativo</option><option value="https://catbox.moe/user/api.php">Catbox original</option></select><label for="avatarCatboxFile">O sube una imagen desde tu PC (mirror alternativo o Catbox):</label><input id="avatarCatboxFile" type="file" name="fileToUpload" accept="image/jpeg,image/png,image/gif,image/webp" required><button type="submit">Subir imagen</button></form><div class="profilePhotoStatus" id="profilePhotoStatus">Después de subirla, copia el enlace que aparece en la otra pestaña, pégalo arriba y pulsa «Guardar URL».</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
+  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen con el alojamiento alternativo o Catbox original y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><form class="catboxUploadPanel" id="avatarCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank"><input type="hidden" name="reqtype" value="fileupload"><label for="avatarCatboxFile">O sube una imagen desde tu PC (mirror alternativo o Catbox):</label><input id="avatarCatboxFile" type="file" name="fileToUpload" accept="image/jpeg,image/png,image/gif,image/webp" required><button type="submit">Subir imagen</button></form><div class="profilePhotoStatus" id="profilePhotoStatus">Si Catbox falla, usa «Abrir mirror alternativo». Copia el enlace resultante, pégalo arriba y pulsa «Guardar URL».</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
   if(canEditProfile){
     $("#avatarUrlSave")?.addEventListener("click",async()=>{const status=$("#profilePhotoStatus"),button=$("#avatarUrlSave");button.disabled=true;try{await Store.setAvatarUrl($("#avatarUrlInput").value.trim());await prf(m,u);}catch(z){status.textContent=errText(z);button.disabled=false;}});
     $("#avatarRemove")?.addEventListener("click",async()=>{if(!confirm("¿Quitar tu foto de perfil?"))return;const status=$("#profilePhotoStatus");$("#avatarRemove").disabled=true;try{await Store.removeAvatar();await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarRemove").disabled=false;}});
@@ -775,9 +776,9 @@ async function setup(m){
       '<p><a class="bt" href="'+E(profileHref)+'">👤 Editar mi perfil y foto</a> <a class="bt" href="#/">Volver al foro y chat</a></p>'+
       '</td></tr></table>'+
       '<table><tr><th>SUBIR ARCHIVOS</th></tr><tr><td>'+
-      '<p>Elige un archivo de tu PC. el alojamiento elegido subirá el archivo y abrirá otra pestaña con el enlace directo. Copia ese enlace para pegarlo en el chat o en el editor de tu foto de perfil. Máximo 200 MB por archivo.</p>'+
-      '<form class="catboxUploadPanel" id="setupCatboxForm" action="https://remote.catbox.tech/user/api.php" method="post" enctype="multipart/form-data" target="_blank">'+
-      '<input type="hidden" name="reqtype" value="fileupload"><label for="uploadProvider">Alojamiento:</label><select name="uploadProvider" aria-label="Alojamiento de archivos"><option value="https://remote.catbox.tech/user/api.php" selected>Mirror alternativo</option><option value="https://catbox.moe/user/api.php">Catbox original</option></select>'+
+      '<p>Elige un archivo de tu PC. Catbox subirá el archivo y abrirá otra pestaña con el enlace directo. También puedes abrir el mirror alternativo si Catbox está caído. Copia ese enlace para pegarlo en el chat o en el editor de tu foto de perfil. Máximo 200 MB por archivo.</p>'+
+      '<form class="catboxUploadPanel" id="setupCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank">'+
+      '<input type="hidden" name="reqtype" value="fileupload">'+
       '<label for="setupCatboxFile">Seleccionar archivo:</label>'+
       '<input id="setupCatboxFile" type="file" name="fileToUpload" required>'+
       '<button type="submit">📦 Subir archivo</button>'+
