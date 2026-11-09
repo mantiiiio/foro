@@ -21,7 +21,9 @@ service cloud.firestore {
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['u', 'ts'])
         && shortString(request.resource.data.u, 16)
-        && request.resource.data.ts is int;
+        && request.resource.data.ts is int
+        && existsAfter(/databases/$(database)/documents/usernames/$(request.resource.data.u))
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.u)).data.uid == request.auth.uid;
       allow update: if isAdmin() || (
         registered()
         && request.auth.uid == uid
