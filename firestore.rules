@@ -28,6 +28,18 @@ service cloud.firestore {
     function moderationPath(uid) {
       return /databases/$(database)/documents/moderation/$(uid);
     }
+    function hasFreshChatRateLimit(uid, messageId) {
+      let path = /databases/$(database)/documents/userRateLimits/$(uid);
+      return existsAfter(path)
+        && getAfter(path).data.lastChatAt == request.time
+        && getAfter(path).data.lastChatMessageId == messageId;
+    }
+    function hasFreshPostRateLimit(uid, postId) {
+      let path = /databases/$(database)/documents/userRateLimits/$(uid);
+      return existsAfter(path)
+        && getAfter(path).data.lastPostAt == request.time
+        && getAfter(path).data.lastPostId == postId;
+    }
     function canParticipate() {
       return signedIn() && (
         isOwner()
@@ -192,6 +204,54 @@ service cloud.firestore {
         && media.size is int
         && media.size > 0
         && media.size <= 25 * 1024 * 1024;
+    }
+
+    match /userRateLimits/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && (
+          (
+            request.resource.data.keys().hasOnly(['lastChatAt','lastChatMessageId'])
+            && request.resource.data.lastChatAt == request.time
+            && request.resource.data.lastChatMessageId is string
+            && request.resource.data.lastChatMessageId.size() > 0
+            && request.resource.data.lastChatMessageId.size() <= 150
+          )
+          || (
+            request.resource.data.keys().hasOnly(['lastPostAt','lastPostId'])
+            && request.resource.data.lastPostAt == request.time
+            && request.resource.data.lastPostId is string
+            && request.resource.data.lastPostId.size() > 0
+            && request.resource.data.lastPostId.size() <= 150
+          )
+        );
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastChatAt','lastChatMessageId'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasAll(['lastChatAt','lastChatMessageId'])
+            && resource.data.lastChatAt is timestamp
+            && resource.data.lastChatAt + duration.value(2, 's') <= request.time
+            && request.resource.data.lastChatAt == request.time
+            && request.resource.data.lastChatMessageId is string
+            && request.resource.data.lastChatMessageId.size() > 0
+            && request.resource.data.lastChatMessageId.size() <= 150
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastPostAt','lastPostId'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasAll(['lastPostAt','lastPostId'])
+            && resource.data.lastPostAt is timestamp
+            && resource.data.lastPostAt + duration.value(3, 's') <= request.time
+            && request.resource.data.lastPostAt == request.time
+            && request.resource.data.lastPostId is string
+            && request.resource.data.lastPostId.size() > 0
+            && request.resource.data.lastPostId.size() <= 150
+          )
+        );
+      allow delete: if false;
     }
 
     match /moderation/{uid} {
@@ -386,6 +446,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if verifiedMember()
         && canParticipate()
+        && hasFreshPostRateLimit(request.auth.uid, postId)
         && request.resource.data.keys().hasOnly(['tp','u','uid','x','ts'])
         && request.resource.data.uid == request.auth.uid
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -438,6 +499,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if signedIn()
         && canParticipate()
+        && hasFreshChatRateLimit(request.auth.uid, messageId)
         && request.resource.data.keys().hasOnly(['uid','u','avatarUrl','x','media','ts'])
         && request.resource.data.uid == request.auth.uid
         && shortString(request.resource.data.u, 32)
