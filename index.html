@@ -646,7 +646,7 @@ const isAdmin = () => isOwner() || ["co_owner","admin"].includes(currentStaffRol
 const isModerator = () => isAdmin() || currentStaffRole === "moderator" || !!(auth?.currentUser && MODERATORS_UID.includes(auth.currentUser.uid));
 const isStaff = () => isModerator();
 const hasStaffBadge = () => isOwner() || ["co_owner","admin","moderator","helper"].includes(currentStaffRole) || !!(auth?.currentUser && (ADMINS_UID.includes(auth.currentUser.uid) || MODERATORS_UID.includes(auth.currentUser.uid)));
-const canCreateTopicInBoard = boardId => boardId==="sug" ? hasStaffBadge() : boardId==="reglas" ? isStaff() : true;
+const canCreateTopicInBoard = boardId => boardId==="reglas" ? isStaff() : true;
 const staffTagHtml = enabled => enabled === true ? '<span class="staffBadge">[STAFF]</span>' : "";
 const canManageStaff = () => isAdmin();
 const canIssueStaffRole = role => (isOwner() && ["co_owner","admin","moderator","helper"].includes(role)) || (isAdmin() && !isOwner() && ["moderator","helper"].includes(role));
@@ -910,7 +910,6 @@ const D = {
     }
   },
   async newT(b,t,x,gallery=[]){
-    if(b==="sug"&&!hasStaffBadge())throw new Error("Solo el staff puede crear temas en Ayuda y sugerencias.");
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
     const cleanGallery=Array.isArray(gallery)?gallery.slice(0,30).map(item=>({type:item.type,url:safeHttps(item.url),caption:String(item.caption||"").slice(0,80)})):[];
@@ -1058,7 +1057,7 @@ const Demo = {
   async topic(t){return demo.t.find(x=>x.id===t)||null;},
   async ratings(t){return uniqueTopicRatings(demo.t.find(x=>x.id===t)?.ratings||[]);},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
-  async newT(b,t,x,gallery=[]){if(b==="sug"&&!hasStaffBadge())throw new Error("Solo el staff puede crear temas en Ayuda y sugerencias.");const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30):[];demo.t.push({id,b,t,u:demo.m,staffBadge:hasStaffBadge(),lastStaffBadge:hasStaffBadge(),gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:hasStaffBadge(),x,ts:n});saveDemo();return id;},
+  async newT(b,t,x,gallery=[]){const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30):[];demo.t.push({id,b,t,u:demo.m,staffBadge:hasStaffBadge(),lastStaffBadge:hasStaffBadge(),gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:hasStaffBadge(),x,ts:n});saveDemo();return id;},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
   async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
   async members(){return Object.keys(demo.u).length;},
