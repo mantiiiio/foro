@@ -115,6 +115,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
   <p><b>¿Puedo entrar sin registrarme?</b><br>Sí. El chat permite invitados anónimos; para crear temas y responder en los foros necesitas una cuenta y verificar tu correo.</p>
   <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Puedes pegar una URL HTTPS directa de una imagen o GIF en tu perfil sin activar facturación. La subida de archivos desde tu dispositivo requiere Firebase Storage.</p>
   <p><b>¿Cómo se muestran imágenes y vídeos en el chat?</b><br>Pega un enlace HTTPS directo que termine en JPG, PNG, GIF, WEBP, MP4 o WEBM. Se mostrará una vista previa cuando el servidor permita el acceso público.</p>
+  <p><b>¿Cómo funciona el token?</b><br>Es opcional y se vincula de forma permanente a la primera cuenta que lo utiliza. Cada uso lo bloquea temporalmente durante 24 horas y crea una solicitud pendiente de revisión administrativa.</p>
 </template>
 
 <script type="module">
@@ -155,6 +156,8 @@ const FB = {
 // Pega los UID reales después de crear las cuentas de staff.
 const ADMINS_UID = []; // Administradores: control total.
 const MODERATORS_UID = []; // Moderadores: moderación sin administrar cuentas ni vaciar todo el chat.
+const ACCESS_TOKEN_HASHES = ["1e95c4be34ddab9058b933e38a2d88e87d34d9ef6e068a3cc8219b26e8dd2b44"]; // Solo se guarda el hash; el token real no se publica en el código.
+const TOKEN_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 // Adjuntos del chat y fotos de perfil: requieren Firebase Storage (plan Blaze).
 const STORAGE_ENABLED = false; // Cambia a true SOLO después de activar Storage y pegar las reglas.
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -198,6 +201,13 @@ const me = () => auth?.currentUser && !auth.currentUser.isAnonymous ? (auth.curr
 const chatName = () => me() || `Invitado-${(auth?.currentUser?.uid || "0000").slice(0,5).toUpperCase()}`;
 const rank = (n,u,uid) => (uid && ADMINS_UID.includes(uid)) ? "Administrador" : (uid && MODERATORS_UID.includes(uid)) ? "Moderador" : n > 99 ? "Veterano" : n > 24 ? "Habitual" : n > 4 ? "Miembro" : "Novato";
 function safeHttps(value){try{const u=new URL(String(value||""));return u.protocol==="https:"?u.href:"";}catch{return "";}}
+async function hashAccessToken(value){
+  const normalized=String(value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(!normalized)throw new Error("Escribe el token de verificación.");
+  if(!crypto?.subtle)throw new Error("Este navegador no permite comprobar el token de forma segura.");
+  const bytes=new TextEncoder().encode(normalized),digest=await crypto.subtle.digest("SHA-256",bytes);
+  return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
 function avatar(u,size=40,url=""){const safe=safeHttps(url);if(safe)return `<img class="ava" width="${size}" height="${size}" src="${E(safe)}" alt="Avatar de ${E(u||"usuario")}" loading="lazy" style="width:${size}px;height:${size}px;object-fit:cover;border:1px solid #006699;background:#fff;flex:none">`;let h=7,s="";for(const c of String(u||"?"))h=(h*31+c.charCodeAt(0))|0;for(let i=0;i<25;i++){const x=i%5,y=i/5|0;if((h >>> (y*3+Math.min(x,4-x)))&1)s+=`<rect x="${x*8}" y="${y*8}" width="8" height="8"/>`;}return `<svg class="ava" width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true" style="background:hsl(${(h>>>0)%360},60%,40%);border:1px solid #006699;flex:none"><g fill="#fff">${s}</g></svg>`;}
 
 let app=null, auth=null, db=null, storage=null, firebaseReady=false, authReady=false, currentUser=null;
@@ -229,10 +239,47 @@ const D = {
       throw e;
     }
   },
-  async login(identifier,p){
+  async login(identifier,p,token=""){
     const value=identifier.trim().toLowerCase();
     const email=value.includes("@")?value:`${value}@foro.local`;
     await signInWithEmailAndPassword(auth,email,p);
+    if(String(token||"").trim()){
+      try{await D.claimAccessToken(token);}
+      catch(e){try{await signOut(auth);await signInAnonymously(auth);}catch{}throw e;}
+    }
+  },
+  async claimAccessToken(raw){
+    const user=auth.currentUser;
+    if(!user||user.isAnonymous)throw new Error("Inicia sesión con tu cuenta antes de usar el token.");
+    const hash=await hashAccessToken(raw);
+    if(!ACCESS_TOKEN_HASHES.includes(hash))throw new Error("Token incorrecto o no habilitado.");
+    const tokenRef=doc(db,"accessTokens",hash),now=Date.now();
+    await runTransaction(db,async tx=>{
+      const snap=await tx.get(tokenRef);
+      const disabledUntil=new Date(now+TOKEN_COOLDOWN_MS-60000);
+      if(!snap.exists()){
+        tx.set(tokenRef,{ownerUid:user.uid,status:"pending",claimedAt:new Date(now),disabledUntil,uses:1});
+        return;
+      }
+      const data=snap.data();
+      if(data.ownerUid!==user.uid)throw new Error("Este token ya está vinculado a otra cuenta y no se puede transferir.");
+      if(data.status==="pending")throw new Error("Tu token ya está pendiente de revisión administrativa.");
+      const until=data.disabledUntil?.toDate?data.disabledUntil.toDate().getTime():new Date(data.disabledUntil||0).getTime();
+      if(until>now)throw new Error("Token temporalmente inhabilitado hasta "+dt(until)+".");
+      if(!["approved","rejected"].includes(data.status))throw new Error("El token no está habilitado. Contacta al administrador.");
+      tx.update(tokenRef,{status:"pending",claimedAt:new Date(now),disabledUntil,uses:(Number(data.uses)||1)+1,reviewedAt:null,reviewedBy:null});
+    });
+    return true;
+  },
+  async tokenRequests(){
+    if(!isAdmin())throw new Error("Solo el administrador puede revisar tokens.");
+    const s=await getDocs(query(collection(db,"accessTokens"),orderBy("claimedAt","desc"),limit(100)));
+    return s.docs.map(d=>({id:d.id,...d.data()}));
+  },
+  async reviewAccessToken(hash,status){
+    if(!isAdmin())throw new Error("Solo el administrador puede verificar tokens.");
+    if(!["approved","rejected"].includes(status))throw new Error("Estado de verificación inválido.");
+    await updateDoc(doc(db,"accessTokens",hash),{status,reviewedAt:new Date(),reviewedBy:auth.currentUser.uid});
   },
   async resetPassword(email){
     if(!email||!email.includes("@"))throw new Error("Escribe el correo real asociado a tu cuenta.");
@@ -358,7 +405,7 @@ function neu(m,id){
 }
 function frm(m,a,r){
   const rg=r==="reg";
-  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · verifica tu correo":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
+  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${!rg&&configured?`<tr><td class="b">Token de verificación (opcional)</td><td><input id="accessToken" type="text" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"><br><small>Se vincula a tu cuenta, queda pendiente de revisión y se bloquea 24 horas.</small></td></tr>`:""}${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · verifica tu correo":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
   $("#lf").onsubmit=async e=>{
     e.preventDefault();const p=$("#pw").value,er=$("#er");er.className="err";
     try{
@@ -373,8 +420,10 @@ function frm(m,a,r){
       }else{
         const identity=$("#identity").value.trim();
         if(!identity.includes("@")&&!/^[a-z0-9_]{3,16}$/i.test(identity))return er.textContent="Introduce tu correo o el usuario de una cuenta antigua.";
-        await Store.login(identity,p);
+        const token=$("#accessToken")?.value.trim()||"";
+        await Store.login(identity,p,token);
         location.hash="#/";
+        if(token)alert("Token vinculado a tu cuenta. Quedó pendiente de revisión administrativa y estará temporalmente inhabilitado durante 24 horas.");
       }
     }catch(z){er.textContent=errText(z);}
   };
@@ -397,6 +446,24 @@ async function prf(m,u){
   }
 }
 function faq(m){m.innerHTML=`<table><tr><th>FAQ / Ayuda</th></tr><tr><td>${$("#faqt").innerHTML}</td></tr></table>`;}
+async function tokenPanel(m){
+  if(!isAdmin()){
+    m.innerHTML=`<section class="notice"><b>Zona exclusiva del administrador.</b><p>Tu cuenta debe estar configurada en <code>ADMINS_UID</code> y en las reglas de Firestore para poder revisar tokens.</p></section>`;
+    return;
+  }
+  try{
+    const requests=await Store.tokenRequests();
+    const rows=await Promise.all(requests.map(async item=>({item,profile:await Store.profByUid(item.ownerUid)})));
+    m.innerHTML=`<p><b>Verificación de tokens</b></p><section class="notice">Cada token queda vinculado a una sola cuenta. Después de usarlo se bloquea durante 24 horas. Aprueba o rechaza las solicitudes pendientes.</section><table><tr><th>Cuenta</th><th>Estado</th><th>Último uso</th><th>Desbloqueo</th><th>Usos</th><th>Revisión</th></tr>${rows.map(({item,profile})=>`<tr><td><b>${E(profile?.u||"Cuenta")}</b><br><small>${E(item.ownerUid)}</small></td><td>${E(item.status||"")}</td><td><small>${E(dt(item.claimedAt))}</small></td><td><small>${E(dt(item.disabledUntil))}</small></td><td class="c">${Number(item.uses)||1}</td><td>${item.status==="pending"?`<button type="button" data-token-review="approved" data-token-id="${E(item.id)}">Aprobar</button> <button type="button" data-token-review="rejected" data-token-id="${E(item.id)}">Rechazar</button>`:`<small>Sin acciones</small>`}</td></tr>`).join("")||`<tr><td colspan="6">Todavía no hay solicitudes de tokens.</td></tr>`}</table><p><a href="#/">Volver al foro</a></p>`;
+    m.querySelectorAll("[data-token-review]").forEach(button=>button.addEventListener("click",async()=>{
+      const status=button.dataset.tokenReview,hash=button.dataset.tokenId;
+      if(!confirm(status==="approved"?"¿Aprobar esta solicitud?":"¿Rechazar esta solicitud?"))return;
+      button.disabled=true;
+      try{await Store.reviewAccessToken(hash,status);await tokenPanel(m);}
+      catch(e){alert(errText(e));button.disabled=false;}
+    }));
+  }catch(e){m.innerHTML=`<span class="err">${E(errText(e))}</span>`;}
+}
 function setup(m){
   m.innerHTML=`<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>${firebaseReady?"Firebase conectado":"Firebase pendiente de configurar"}</b><br>${firebaseReady?"La aplicación ya inició sesión con Firebase. El acceso al foro depende de las reglas publicadas.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio."}</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta verificada para publicar en los foros.</li><li>El administrador se asigna de forma segura por UID en <code>ADMINS_UID</code> y en las reglas de Firestore.</li></ol><p><b>Archivos y avatares:</b> actualmente están desactivados. Para habilitarlos debes crear el bucket de Firebase Storage, publicar <code>storage.rules</code> y activar <code>STORAGE_ENABLED</code>. Firebase requiere el plan Blaze para utilizar Storage; puede generar cargos según el uso.</p></td></tr></table>`;
 }
@@ -420,12 +487,12 @@ function renderAccountNotice(){
   });
 }
 async function out(){await Store.out();location.hash="#/";}
-const ROUTES={"":idx,b:brd,t:thr,n:neu,login:frm,reg:frm,out,setup,faq,u:prf};
+const ROUTES={"":idx,b:brd,t:thr,n:neu,login:frm,reg:frm,out,setup,faq,u:prf,tokens:tokenPanel};
 async function go(){
   const parts=location.hash.replace(/^#\/?/,"").split("/"),r=parts[0]||"",a=parts.slice(1).join("/");
   const m=$("#m");
   renderAccountNotice();
-  $("#nav").innerHTML=`🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> `+(Store.me()?`👤 <b><a href="#/u/${encodeURIComponent(Store.me())}">${E(Store.me())}</a></b> 🚪 <a href="#/out">Salir</a>`:`🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>`)+` <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>`;
+  $("#nav").innerHTML=`🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> `+(Store.me()?`👤 <b><a href="#/u/${encodeURIComponent(Store.me())}">${E(Store.me())}</a></b> 🚪 <a href="#/out">Salir</a>`:`🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>`)+(isAdmin()?` 🛡 <a href="#/tokens">Verificar tokens</a>`:"")+` <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>`;
   m.innerHTML="Cargando...";$("#ann").hidden=!!r;
   try{await (ROUTES[r]||idx)(m,a,r);}catch(z){m.innerHTML=`<span class="err">Error: ${E(errText(z))}</span><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>`;}
 }
