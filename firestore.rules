@@ -11,10 +11,6 @@ service cloud.firestore {
     function isAdmin() { return isOwner() || hasStaffRole('co_owner') || hasStaffRole('admin'); }
     function isModerator() { return isAdmin() || hasStaffRole('moderator'); }
     function isStaff() { return isModerator(); }
-    // Todo rol reconocido por el sistema de personal puede crear temas en Ayuda y sugerencias.
-    function isForumStaff() {
-      return isOwner() || (signedIn() && exists(/databases/$(database)/documents/staff/$(request.auth.uid)));
-    }
     function canManageStaff() { return isAdmin(); }
     function canIssueStaffRole(role) {
       return (isOwner() && role in ['co_owner','admin','moderator','helper'])
@@ -452,8 +448,7 @@ service cloud.firestore {
         && request.resource.data.n == 0
         && request.resource.data.ts is int
         && request.resource.data.lr is int
-        && (request.resource.data.b != 'reglas' || isStaff())
-        && (request.resource.data.b != 'sug' || isForumStaff());
+        && (request.resource.data.b != 'reglas' || isStaff());
       allow update: if isAdmin() || (
         isModerator()
         && resource.data.b != 'reglas'
