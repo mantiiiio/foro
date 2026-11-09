@@ -792,6 +792,7 @@ function inferExternalMediaKind(url){
     "images.ctfassets.net","cdn.statically.io"
   ];
   if(imageHosts.some(domain=>host===domain||host.endsWith("."+domain)))return "image";
+  if(host.startsWith("media")&&host.endsWith(".giphy.com"))return "image";
   if(host==="res.cloudinary.com"&&path.includes("/image/upload/"))return "image";
   if((host==="cdn.discordapp.com"||host==="media.discordapp.net")&&path.includes("/attachments/")){
     if(/\.(jpe?g|png|gif|webp|avif)$/i.test(path))return "image";
@@ -862,7 +863,7 @@ function renderExternalUrlPreview(rawUrl){
 
   const kind=inferExternalMediaKind(url);
   if(kind==="image"&&url.protocol==="https:"){
-    return '<a class="cmImageLink" href="'+href+'" target="_blank" rel="nofollow noopener noreferrer"><img class="cmmedia" src="'+href+'" alt="Imagen o GIF externo · '+host+'" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest(\\'.cmImageLink\\').classList.add(\\'cmImageFailed\\');this.remove()"></a>';
+    return '<a class="cmImageLink" href="'+href+'" target="_blank" rel="nofollow noopener noreferrer"><img class="cmmedia" src="'+href+'" alt="Imagen o GIF externo · '+host+'" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest(&#39;.cmImageLink&#39;).classList.add(&#39;cmImageFailed&#39;);this.remove()"></a>';
   }
   if(kind==="video"&&url.protocol==="https:"){
     return '<video class="cmvideo" controls playsinline preload="metadata"><source src="'+href+'"></video><div class="cmExternalLink"><a href="'+href+'" target="_blank" rel="nofollow noopener noreferrer">Abrir vídeo en '+host+'</a></div>';
