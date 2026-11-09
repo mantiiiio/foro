@@ -420,6 +420,13 @@ const $ = s => document.querySelector(s);
 const BL = BOARDS.flatMap(c => c[1]);
 const E = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dt = t => { const d = typeof t === "number" ? new Date(t) : t?.toDate ? t.toDate() : new Date(t); return Number.isNaN(d.getTime()) ? "fecha desconocida" : d.toLocaleString("es-UY", {dateStyle:"medium",timeStyle:"short"}); };
+function isModerationContentHidden(item){
+  if(item?.moderationHidden!==true)return false;
+  const raw=item.moderationHiddenUntil;
+  if(raw==null)return true;
+  const until=raw?.toDate?raw.toDate():raw instanceof Date?raw:new Date(raw);
+  return !Number.isFinite(until.getTime())||until.getTime()>Date.now();
+}
 const fmt = s => String(s ?? "").split("\n").map(line => {
   const escaped = E(line);
   const safeLine = escaped.startsWith("&gt;") ? '<span class="q">' + escaped + "</span>" : escaped;
@@ -882,10 +889,10 @@ const D = {
     return {verified:auth.currentUser.emailVerified,grantedRole};
   },
   async out(){await signOut(auth);await signInAnonymously(auth);},
-  async topics(){try{const s=await getDocs(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()}));}catch(error){throw new Error("No se pudieron leer los temas (topics): "+(error.code||error.message||"error desconocido"));}},
-  async topicsByBoard(boardId){try{const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas de la categoría "+boardId+": "+(error.code||error.message||"error desconocido"));}},
-  async posts(t){try{const s=await getDocs(query(collection(db,"posts"),where("tp","==",t)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.ts||0)-(b.ts||0));}catch(error){throw new Error("No se pudieron leer las publicaciones del tema: "+(error.code||error.message||"error desconocido"));}},
-  async topic(t){try{const s=await getDoc(doc(db,"topics",t));return s.exists()?{id:s.id,...s.data()}:null;}catch(error){throw new Error("No se pudo leer el tema: "+(error.code||error.message||"error desconocido"));}},
+  async topics(){try{const s=await getDocs(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item));}catch(error){throw new Error("No se pudieron leer los temas (topics): "+(error.code||error.message||"error desconocido"));}},
+  async topicsByBoard(boardId){try{const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas de la categoría "+boardId+": "+(error.code||error.message||"error desconocido"));}},
+  async posts(t){try{const s=await getDocs(query(collection(db,"posts"),where("tp","==",t)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(a.ts||0)-(b.ts||0));}catch(error){throw new Error("No se pudieron leer las publicaciones del tema: "+(error.code||error.message||"error desconocido"));}},
+  async topic(t){try{const s=await getDoc(doc(db,"topics",t));if(!s.exists())return null;const item={id:s.id,...s.data()};return isModerationContentHidden(item)?null:item;}catch(error){throw new Error("No se pudo leer el tema: "+(error.code||error.message||"error desconocido"));}},
   async ratings(t){try{const s=await getDocs(collection(db,"topics",t,"ratings"));return uniqueTopicRatings(s.docs.map(d=>({id:d.id,...d.data(),uid:d.data().uid||d.id})));}catch(error){console.warn("No se pudieron cargar las valoraciones; se mostrarán sin votos.",error);return []; }},
   async rateTopic(t,stars){
     requireRegisteredMember("valorar este tema");await assertCurrentUserNotBanned();
@@ -961,6 +968,19 @@ const D = {
     });
     return result;
   },
+  async setModeratedContentVisibility(uid,hidden,until=null){
+    const collections=["topics","posts","chatMessages"];
+    for(const collectionName of collections){
+      const snapshot=await getDocs(query(collection(db,collectionName),where("uid","==",uid)));
+      for(let offset=0;offset<snapshot.docs.length;offset+=400){
+        const batch=writeBatch(db);
+        snapshot.docs.slice(offset,offset+400).forEach(item=>{
+          batch.update(item.ref,{moderationHidden:!!hidden,moderationHiddenUntil:hidden?(until||null):null});
+        });
+        await batch.commit();
+      }
+    }
+  },
   async banUser(uid,type,reason,durationMs=0){
     if(!isStaff())throw new Error("No tienes permiso para banear.");
     if(uid===OWNER_UID||uid===auth.currentUser.uid)throw new Error("No puedes banear esta cuenta.");
@@ -969,18 +989,22 @@ const D = {
     if(type==="permanent"&&!isAdmin())throw new Error("Solo un administrador puede aplicar un ban permanente manual.");
     const clean=String(reason||"").trim().slice(0,240);if(clean.length<3)throw new Error("Escribe un motivo de al menos 3 caracteres.");
     if(type==="temporary"&&(!Number.isFinite(durationMs)||durationMs<60000||durationMs>30*86400000))throw new Error("Duración temporal no válida.");
+    const banUntil=type==="temporary"?new Date(Date.now()+durationMs):null;
     const ref=doc(db,"moderation",uid);
     await runTransaction(db,async tx=>{
       const snap=await tx.get(ref),before=snap.exists()?snap.data():{warnings:[],warningCount:0};
       const warnings=Array.isArray(before.warnings)?before.warnings.slice(0,3):[];
-      const data={warnings,warningCount:warnings.length,status:type,banUntil:type==="temporary"?new Date(Date.now()+durationMs):null,banReason:clean,updatedAt:Date.now(),lastActionBy:auth.currentUser.uid};
+      const data={warnings,warningCount:warnings.length,status:type,banUntil,banReason:clean,updatedAt:Date.now(),lastActionBy:auth.currentUser.uid};
       tx.set(ref,data);
     });
+    // Oculta en todo el foro el contenido publicado por la cuenta suspendida.
+    await D.setModeratedContentVisibility(uid,true,banUntil);
   },
   async unbanUser(uid){
     if(!isAdmin())throw new Error("Solo un administrador puede levantar un ban.");
     if(uid===OWNER_UID||uid===auth.currentUser.uid)throw new Error("No puedes modificar esta cuenta.");
     await setDoc(doc(db,"moderation",uid),{warnings:[],warningCount:0,status:"active",banUntil:null,banReason:"",updatedAt:Date.now(),lastActionBy:auth.currentUser.uid});
+    await D.setModeratedContentVisibility(uid,false,null);
   },
   async updateAvatar(file){
     requireVerifiedMember("cambiar tu foto de perfil");
@@ -2028,7 +2052,7 @@ function subscribeChat(){
   const q=query(collection(db,"chatMessages"),orderBy("ts","desc"),limit(CHAT_LIMIT));
   $("#chatState").textContent="CONECTANDO AL CHAT...";
   chatUnsub=onSnapshot(q,s=>{
-    chatCache=s.docs.map(d=>({id:d.id,...d.data()})).reverse();
+    chatCache=s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).reverse();
     renderChat(chatCache);
     $("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;
   },e=>{
