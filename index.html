@@ -233,9 +233,19 @@ const saveDemo = () => localStorage.setItem("mantipobres_demo",JSON.stringify(de
 // API de datos: Firebase real. Si todavía no configuraste FB, se muestra una demo local.
 const D = {
   me,
-  async reg(n,email,p){
+  async reg(n,email,p,inviteToken=""){
     const cred=await createUserWithEmailAndPassword(auth,email,p);
     try{
+      const cleanToken=String(inviteToken||"").trim();
+      if(cleanToken){
+        const inviteHash=await hashAccessToken(cleanToken);
+        const inviteSnap=await getDoc(doc(db,"staffInvites",inviteHash));
+        if(!inviteSnap.exists())throw new Error("La invitación no existe o fue revocada.");
+        const invite=inviteSnap.data();
+        const expires=invite.expiresAt?.toDate?invite.expiresAt.toDate().getTime():new Date(invite.expiresAt||0).getTime();
+        if(invite.status!=="available"||!expires||expires<=Date.now())throw new Error("La invitación ya se usó, fue revocada o venció.");
+        if(!Object.prototype.hasOwnProperty.call(STAFF_ROLE_LABELS,invite.role))throw new Error("La invitación no tiene un rol válido.");
+      }
       await updateProfile(cred.user,{displayName:n});
       await sendEmailVerification(cred.user);
       const now=Date.now(),userRef=doc(db,"users",cred.user.uid),handleRef=doc(db,"usernames",n);
@@ -245,6 +255,10 @@ const D = {
         tx.set(userRef,{u:n,ts:now,rulesAcceptedAt:now});
         tx.set(handleRef,{u:n,uid:cred.user.uid,ts:now});
       });
+      if(cleanToken){
+        try{sessionStorage.setItem("mp_pending_staff_invite_"+cred.user.uid,cleanToken);}
+        catch(e){console.warn("No se pudo conservar la invitación en esta pestaña; podrás volver a pegarla al entrar.",e);}
+      }
     }catch(e){
       try{await deleteUser(cred.user);}catch(cleanupError){console.warn("No se pudo retirar la cuenta incompleta",cleanupError);}
       throw e;
@@ -282,14 +296,16 @@ const D = {
     currentStaffRole=grantedRole;updateAdminUI();
     return grantedRole;
   },
-  async createStaffInvite(role){
+  async createStaffInvite(role,description){
     if(!canIssueStaffRole(role))throw new Error("No tienes permiso para generar invitaciones de ese rol.");
+    const purpose=String(description||"").trim();
+    if(purpose.length<3||purpose.length>140)throw new Error("Describe el propósito del token (3 a 140 caracteres).");
     const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",bytes=new Uint8Array(24);
     crypto.getRandomValues(bytes);
     const raw=Array.from(bytes,b=>alphabet[b%alphabet.length]).join("");
     const token="MP-"+raw.match(/.{1,4}/g).join("-");
     const hash=await hashAccessToken(token),inviteRef=doc(db,"staffInvites",hash);
-    await setDoc(inviteRef,{role,status:"available",createdBy:auth.currentUser.uid,createdAt:serverTimestamp(),expiresAt:new Date(Date.now()+7*24*60*60*1000)});
+    await setDoc(inviteRef,{role,description:purpose,status:"available",createdBy:auth.currentUser.uid,createdAt:serverTimestamp(),expiresAt:new Date(Date.now()+7*24*60*60*1000)});
     return token;
   },
   async listStaffInvites(){
@@ -328,7 +344,18 @@ const D = {
     if(!user||user.isAnonymous)throw new Error("No hay una cuenta registrada abierta.");
     await reload(user);
     await getIdToken(auth.currentUser,true);
-    return auth.currentUser.emailVerified;
+    let grantedRole="";
+    if(auth.currentUser.emailVerified){
+      const key="mp_pending_staff_invite_"+auth.currentUser.uid;
+      let pending="";
+      try{pending=sessionStorage.getItem(key)||"";}catch{}
+      if(pending){
+        grantedRole=await D.claimStaffInvite(pending);
+        try{sessionStorage.removeItem(key);}catch{}
+        await loadCurrentStaffRole(auth.currentUser);
+      }
+    }
+    return {verified:auth.currentUser.emailVerified,grantedRole};
   },
   async out(){await signOut(auth);await signInAnonymously(auth);},
   async topics(){const s=await getDocs(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()}));},
