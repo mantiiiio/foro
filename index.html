@@ -937,7 +937,9 @@ function clearRouteLive(){
   routeLiveUnsubs.splice(0).forEach(unsubscribe=>{try{unsubscribe();}catch{}});
   if(routeRefreshTimer){clearTimeout(routeRefreshTimer);routeRefreshTimer=null;}
 }
+let contentOnlyRenderId=null;
 function watchRouteData(reference,renderId){
+  if(contentOnlyRenderId===renderId)return;
   let firstSnapshot=true;
   const unsubscribe=onSnapshot(reference,()=>{
     if(firstSnapshot){firstSnapshot=false;return;}
@@ -945,11 +947,34 @@ function watchRouteData(reference,renderId){
     if(routeRefreshTimer)clearTimeout(routeRefreshTimer);
     routeRefreshTimer=setTimeout(()=>{
       routeRefreshTimer=null;
-      if(renderId===routeRenderId)go();
+      if(renderId===routeRenderId)refreshRouteContent(renderId);
     },120);
   },error=>console.error("No se pudo actualizar la vista en vivo:",error));
   if(renderId===routeRenderId)routeLiveUnsubs.push(unsubscribe);
   else unsubscribe();
+}
+async function refreshRouteContent(expectedRenderId=routeRenderId){
+  const routeKey=location.hash||"#/";
+  if(expectedRenderId!==routeRenderId||routeKey!==activeRouteKey)return;
+  const parts=routeKey.replace(/^#\\/?/,"").split("/");
+  const routeName=parts[0]||"",arg=parts.slice(1).join("/");
+  const renderer=ROUTES[routeName]||idx,m=$("#m");
+  if(!m)return;
+  const y=window.scrollY||0,drafts={};
+  ["rx","ti","tx"].forEach(id=>{const field=$("#"+id);if(field)drafts[id]=field.value;});
+  const active=document.activeElement,activeId=active?.id||"";
+  let selection=null;
+  try{if(active&&typeof active.selectionStart==="number")selection=[active.selectionStart,active.selectionEnd];}catch{}
+  const previous=contentOnlyRenderId;
+  contentOnlyRenderId=expectedRenderId;
+  try{
+    await renderer(m,arg,routeName);
+    if(expectedRenderId!==routeRenderId)return;
+    Object.entries(drafts).forEach(([id,value])=>{const field=$("#"+id);if(field)field.value=value;});
+    if(activeId){const field=$("#"+activeId);if(field){field.focus({preventScroll:true});if(selection&&typeof field.setSelectionRange==="function")field.setSelectionRange(selection[0],selection[1]);}}
+    requestAnimationFrame(()=>{if(expectedRenderId===routeRenderId)window.scrollTo(0,y);});
+  }catch(error){console.error("No se pudo actualizar el contenido de la vista:",error);}
+  finally{if(contentOnlyRenderId===expectedRenderId)contentOnlyRenderId=previous;}
 }
 let activeRouteKey=location.hash||"#/";
 let routeRenderId=0;
