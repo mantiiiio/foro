@@ -1804,6 +1804,13 @@ async function go(){
   }catch(z){
     if(renderId!==routeRenderId)return;
     console.error("Error al cargar la ruta "+routeKey,z);
+    if(firebaseReady&&isRegisteredMember()&&(z?.code==="permission-denied"||z?.code==="firestore/permission-denied")){
+      stopChatSubscription();
+      setSuspendedShell(true);
+      m.innerHTML='<div class="moderationLoading"><b>Verificando el acceso de tu cuenta...</b><p>Por seguridad, los foros, enlaces, archivos y el chat quedan ocultos mientras se comprueba la moderación.</p></div>';
+      refreshOwnModerationFromServer();
+      return;
+    }
     // Un visitante sin sesión no debe ver un error de reglas: necesita iniciar sesión.
     if(firebaseReady&&!isRegisteredMember()&&(z?.code==="permission-denied"||z?.code==="firestore/permission-denied")){
       m.innerHTML='<section class="notice"><h2>🔒 ¡Ve todo iniciando sesión!</h2><p>Inicia sesión o crea una cuenta gratis para acceder a los temas, comentarios, imágenes, enlaces, archivos y al chat.</p><p><a class="bt" href="#/login">Entrar a mi cuenta</a> <a class="bt" href="#/reg">Registrarme gratis</a></p></section>';
