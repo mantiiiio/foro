@@ -1,5 +1,12 @@
 {
   "projects": {
     "default": "foro-66dd5"
+  },
+  "targets": {
+    "foro-66dd5": {
+      "hosting": {
+        "main": ["mantipobres"]
+      }
+    }
   }
 }
