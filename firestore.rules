@@ -59,7 +59,7 @@ service cloud.firestore {
         && existsAfter(/databases/$(database)/documents/usernames/$(request.resource.data.u))
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.u)).data.uid == request.auth.uid;
       allow update: if (
-        verifiedMember()
+        registered()
         && request.auth.uid == uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avatarUrl', 'avatarPath'])
         && request.resource.data.avatarUrl is string
@@ -232,7 +232,7 @@ service cloud.firestore {
         )
         && (request.resource.data.x.size() > 0 || request.resource.data.media is map)
         && request.resource.data.media == null
-        && (!containsLink(request.resource.data.x) || verifiedMember());
+        && (!containsLink(request.resource.data.x) || registered());
       allow update: if false;
       allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
