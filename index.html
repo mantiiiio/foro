@@ -356,7 +356,6 @@ function autoModerationReason(text,channel="chat"){
   const recent=state.filter(item=>now-item.at<60000);
   if(recent.some(item=>item.text===norm))return "duplicate";
   if(channel==="chat"&&recent.filter(item=>now-item.at<12000).length>=5)return "flood";
-  autoModActivity.set(uid,recent);
   return "";
 }
 async function assertCurrentUserNotBanned(){
