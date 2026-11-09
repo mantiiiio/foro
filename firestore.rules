@@ -134,7 +134,7 @@ service cloud.firestore {
         )
         && (request.resource.data.x.size() > 0 || request.resource.data.media is map);
       allow update: if false;
-      allow delete: if isStaff() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
   }
 }
