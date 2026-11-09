@@ -66,55 +66,84 @@ service cloud.firestore {
     }
 
 
-    // Tokens de verificación: un token solo puede vincularse a un UID.
-    // El ID del documento es SHA-256 del token; el token original nunca se almacena.
+    // El sistema anterior de tokens genéricos quedó retirado permanentemente.
     match /accessTokens/{tokenHash} {
-      allow get: if signedIn() && (
-        isAdmin()
-        || !exists(/databases/$(database)/documents/accessTokens/$(tokenHash))
-        || resource.data.ownerUid == request.auth.uid
-      );
-      allow list: if isAdmin();
+      allow read, write: if false;
+    }
 
-      allow create: if registered()
-        && tokenHash == '1e95c4be34ddab9058b933e38a2d88e87d34d9ef6e068a3cc8219b26e8dd2b44'
-        && request.resource.data.keys().hasOnly(['ownerUid','status','claimedAt','disabledUntil','uses'])
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.status == 'pending'
-        && request.resource.data.claimedAt is timestamp
-        && request.resource.data.disabledUntil is timestamp
-        && request.resource.data.disabledUntil > request.time
-        && request.resource.data.disabledUntil <= request.time + duration.value(24, 'h')
-        && request.resource.data.uses == 1;
+    function isOwner() {
+      return signedIn() && request.auth.uid == 'PEGA_AQUI_TU_UID_ADMIN';
+    }
+    function hasStaffRole(role) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
+        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == role;
+    }
+    function isAdmin() { return isOwner() || hasStaffRole('co_owner') || hasStaffRole('admin'); }
+    function isModerator() { return isAdmin() || hasStaffRole('moderator'); }
+    function isStaff() { return isModerator(); }
+    function canManageStaff() { return isAdmin(); }
+    function canIssueStaffRole(role) {
+      return (isOwner() && role in ['co_owner','admin','moderator','helper'])
+        || (isAdmin() && !isOwner() && role in ['moderator','helper']);
+    }
+    function canManageInviteRole(role) {
+      return isOwner() || (isAdmin() && role in ['moderator','helper']);
+    }
 
+    // Roles persistentes: nadie puede otorgarse un rol sin una invitación válida.
+    match /staff/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || canManageStaff());
+      allow list: if canManageStaff();
+      allow create: if verifiedMember()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['role','grantedAt','grantedBy','inviteHash'])
+        && request.resource.data.role in ['co_owner','admin','moderator','helper']
+        && request.resource.data.grantedAt is timestamp
+        && request.resource.data.grantedBy is string
+        && request.resource.data.inviteHash is string
+        && existsAfter(/databases/$(database)/documents/staffInvites/$(request.resource.data.inviteHash))
+        && getAfter(/databases/$(database)/documents/staffInvites/$(request.resource.data.inviteHash)).data.status == 'used'
+        && getAfter(/databases/$(database)/documents/staffInvites/$(request.resource.data.inviteHash)).data.claimedBy == request.auth.uid
+        && getAfter(/databases/$(database)/documents/staffInvites/$(request.resource.data.inviteHash)).data.role == request.resource.data.role
+        && getAfter(/databases/$(database)/documents/staffInvites/$(request.resource.data.inviteHash)).data.createdBy == request.resource.data.grantedBy;
+      allow update: if false;
+      allow delete: if isOwner() || (isAdmin() && resource.data.role in ['moderator','helper']);
+    }
+
+    // Solo el personal administrador emite invitaciones. El ID del documento es SHA-256 del código.
+    match /staffInvites/{tokenHash} {
+      allow get: if signedIn();
+      allow list: if canManageStaff();
+      allow create: if canIssueStaffRole(request.resource.data.role)
+        && request.resource.data.keys().hasOnly(['role','status','createdBy','createdAt','expiresAt'])
+        && request.resource.data.role in ['co_owner','admin','moderator','helper']
+        && request.resource.data.status == 'available'
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(7, 'd');
       allow update: if (
-        isAdmin()
-        && resource.data.status == 'pending'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedAt','reviewedBy'])
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.status in ['approved','rejected']
-        && request.resource.data.reviewedAt is timestamp
-        && request.resource.data.reviewedBy == request.auth.uid
+        verifiedMember()
+        && resource.data.status == 'available'
+        && resource.data.expiresAt > request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','claimedBy','claimedAt'])
+        && request.resource.data.status == 'used'
+        && request.resource.data.claimedBy == request.auth.uid
+        && request.resource.data.claimedAt == request.time
+        && existsAfter(/databases/$(database)/documents/staff/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/staff/$(request.auth.uid)).data.inviteHash == tokenHash
+        && getAfter(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == resource.data.role
       ) || (
-        registered()
-        && tokenHash == '1e95c4be34ddab9058b933e38a2d88e87d34d9ef6e068a3cc8219b26e8dd2b44'
-        && resource.data.ownerUid == request.auth.uid
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && resource.data.status in ['approved','rejected']
-        && resource.data.disabledUntil is timestamp
-        && resource.data.disabledUntil <= request.time
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','claimedAt','disabledUntil','uses','reviewedAt','reviewedBy'])
-        && request.resource.data.status == 'pending'
-        && request.resource.data.claimedAt is timestamp
-        && request.resource.data.disabledUntil is timestamp
-        && request.resource.data.disabledUntil > request.time
-        && request.resource.data.disabledUntil <= request.time + duration.value(24, 'h')
-        && request.resource.data.uses == resource.data.uses + 1
-        && request.resource.data.reviewedAt == null
-        && request.resource.data.reviewedBy == null
+        canManageInviteRole(resource.data.role)
+        && resource.data.status == 'available'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','revokedBy','revokedAt'])
+        && request.resource.data.status == 'revoked'
+        && request.resource.data.revokedBy == request.auth.uid
+        && request.resource.data.revokedAt == request.time
       );
-
-      allow delete: if isAdmin();
+      allow delete: if canManageInviteRole(resource.data.role);
     }
 
     match /topics/{topicId} {

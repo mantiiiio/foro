@@ -2,13 +2,17 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() { return request.auth != null; }
-    function isAdmin() {
-      return signedIn() && request.auth.uid in ['PEGA_AQUI_TU_UID_ADMIN'];
+    function isOwner() {
+      return signedIn() && request.auth.uid == 'PEGA_AQUI_TU_UID_ADMIN';
     }
-    function isModerator() {
-      return signedIn() && request.auth.uid in ['PEGA_AQUI_TU_UID_MODERADOR'];
+    function hasStaffRole(role) {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/staff/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/staff/$(request.auth.uid)).data.role == role;
     }
-    function isStaff() { return isAdmin() || isModerator(); }
+    function isAdmin() { return isOwner() || hasStaffRole('co_owner') || hasStaffRole('admin'); }
+    function isModerator() { return isAdmin() || hasStaffRole('moderator'); }
+    function isStaff() { return isModerator(); }
 
     match /chat/{uid}/{fileName} {
       allow read: if true;

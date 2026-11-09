@@ -115,7 +115,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
   <p><b>¿Puedo entrar sin registrarme?</b><br>Sí. El chat permite invitados anónimos; para crear temas y responder en los foros necesitas una cuenta y verificar tu correo.</p>
   <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Puedes pegar una URL HTTPS directa de una imagen o GIF en tu perfil sin activar facturación. La subida de archivos desde tu dispositivo requiere Firebase Storage.</p>
   <p><b>¿Cómo se muestran imágenes y vídeos en el chat?</b><br>Pega un enlace HTTPS directo que termine en JPG, PNG, GIF, WEBP, MP4 o WEBM. Se mostrará una vista previa cuando el servidor permita el acceso público.</p>
-  <p><b>¿Cómo funciona el token?</b><br>Es opcional y se vincula de forma permanente a la primera cuenta que lo utiliza. Cada uso lo bloquea temporalmente durante 24 horas y crea una solicitud pendiente de revisión administrativa.</p>
+  <p><b>¿Cómo funcionan las invitaciones del staff?</b><br>Solo el propietario, co-owner o administrador puede generarlas desde Administración. Cada invitación concede un único rol a una cuenta con correo verificado, se usa una sola vez y queda bloqueada permanentemente. Las invitaciones vencen a los 7 días si nadie las utiliza.</p>
 </template>
 
 <script type="module">
@@ -134,7 +134,7 @@ import {
   sendPasswordResetEmail, reload, deleteUser, getIdToken
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc,
+  getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, serverTimestamp,
   updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot,
   writeBatch, increment, runTransaction
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
@@ -153,11 +153,11 @@ const FB = {
   appId: "1:228134558657:web:3c41529373384e9f582d40",
   measurementId: "G-NC7LRR4M1F"
 };
-// Pega los UID reales después de crear las cuentas de staff.
-const ADMINS_UID = []; // Administradores: control total.
-const MODERATORS_UID = []; // Moderadores: moderación sin administrar cuentas ni vaciar todo el chat.
-const ACCESS_TOKEN_HASHES = ["1e95c4be34ddab9058b933e38a2d88e87d34d9ef6e068a3cc8219b26e8dd2b44"]; // Solo se guarda el hash; el token real no se publica en el código.
-const TOKEN_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+// Configura tu UID como propietario del foro. No uses tokens para conceder el rol de propietario.
+const OWNER_UID = "PEGA_AQUI_TU_UID_ADMIN";
+const ADMINS_UID = []; // Compatibilidad para administradores antiguos; los nuevos roles se guardan en Firestore.
+const MODERATORS_UID = []; // Compatibilidad para moderadores antiguos.
+const STAFF_ROLE_LABELS = {co_owner:"Co-owner",admin:"Administrador",moderator:"Moderador",helper:"Ayudante"};
 // Adjuntos del chat y fotos de perfil: requieren Firebase Storage (plan Blaze).
 const STORAGE_ENABLED = false; // Cambia a true SOLO después de activar Storage y pegar las reglas.
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -193,9 +193,20 @@ const errText = z => ({
   "storage/bucket-not-found":"No se encontró el bucket de Storage. Revisa firebaseConfig.",
   "storage/project-not-found":"No se encontró el proyecto de Storage. Revisa la configuración."
 }[z?.code] || z?.message || String(z));
-const isAdmin = () => !!(auth?.currentUser && ADMINS_UID.includes(auth.currentUser.uid));
-const isModerator = () => !!(auth?.currentUser && MODERATORS_UID.includes(auth.currentUser.uid));
-const isStaff = () => isAdmin() || isModerator();
+let currentStaffRole = "";
+const isOwner = () => !!(auth?.currentUser && OWNER_UID && OWNER_UID !== "PEGA_AQUI_TU_UID_ADMIN" && auth.currentUser.uid === OWNER_UID);
+const isAdmin = () => isOwner() || ["co_owner","admin"].includes(currentStaffRole) || !!(auth?.currentUser && ADMINS_UID.includes(auth.currentUser.uid));
+const isModerator = () => isAdmin() || currentStaffRole === "moderator" || !!(auth?.currentUser && MODERATORS_UID.includes(auth.currentUser.uid));
+const isStaff = () => isModerator();
+const canManageStaff = () => isAdmin();
+const canIssueStaffRole = role => (isOwner() && ["co_owner","admin","moderator","helper"].includes(role)) || (isAdmin() && !isOwner() && ["moderator","helper"].includes(role));
+const canManageInviteRole = role => isOwner() || (isAdmin() && ["moderator","helper"].includes(role));
+async function loadCurrentStaffRole(user){
+  currentStaffRole="";
+  if(!user||user.isAnonymous||!db)return;
+  try{const s=await getDoc(doc(db,"staff",user.uid));if(s.exists())currentStaffRole=s.data().role||"";}
+  catch(e){console.warn("No se pudo leer el rol del usuario",e);}
+}
 const emailVerified = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.emailVerified);
 const me = () => auth?.currentUser && !auth.currentUser.isAnonymous ? (auth.currentUser.displayName || "Usuario") : "";
 const chatName = () => me() || `Invitado-${(auth?.currentUser?.uid || "0000").slice(0,5).toUpperCase()}`;
@@ -244,42 +255,64 @@ const D = {
     const email=value.includes("@")?value:`${value}@foro.local`;
     await signInWithEmailAndPassword(auth,email,p);
     if(String(token||"").trim()){
-      try{await D.claimAccessToken(token);}
+      try{await D.claimStaffInvite(token);}
       catch(e){try{await signOut(auth);await signInAnonymously(auth);}catch{}throw e;}
     }
   },
-  async claimAccessToken(raw){
+  async claimStaffInvite(raw){
     const user=auth.currentUser;
-    if(!user||user.isAnonymous)throw new Error("Inicia sesión con tu cuenta antes de usar el token.");
+    if(!user||user.isAnonymous)throw new Error("Inicia sesión con tu cuenta para usar la invitación.");
+    if(!user.emailVerified)throw new Error("Primero verifica el correo de tu cuenta; después podrás usar la invitación.");
     const hash=await hashAccessToken(raw);
-    if(!ACCESS_TOKEN_HASHES.includes(hash))throw new Error("Token incorrecto o no habilitado.");
-    const tokenRef=doc(db,"accessTokens",hash),now=Date.now();
+    const inviteRef=doc(db,"staffInvites",hash),staffRef=doc(db,"staff",user.uid);
+    let grantedRole="";
     await runTransaction(db,async tx=>{
-      const snap=await tx.get(tokenRef);
-      const disabledUntil=new Date(now+TOKEN_COOLDOWN_MS-60000);
-      if(!snap.exists()){
-        tx.set(tokenRef,{ownerUid:user.uid,status:"pending",claimedAt:new Date(now),disabledUntil,uses:1});
-        return;
-      }
-      const data=snap.data();
-      if(data.ownerUid!==user.uid)throw new Error("Este token ya está vinculado a otra cuenta y no se puede transferir.");
-      if(data.status==="pending")throw new Error("Tu token ya está pendiente de revisión administrativa.");
-      const until=data.disabledUntil?.toDate?data.disabledUntil.toDate().getTime():new Date(data.disabledUntil||0).getTime();
-      if(until>now)throw new Error("Token temporalmente inhabilitado hasta "+dt(until)+".");
-      if(!["approved","rejected"].includes(data.status))throw new Error("El token no está habilitado. Contacta al administrador.");
-      tx.update(tokenRef,{status:"pending",claimedAt:new Date(now),disabledUntil,uses:(Number(data.uses)||1)+1,reviewedAt:null,reviewedBy:null});
+      const inviteSnap=await tx.get(inviteRef),staffSnap=await tx.get(staffRef);
+      if(!inviteSnap.exists())throw new Error("Token incorrecto, vencido o revocado.");
+      if(staffSnap.exists())throw new Error("Tu cuenta ya tiene un rol de personal. Pide al propietario que lo cambie.");
+      const invite=inviteSnap.data();
+      if(invite.status!=="available")throw new Error("Este token ya se utilizó o fue revocado. Los tokens usados quedan bloqueados para siempre.");
+      const expires=invite.expiresAt?.toDate?invite.expiresAt.toDate().getTime():new Date(invite.expiresAt||0).getTime();
+      if(!expires||expires<=Date.now())throw new Error("Esta invitación venció. Solicita una nueva al administrador.");
+      if(!Object.prototype.hasOwnProperty.call(STAFF_ROLE_LABELS,invite.role))throw new Error("El rol de esta invitación no es válido.");
+      grantedRole=invite.role;
+      tx.update(inviteRef,{status:"used",claimedBy:user.uid,claimedAt:serverTimestamp()});
+      tx.set(staffRef,{role:grantedRole,grantedAt:serverTimestamp(),grantedBy:invite.createdBy,inviteHash:hash});
     });
-    return true;
+    currentStaffRole=grantedRole;updateAdminUI();
+    return grantedRole;
   },
-  async tokenRequests(){
-    if(!isAdmin())throw new Error("Solo el administrador puede revisar tokens.");
-    const s=await getDocs(query(collection(db,"accessTokens"),orderBy("claimedAt","desc"),limit(100)));
-    return s.docs.map(d=>({id:d.id,...d.data()}));
+  async createStaffInvite(role){
+    if(!canIssueStaffRole(role))throw new Error("No tienes permiso para generar invitaciones de ese rol.");
+    const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",bytes=new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    const raw=Array.from(bytes,b=>alphabet[b%alphabet.length]).join("");
+    const token="MP-"+raw.match(/.{1,4}/g).join("-");
+    const hash=await hashAccessToken(token),inviteRef=doc(db,"staffInvites",hash);
+    await setDoc(inviteRef,{role,status:"available",createdBy:auth.currentUser.uid,createdAt:serverTimestamp(),expiresAt:new Date(Date.now()+7*24*60*60*1000)});
+    return token;
   },
-  async reviewAccessToken(hash,status){
-    if(!isAdmin())throw new Error("Solo el administrador puede verificar tokens.");
-    if(!["approved","rejected"].includes(status))throw new Error("Estado de verificación inválido.");
-    await updateDoc(doc(db,"accessTokens",hash),{status,reviewedAt:new Date(),reviewedBy:auth.currentUser.uid});
+  async listStaffInvites(){
+    if(!canManageStaff())throw new Error("Solo el propietario, co-owner o administrador puede ver las invitaciones.");
+    const s=await getDocs(collection(db,"staffInvites"));
+    return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0));
+  },
+  async listStaffMembers(){
+    if(!canManageStaff())throw new Error("Solo el propietario, co-owner o administrador puede ver el personal.");
+    const s=await getDocs(collection(db,"staff"));
+    return s.docs.map(d=>({uid:d.id,...d.data()}));
+  },
+  async revokeStaffInvite(hash){
+    const s=await getDoc(doc(db,"staffInvites",hash));
+    if(!s.exists()||!canManageInviteRole(s.data().role))throw new Error("No tienes permiso para revocar esa invitación.");
+    if(s.data().status!=="available")throw new Error("Solo se pueden revocar invitaciones todavía disponibles.");
+    await updateDoc(doc(db,"staffInvites",hash),{status:"revoked",revokedBy:auth.currentUser.uid,revokedAt:serverTimestamp()});
+  },
+  async removeStaffRole(uid){
+    const s=await getDoc(doc(db,"staff",uid));
+    if(!s.exists())return;
+    if(!(isOwner()||(["moderator","helper"].includes(s.data().role)&&isAdmin())))throw new Error("Solo el propietario puede retirar roles de co-owner o administrador.");
+    await deleteDoc(doc(db,"staff",uid));
   },
   async resetPassword(email){
     if(!email||!email.includes("@"))throw new Error("Escribe el correo real asociado a tu cuenta.");
@@ -405,7 +438,7 @@ function neu(m,id){
 }
 function frm(m,a,r){
   const rg=r==="reg";
-  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${!rg&&configured?`<tr><td class="b">Token de verificación (opcional)</td><td><input id="accessToken" type="text" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"><br><small>Se vincula a tu cuenta, queda pendiente de revisión y se bloquea 24 horas.</small></td></tr>`:""}${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · verifica tu correo":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
+  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${!rg&&configured?`<tr><td class="b">Invitación del staff (opcional)</td><td><input id="accessToken" type="text" maxlength="48" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"><br><small>Solo un propietario/co-owner/administrador puede generar estos códigos. Se usan una vez y quedan bloqueados para siempre.</small></td></tr>`:""}${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · verifica tu correo":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
   $("#lf").onsubmit=async e=>{
     e.preventDefault();const p=$("#pw").value,er=$("#er");er.className="err";
     try{
@@ -423,7 +456,7 @@ function frm(m,a,r){
         const token=$("#accessToken")?.value.trim()||"";
         await Store.login(identity,p,token);
         location.hash="#/";
-        if(token)alert("Token vinculado a tu cuenta. Quedó pendiente de revisión administrativa y estará temporalmente inhabilitado durante 24 horas.");
+        if(token){const role=STAFF_ROLE_LABELS[currentStaffRole]||"personal";alert("Invitación utilizada correctamente. Tu cuenta recibió el rol: "+role+". Este token quedó bloqueado para siempre.");}
       }
     }catch(z){er.textContent=errText(z);}
   };
@@ -446,23 +479,52 @@ async function prf(m,u){
   }
 }
 function faq(m){m.innerHTML=`<table><tr><th>FAQ / Ayuda</th></tr><tr><td>${$("#faqt").innerHTML}</td></tr></table>`;}
-async function tokenPanel(m){
-  if(!isAdmin()){
-    m.innerHTML=`<section class="notice"><b>Zona exclusiva del administrador.</b><p>Tu cuenta debe estar configurada en <code>ADMINS_UID</code> y en las reglas de Firestore para poder revisar tokens.</p></section>`;
+async function staffPanel(m){
+  if(!canManageStaff()){
+    m.innerHTML=`<section class="notice"><b>Zona exclusiva del personal administrador.</b><p>El propietario configura el primer UID. Después, los co-owner y administradores podrán emitir invitaciones para moderadores y ayudantes.</p></section>`;
     return;
   }
-  try{
-    const requests=await Store.tokenRequests();
-    const rows=await Promise.all(requests.map(async item=>({item,profile:await Store.profByUid(item.ownerUid)})));
-    m.innerHTML=`<p><b>Verificación de tokens</b></p><section class="notice">Cada token queda vinculado a una sola cuenta. Después de usarlo se bloquea durante 24 horas. Aprueba o rechaza las solicitudes pendientes.</section><table><tr><th>Cuenta</th><th>Estado</th><th>Último uso</th><th>Desbloqueo</th><th>Usos</th><th>Revisión</th></tr>${rows.map(({item,profile})=>`<tr><td><b>${E(profile?.u||"Cuenta")}</b><br><small>${E(item.ownerUid)}</small></td><td>${E(item.status||"")}</td><td><small>${E(dt(item.claimedAt))}</small></td><td><small>${E(dt(item.disabledUntil))}</small></td><td class="c">${Number(item.uses)||1}</td><td>${item.status==="pending"?`<button type="button" data-token-review="approved" data-token-id="${E(item.id)}">Aprobar</button> <button type="button" data-token-review="rejected" data-token-id="${E(item.id)}">Rechazar</button>`:`<small>Sin acciones</small>`}</td></tr>`).join("")||`<tr><td colspan="6">Todavía no hay solicitudes de tokens.</td></tr>`}</table><p><a href="#/">Volver al foro</a></p>`;
-    m.querySelectorAll("[data-token-review]").forEach(button=>button.addEventListener("click",async()=>{
-      const status=button.dataset.tokenReview,hash=button.dataset.tokenId;
-      if(!confirm(status==="approved"?"¿Aprobar esta solicitud?":"¿Rechazar esta solicitud?"))return;
-      button.disabled=true;
-      try{await Store.reviewAccessToken(hash,status);await tokenPanel(m);}
-      catch(e){alert(errText(e));button.disabled=false;}
+  let generatedToken="";
+  const render=async()=>{
+    const [invites,members]=await Promise.all([Store.listStaffInvites(),Store.listStaffMembers()]);
+    const roles=Object.entries(STAFF_ROLE_LABELS).filter(([role])=>canIssueStaffRole(role));
+    m.innerHTML=`<h3>🛡 Administración del personal</h3>
+      <section class="notice"><b>Invitaciones de un solo uso</b><br>Los códigos se generan al azar, se guarda solo su hash, vencen en 7 días y, al usarse, quedan bloqueados para siempre. Solo el propietario puede emitir co-owner y administradores; el resto del equipo administrativo puede emitir moderadores y ayudantes.</section>
+      <form id="staffInviteForm"><label for="staffInviteRole"><b>Rol para la invitación</b></label><br><select id="staffInviteRole">${roles.map(([key,label])=>`<option value="${E(key)}">${E(label)}</option>`).join("")}</select> <button type="submit" id="staffInviteCreate">Generar token</button> <span id="staffInviteError" class="err"></span></form>
+      <section id="staffTokenResult" class="notice" ${generatedToken?"":"hidden"}><b>Guarda este token ahora. No se puede volver a mostrar.</b><br><code id="staffTokenValue">${E(generatedToken)}</code><br><button type="button" id="staffTokenCopy">Copiar token</button></section>
+      <h3>Personal activo</h3>
+      <table><tr><th>UID</th><th>Rol</th><th>Desde</th><th>Acción</th></tr>${members.map(member=>`<tr><td><small>${E(member.uid)}</small></td><td><b>${E(STAFF_ROLE_LABELS[member.role]||member.role)}</b></td><td><small>${E(dt(member.grantedAt))}</small></td><td>${(isOwner()||(["moderator","helper"].includes(member.role)&&isAdmin()))?`<button type="button" data-staff-remove="${E(member.uid)}">Retirar rol</button>`:"—"}</td></tr>`).join("")||`<tr><td colspan="4">Todavía no hay miembros de staff invitados.</td></tr>`}</table>
+      <h3>Invitaciones emitidas</h3>
+      <table><tr><th>Rol</th><th>Estado</th><th>Creada</th><th>Vence</th><th>Cuenta que la usó</th><th>Acción</th></tr>${invites.map(item=>{
+        const expires=item.expiresAt?.toDate?item.expiresAt.toDate().getTime():new Date(item.expiresAt||0).getTime();
+        const status=item.status==="available"&&expires<=Date.now()?"Vencida":({available:"Disponible",used:"Usada · bloqueada",revoked:"Revocada"}[item.status]||item.status);
+        return `<tr><td>${E(STAFF_ROLE_LABELS[item.role]||item.role)}</td><td><b>${E(status)}</b></td><td><small>${E(dt(item.createdAt))}</small></td><td><small>${E(dt(item.expiresAt))}</small></td><td><small>${E(item.claimedBy||"—")}</small></td><td>${item.status==="available"&&canManageInviteRole(item.role)?`<button type="button" data-invite-revoke="${E(item.id)}">Revocar</button>`:"—"}</td></tr>`;
+      }).join("")||`<tr><td colspan="6">Todavía no hay invitaciones.</td></tr>`}</table>
+      <p><a href="#/">Volver al foro</a></p>`;
+    if(generatedToken){
+      $("#staffTokenResult").hidden=false;
+      $("#staffTokenCopy").addEventListener("click",async()=>{
+        try{await navigator.clipboard.writeText(generatedToken);$("#staffTokenCopy").textContent="Copiado";}
+        catch{$("#staffTokenCopy").textContent="No se pudo copiar; selecciona el código";}
+      });
+    }
+    $("#staffInviteForm").addEventListener("submit",async e=>{
+      e.preventDefault();
+      const button=$("#staffInviteCreate"),error=$("#staffInviteError"),role=$("#staffInviteRole").value;
+      button.disabled=true;error.textContent="";
+      try{generatedToken=await Store.createStaffInvite(role);await render();}
+      catch(z){error.textContent=errText(z);button.disabled=false;}
+    });
+    m.querySelectorAll("[data-invite-revoke]").forEach(button=>button.addEventListener("click",async()=>{
+      if(!confirm("¿Revocar esta invitación? Ya no podrá utilizarse."))return;
+      button.disabled=true;try{await Store.revokeStaffInvite(button.dataset.inviteRevoke);generatedToken="";await render();}catch(z){alert(errText(z));button.disabled=false;}
     }));
-  }catch(e){m.innerHTML=`<span class="err">${E(errText(e))}</span>`;}
+    m.querySelectorAll("[data-staff-remove]").forEach(button=>button.addEventListener("click",async()=>{
+      if(!confirm("¿Retirar el rol de esta cuenta? Esta acción no borra la cuenta ni sus publicaciones."))return;
+      button.disabled=true;try{await Store.removeStaffRole(button.dataset.staffRemove);await render();}catch(z){alert(errText(z));button.disabled=false;}
+    }));
+  };
+  try{await render();}catch(e){m.innerHTML=`<span class="err">${E(errText(e))}</span>`;}
 }
 function setup(m){
   m.innerHTML=`<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>${firebaseReady?"Firebase conectado":"Firebase pendiente de configurar"}</b><br>${firebaseReady?"La aplicación ya inició sesión con Firebase. El acceso al foro depende de las reglas publicadas.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio."}</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta verificada para publicar en los foros.</li><li>El administrador se asigna de forma segura por UID en <code>ADMINS_UID</code> y en las reglas de Firestore.</li></ol><p><b>Archivos y avatares:</b> actualmente están desactivados. Para habilitarlos debes crear el bucket de Firebase Storage, publicar <code>storage.rules</code> y activar <code>STORAGE_ENABLED</code>. Firebase requiere el plan Blaze para utilizar Storage; puede generar cargos según el uso.</p></td></tr></table>`;
@@ -487,12 +549,12 @@ function renderAccountNotice(){
   });
 }
 async function out(){await Store.out();location.hash="#/";}
-const ROUTES={"":idx,b:brd,t:thr,n:neu,login:frm,reg:frm,out,setup,faq,u:prf,tokens:tokenPanel};
+const ROUTES={"":idx,b:brd,t:thr,n:neu,login:frm,reg:frm,out,setup,faq,u:prf,staff:staffPanel};
 async function go(){
   const parts=location.hash.replace(/^#\/?/,"").split("/"),r=parts[0]||"",a=parts.slice(1).join("/");
   const m=$("#m");
   renderAccountNotice();
-  $("#nav").innerHTML=`🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> `+(Store.me()?`👤 <b><a href="#/u/${encodeURIComponent(Store.me())}">${E(Store.me())}</a></b> 🚪 <a href="#/out">Salir</a>`:`🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>`)+(isAdmin()?` 🛡 <a href="#/tokens">Verificar tokens</a>`:"")+` <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>`;
+  $("#nav").innerHTML=`🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> `+(Store.me()?`👤 <b><a href="#/u/${encodeURIComponent(Store.me())}">${E(Store.me())}</a></b> 🚪 <a href="#/out">Salir</a>`:`🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>`)+(canManageStaff()?` 🛡 <a href="#/staff">Administración</a>`:"")+` <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>`;
   m.innerHTML="Cargando...";$("#ann").hidden=!!r;
   try{await (ROUTES[r]||idx)(m,a,r);}catch(z){m.innerHTML=`<span class="err">Error: ${E(errText(z))}</span><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>`;}
 }
@@ -591,12 +653,14 @@ async function startFirebase(){
       let resolved=false, requestingGuest=false;
       onAuthStateChanged(auth,async user=>{
         currentUser=user;
+        currentStaffRole="";
         if(!user){
           if(!requestingGuest){requestingGuest=true;try{await signInAnonymously(auth);}catch(e){console.error(e);if(!resolved){resolved=true;reject(e);}}}
           return;
         }
+        await loadCurrentStaffRole(user);
         if(!resolved){resolved=true;resolve();}
-        if(firebaseReady){updateAdminUI();renderAccountNotice();renderChat(chatCache);$("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;}
+        if(firebaseReady){updateAdminUI();renderAccountNotice();renderChat(chatCache);go();$("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;}
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
@@ -607,7 +671,7 @@ async function startFirebase(){
 }
 function updateAdminUI(){
   const admin=isAdmin();$("#chatAdmin").hidden=!admin;
-  if(admin){$("#chatAdminInfo").textContent="Administrador verificado por UID de Firebase. Puedes borrar mensajes y vaciar el chat.";}
+  if(admin){$("#chatAdminInfo").textContent="Permisos administrativos verificados por UID y roles protegidos en Firestore.";}
 }
 
 // Cabecera, reloj y routing

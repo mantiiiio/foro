@@ -2,7 +2,7 @@
 
 MantiPobres es un foro retro en español alojado en Firebase Hosting, con cuentas, perfiles, categorías, temas, respuestas y chat en directo.
 
-- Web pública: https://foro-66dd5.web.app/
+- Web pública: https://mantipobres.web.app/
 - Repositorio: https://github.com/mantiiiio/foro
 - Firebase Project ID: `foro-66dd5`
 
@@ -43,17 +43,18 @@ El registro pide un nombre de usuario (3–16 caracteres: letras, números o gui
 
 Las cuentas antiguas que se crearon con alias `@foro.local` no tienen una dirección real a la que enviar verificación o recuperación. Para publicar con la nueva versión, crea una cuenta nueva con tu correo real.
 
-## Administrador
+## Personal y roles administrativos
 
-Los roles de administrador y moderador se configuran por UID; no se conceden por nombre de usuario ni por el contenido del navegador.
+Los roles no se conceden por nombre de usuario ni por texto del navegador. El primer propietario se configura con su UID real, tanto en `index.html` como en `firestore.rules`. No se puede crear un propietario mediante un token.
 
-1. Registra la cuenta de administrador con un correo real y verifica el correo.
-2. Firebase Console → Authentication → Users: copia el UID de esa cuenta.
-3. En `index.html`, cambia `const ADMINS_UID = [];` por `const ADMINS_UID = ["UID_REAL"];`.
-4. En `firestore.rules` (y en `storage.rules`, cuando se active Storage), sustituye `PEGA_AQUI_TU_UID_ADMIN` por el mismo UID.
-5. Vuelve a desplegar: `firebase deploy --only hosting,firestore:rules`.
+- **Propietario:** control total; puede emitir invitaciones para co-owner, administrador, moderador y ayudante.
+- **Co-owner / Administrador:** pueden gestionar el personal y emitir invitaciones para moderadores y ayudantes.
+- **Moderador:** puede moderar temas y respuestas; no puede elevarse de rol ni emitir invitaciones.
+- **Ayudante:** distintivo de personal sin permisos de moderación.
 
-El UID no es una contraseña. Nunca guardes contraseñas, tokens privados ni claves de servicio en el HTML o en el repositorio.
+Solo el propietario/co-owner/administrador ve el apartado **Administración**. Los tokens se generan con aleatoriedad criptográfica, se guarda únicamente SHA-256, vencen a los 7 días y se pueden usar una sola vez. Al reclamarse, el token queda bloqueado permanentemente y el rol se vincula al UID de Firebase. El titular debe iniciar sesión con una cuenta cuyo correo esté verificado. El token anterior de verificación genérica quedó retirado y no es válido para este sistema.
+
+Para activar el propietario, copia tu UID de Firebase desde tu perfil o Firebase Console → Authentication → Users y reemplaza `PEGA_AQUI_TU_UID_ADMIN` en `index.html`, `firestore.rules` y `storage.rules`. Después despliega las reglas de Firestore. El UID no es una contraseña. Nunca guardes contraseñas, tokens privados ni claves de servicio en el HTML o en el repositorio.
 
 ## GitHub Actions
 
