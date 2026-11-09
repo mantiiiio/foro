@@ -343,7 +343,7 @@ import {
   sendPasswordResetEmail, reload, deleteUser, getIdToken
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocFromServer, getDocs, addDoc, setDoc, serverTimestamp,
+  getFirestore, collection, doc, getDoc, getDocFromServer, getDocs, getCountFromServer, addDoc, setDoc, serverTimestamp,
   updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot,
   writeBatch, increment, runTransaction
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
@@ -826,6 +826,7 @@ const D = {
   },
   async out(){await signOut(auth);await signInAnonymously(auth);},
   async topics(){const s=await getDocs(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()}));},
+  async topicsByBoard(boardId){const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.lr||0)-(a.lr||0));},
   async posts(t){const s=await getDocs(query(collection(db,"posts"),where("tp","==",t)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.ts||0)-(b.ts||0));},
   async topic(t){const s=await getDoc(doc(db,"topics",t));return s.exists()?{id:s.id,...s.data()}:null;},
   async ratings(t){const s=await getDocs(collection(db,"topics",t,"ratings"));return s.docs.map(d=>({id:d.id,...d.data()}));},
@@ -847,8 +848,8 @@ const D = {
     const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,x,ts:n});batch.update(topicRef,{lr:n,lu:u,n:increment(1)});await batch.commit();
   },
   async editPost(id,x){requireVerifiedMember("editar tus publicaciones");await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
-  async members(){const s=await getDocs(collection(db,"users"));return s.size;},
-  async cnt(n){const s=await getDocs(query(collection(db,"posts"),where("u","==",n)));return s.size;},
+  async members(){const s=await getCountFromServer(collection(db,"users"));return s.data().count;},
+  async cnt(n){const s=await getCountFromServer(query(collection(db,"posts"),where("u","==",n)));return s.data().count;},
   async prof(n){const s=await getDocs(query(collection(db,"users"),where("u","==",n),limit(1)));return s.empty?null:{uid:s.docs[0].id,...s.docs[0].data()};},
   async profByUid(uid){const s=await getDoc(doc(db,"users",uid));return s.exists()?{uid:s.id,...s.data()}:null;},
   async moderation(uid){const s=await getDoc(doc(db,"moderation",uid));return s.exists()?{uid,...s.data()}:{uid,warnings:[],warningCount:0,status:"active",banUntil:null,banReason:""};},
@@ -977,6 +978,7 @@ const Demo = {
   async login(n,p){if(!demo.u[n]||demo.u[n].p!==demoHash(p))throw new Error("Usuario o clave incorrectos.");demo.m=n;saveDemo();},
   async out(){demo.m="";saveDemo();},
   async topics(){return [...demo.t].sort((a,b)=>b.lr-a.lr);},
+  async topicsByBoard(boardId){return demo.t.filter(t=>t.b===boardId).sort((a,b)=>b.lr-a.lr);},
   async posts(t){return demo.p.filter(p=>p.tp===t).sort((a,b)=>a.ts-b.ts);},
   async topic(t){return demo.t.find(x=>x.id===t)||null;},
   async ratings(t){return demo.t.find(x=>x.id===t)?.ratings||[];},
@@ -1005,7 +1007,7 @@ let Store = configured ? D : Demo;
 
 // Render del índice y foros
 async function idx(m){
-  const T=await Store.topics(),n=await Store.members();
+  const [T,n]=await Promise.all([Store.topics(),Store.members()]);
   let h=`<table><tr><th colspan="2">Foro</th><th width="60" class="c">Temas</th><th width="70" class="c">Mensajes</th><th width="200">Último mensaje</th></tr>`;
   BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"📌":"📁"}</td><td><a href="#/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="#/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}`:"&mdash;"}</small></td></tr>`;});});
   const recent=T.slice(0,15);
@@ -1014,10 +1016,10 @@ async function idx(m){
 }
 async function brd(m,id){
   const B=BL.find(x=>x[0]===id);if(!B)return m.innerHTML="Foro inexistente";
-  const T=(await Store.topics()).filter(t=>t.b===id),isRules=id==="reglas";
+  const T=await Store.topicsByBoard(id),isRules=id==="reglas";
   const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican al foro y al chat. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
   m.innerHTML=rulesIntro+`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${isRules&&!isStaff()?"":`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`}</p><table><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${T.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>${isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:""}`;
-  if(configured)watchRouteData(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)),routeRenderId);
+  if(configured)watchRouteData(query(collection(db,"topics"),where("b","==",id),limit(300)),routeRenderId);
 }
 async function thr(m,id){
   const t=await Store.topic(id);
