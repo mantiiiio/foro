@@ -465,7 +465,7 @@ function neu(m,id){
 }
 function frm(m,a,r){
   const rg=r==="reg";
-  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${!rg&&configured?`<tr><td class="b">Invitación del staff (opcional)</td><td><input id="accessToken" type="text" maxlength="48" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"><br><small>Solo un propietario/co-owner/administrador puede generar estos códigos. Se usan una vez y quedan bloqueados para siempre.</small></td></tr>`:""}${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · verifica tu correo":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
+  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${configured?`<tr><td class="b">Invitación del staff (opcional)</td><td><input id="accessToken" type="text" maxlength="48" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"><br><small>Solo sirve un código emitido desde Administración. Se usa una vez y queda bloqueado para siempre.</small></td></tr>`:""}${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · verifica tu correo":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
   $("#lf").onsubmit=async e=>{
     e.preventDefault();const p=$("#pw").value,er=$("#er");er.className="err";
     try{
@@ -475,8 +475,10 @@ function frm(m,a,r){
         if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return er.textContent="Introduce un correo electrónico válido.";
         if(p.length<6)return er.textContent="La contraseña debe tener al menos 6 caracteres.";
         if(!$("#ok").checked)return er.textContent="Debes aceptar las reglas.";
-        await Store.reg(n,email,p);
+        const invite=$("#accessToken")?.value.trim()||"";
+        await Store.reg(n,email,p,invite);
         location.hash="#/";
+        if(invite)alert("Cuenta creada. Verifica tu correo y pulsa «Ya verifiqué» para activar la invitación. También podrás pegar el mismo código al iniciar sesión después de verificar el correo.");
       }else{
         const identity=$("#identity").value.trim();
         if(!identity.includes("@")&&!/^[a-z0-9_]{3,16}$/i.test(identity))return er.textContent="Introduce tu correo o el usuario de una cuenta antigua.";
@@ -517,16 +519,16 @@ async function staffPanel(m){
     const roles=Object.entries(STAFF_ROLE_LABELS).filter(([role])=>canIssueStaffRole(role));
     m.innerHTML=`<h3>🛡 Administración del personal</h3>
       <section class="notice"><b>Invitaciones de un solo uso</b><br>Los códigos se generan al azar, se guarda solo su hash, vencen en 7 días y, al usarse, quedan bloqueados para siempre. Solo el propietario puede emitir co-owner y administradores; el resto del equipo administrativo puede emitir moderadores y ayudantes.</section>
-      <form id="staffInviteForm"><label for="staffInviteRole"><b>Rol para la invitación</b></label><br><select id="staffInviteRole">${roles.map(([key,label])=>`<option value="${E(key)}">${E(label)}</option>`).join("")}</select> <button type="submit" id="staffInviteCreate">Generar token</button> <span id="staffInviteError" class="err"></span></form>
+      <form id="staffInviteForm"><label for="staffInviteRole"><b>Rol para la invitación</b></label><br><select id="staffInviteRole">${roles.map(([key,label])=>`<option value="${E(key)}">${E(label)}</option>`).join("")}</select><br><label for="staffInviteDescription"><b>¿Para qué es este token?</b></label><br><input id="staffInviteDescription" type="text" maxlength="140" minlength="3" placeholder="Ej.: Moderación de la sección Tecnología" required style="width:min(100%,520px)"><br><button type="submit" id="staffInviteCreate">Generar token</button> <span id="staffInviteError" class="err"></span></form>
       <section id="staffTokenResult" class="notice" ${generatedToken?"":"hidden"}><b>Guarda este token ahora. No se puede volver a mostrar.</b><br><code id="staffTokenValue">${E(generatedToken)}</code><br><button type="button" id="staffTokenCopy">Copiar token</button></section>
       <h3>Personal activo</h3>
       <table><tr><th>UID</th><th>Rol</th><th>Desde</th><th>Acción</th></tr>${members.map(member=>`<tr><td><small>${E(member.uid)}</small></td><td><b>${E(STAFF_ROLE_LABELS[member.role]||member.role)}</b></td><td><small>${E(dt(member.grantedAt))}</small></td><td>${(isOwner()||(["moderator","helper"].includes(member.role)&&isAdmin()))?`<button type="button" data-staff-remove="${E(member.uid)}">Retirar rol</button>`:"—"}</td></tr>`).join("")||`<tr><td colspan="4">Todavía no hay miembros de staff invitados.</td></tr>`}</table>
       <h3>Invitaciones emitidas</h3>
-      <table><tr><th>Rol</th><th>Estado</th><th>Creada</th><th>Vence</th><th>Cuenta que la usó</th><th>Acción</th></tr>${invites.map(item=>{
+      <table><tr><th>Rol</th><th>Propósito</th><th>Estado</th><th>Creada</th><th>Vence</th><th>Cuenta que la usó</th><th>Acción</th></tr>${invites.map(item=>{
         const expires=item.expiresAt?.toDate?item.expiresAt.toDate().getTime():new Date(item.expiresAt||0).getTime();
         const status=item.status==="available"&&expires<=Date.now()?"Vencida":({available:"Disponible",used:"Usada · bloqueada",revoked:"Revocada"}[item.status]||item.status);
-        return `<tr><td>${E(STAFF_ROLE_LABELS[item.role]||item.role)}</td><td><b>${E(status)}</b></td><td><small>${E(dt(item.createdAt))}</small></td><td><small>${E(dt(item.expiresAt))}</small></td><td><small>${E(item.claimedBy||"—")}</small></td><td>${item.status==="available"&&canManageInviteRole(item.role)?`<button type="button" data-invite-revoke="${E(item.id)}">Revocar</button>`:"—"}</td></tr>`;
-      }).join("")||`<tr><td colspan="6">Todavía no hay invitaciones.</td></tr>`}</table>
+        return `<tr><td>${E(STAFF_ROLE_LABELS[item.role]||item.role)}</td><td>${E(item.description||"—")}</td><td><b>${E(status)}</b></td><td><small>${E(dt(item.createdAt))}</small></td><td><small>${E(dt(item.expiresAt))}</small></td><td><small>${E(item.claimedBy||"—")}</small></td><td>${item.status==="available"&&canManageInviteRole(item.role)?`<button type="button" data-invite-revoke="${E(item.id)}">Revocar</button>`:"—"}</td></tr>`;
+      }).join("")||`<tr><td colspan="7">Todavía no hay invitaciones.</td></tr>`}</table>
       <p><a href="#/">Volver al foro</a></p>`;
     if(generatedToken){
       $("#staffTokenResult").hidden=false;
@@ -537,9 +539,9 @@ async function staffPanel(m){
     }
     $("#staffInviteForm").addEventListener("submit",async e=>{
       e.preventDefault();
-      const button=$("#staffInviteCreate"),error=$("#staffInviteError"),role=$("#staffInviteRole").value;
+      const button=$("#staffInviteCreate"),error=$("#staffInviteError"),role=$("#staffInviteRole").value,description=$("#staffInviteDescription").value.trim();
       button.disabled=true;error.textContent="";
-      try{generatedToken=await Store.createStaffInvite(role);await render();}
+      try{generatedToken=await Store.createStaffInvite(role,description);await render();}
       catch(z){error.textContent=errText(z);button.disabled=false;}
     });
     m.querySelectorAll("[data-invite-revoke]").forEach(button=>button.addEventListener("click",async()=>{
@@ -570,7 +572,7 @@ function renderAccountNotice(){
   });
   $("#refreshVerification").addEventListener("click",async()=>{
     const b=$("#refreshVerification");b.disabled=true;
-    try{const verified=await Store.refreshVerification();if(verified){alert("¡Correo verificado! Ya puedes publicar.");renderAccountNotice();go();}else{alert("Todavía no figura como verificado. Abre el enlace del correo y vuelve a intentarlo.");}}
+    try{const result=await Store.refreshVerification();if(result.verified){alert(result.grantedRole?"¡Correo verificado! También se activó tu invitación como "+(STAFF_ROLE_LABELS[result.grantedRole]||result.grantedRole)+".":"¡Correo verificado! Ya puedes publicar.");renderAccountNotice();go();}else{alert("Todavía no figura como verificado. Abre el enlace del correo y vuelve a intentarlo.");}}
     catch(e){alert(errText(e));}
     finally{if($("#refreshVerification"))$("#refreshVerification").disabled=false;}
   });
