@@ -57,13 +57,13 @@ El UID no es una contraseña. Nunca guardes contraseñas, tokens privados ni cla
 
 ## GitHub Actions
 
-Para preparar despliegue automático, desde la carpeta del repositorio ejecuta:
+Los workflows ya están creados en `.github/workflows/` y esperan el secreto privado `FIREBASE_SERVICE_ACCOUNT_FORO_66DD5`. Para que Firebase CLI cree la cuenta de servicio y cargue el secreto en GitHub:
 
 ```cmd
 firebase init hosting:github
 ```
 
-Selecciona `mantiiiio/foro` y la rama `main`. Firebase configurará el secreto de servicio y los workflows. No reemplaces `index.html` si el CLI pregunta si debe sobrescribirlo.
+Selecciona `mantiiiio/foro` y la rama `main`. Si pregunta si debe sobrescribir los archivos YAML de workflows ya existentes, puedes aceptar; no reemplaces `index.html`. El CLI creará la cuenta de servicio, guardará su clave como secreto y escribirá los workflows correspondientes. Después, un push a `main` desplegará Hosting y los pull requests tendrán una URL de vista previa. El primer despliegue de Authentication y Firestore se hace desde tu CMD con `firebase deploy --only auth,firestore,hosting`; el workflow automático publica Hosting.
 
 ## Firebase Storage: fotos y archivos
 
