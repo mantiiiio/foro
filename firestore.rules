@@ -65,6 +65,58 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+
+    // Tokens de verificación: un token solo puede vincularse a un UID.
+    // El ID del documento es SHA-256 del token; el token original nunca se almacena.
+    match /accessTokens/{tokenHash} {
+      allow get: if signedIn() && (
+        isAdmin()
+        || !exists(/databases/$(database)/documents/accessTokens/$(tokenHash))
+        || resource.data.ownerUid == request.auth.uid
+      );
+      allow list: if isAdmin();
+
+      allow create: if registered()
+        && tokenHash == '1e95c4be34ddab9058b933e38a2d88e87d34d9ef6e068a3cc8219b26e8dd2b44'
+        && request.resource.data.keys().hasOnly(['ownerUid','status','claimedAt','disabledUntil','uses'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.claimedAt is timestamp
+        && request.resource.data.disabledUntil is timestamp
+        && request.resource.data.disabledUntil > request.time
+        && request.resource.data.disabledUntil <= request.time + duration.value(24, 'h')
+        && request.resource.data.uses == 1;
+
+      allow update: if (
+        isAdmin()
+        && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedAt','reviewedBy'])
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.status in ['approved','rejected']
+        && request.resource.data.reviewedAt is timestamp
+        && request.resource.data.reviewedBy == request.auth.uid
+      ) || (
+        registered()
+        && tokenHash == '1e95c4be34ddab9058b933e38a2d88e87d34d9ef6e068a3cc8219b26e8dd2b44'
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && resource.data.status in ['approved','rejected']
+        && resource.data.disabledUntil is timestamp
+        && resource.data.disabledUntil <= request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','claimedAt','disabledUntil','uses','reviewedAt','reviewedBy'])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.claimedAt is timestamp
+        && request.resource.data.disabledUntil is timestamp
+        && request.resource.data.disabledUntil > request.time
+        && request.resource.data.disabledUntil <= request.time + duration.value(24, 'h')
+        && request.resource.data.uses == resource.data.uses + 1
+        && request.resource.data.reviewedAt == null
+        && request.resource.data.reviewedBy == null
+      );
+
+      allow delete: if isAdmin();
+    }
+
     match /topics/{topicId} {
       allow read: if true;
       allow create: if verifiedMember()
