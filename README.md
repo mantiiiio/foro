@@ -16,7 +16,7 @@ MantiPobres es un foro retro en español alojado en Firebase Hosting, con cuenta
 - Chat en tiempo real con mensajes de texto y borrado de mensajes propios.
 - Herramientas de administración por UID.
 - Anuncios y panel lateral editables directamente en `index.html`.
-- Adjuntos JPG/PNG/GIF/WEBP, vídeo MP4/WEBM y fotos de perfil preparados, pero desactivados hasta configurar Firebase Storage.
+- Avatares mediante enlaces HTTPS públicos y vista previa de enlaces directos a imágenes/GIF/vídeos en el chat, sin activar facturación. La subida directa de archivos está preparada, pero desactivada.
 
 ## Configuración y despliegue
 
@@ -67,9 +67,9 @@ Selecciona `mantiiiio/foro` y la rama `main`. Si pregunta si debe sobrescribir l
 
 ## Firebase Storage: fotos y archivos
 
-El código incluye soporte para avatares JPG/PNG/GIF/WEBP (máximo 5 MB) y adjuntos del chat (imágenes hasta 8 MB, vídeos MP4/WEBM hasta 25 MB), pero `STORAGE_ENABLED` permanece en `false` de forma intencional.
+Para mantener el proyecto gratuito, `STORAGE_ENABLED` permanece en `false`. Los avatares admiten enlaces HTTPS públicos a imágenes/GIF y el chat muestra vistas previas de enlaces directos a JPG/PNG/GIF/WEBP/MP4/WEBM. No se suben archivos a Firebase Storage.
 
-Cloud Storage for Firebase requiere el plan Blaze para crear o utilizar buckets. Antes de activarlo, vincula una cuenta de facturación, elige una ubicación y configura alertas de presupuesto. Después crea el bucket, despliega `storage.rules`, comprueba que `FB.storageBucket` coincida con el bucket real y recién entonces cambia `STORAGE_ENABLED` a `true`.
+Si algún día decides habilitar subidas directas, Cloud Storage for Firebase requiere el plan Blaze para crear o utilizar buckets. No lo actives si quieres mantenerte 100% gratis. Solo con autorización y supervisión de un adulto responsable, revisa primero la facturación, límites y alertas; después configura `storage.rules` y `FB.storageBucket` antes de cambiar `STORAGE_ENABLED` a `true`.
 
 Los adjuntos se sirven públicamente para que los participantes puedan verlos; no subas material privado o sensible. Las reglas validan la identidad, el tipo MIME y el tamaño, pero no analizan archivos en busca de malware.
 
