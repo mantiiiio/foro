@@ -723,6 +723,19 @@ const configured = FB.apiKey && !FB.apiKey.startsWith("PEGA_") && FB.projectId &
 function setNetStatus(text, ok=false){const n=$("#netState");n.textContent=text;n.style.color=ok?"#0f0":"#ff8a8a";}
 function safeLocal(){try{return JSON.parse(localStorage.getItem("mantipobres_demo") || '{"u":{},"t":[],"p":[],"m":"","chat":[]}')}catch{return {u:{},t:[],p:[],m:"",chat:[]};}}
 let demo = safeLocal();
+function uniqueTopicRatings(items){
+  const unique=new Map();
+  for(const item of Array.isArray(items)?items:[]){
+    const voter=String(item?.uid||item?.id||"");
+    const stars=Number(item?.stars);
+    if(!voter||!Number.isInteger(stars)||stars<1||stars>5)continue;
+    const value={...item,uid:voter,stars};
+    const previous=unique.get(voter);
+    if(!previous||Number(value.ts||0)>=Number(previous.ts||0))unique.set(voter,value);
+  }
+  return [...unique.values()];
+}
+
 const saveDemo = () => localStorage.setItem("mantipobres_demo",JSON.stringify(demo));
 
 // API de datos: Firebase real. Si todavía no configuraste FB, se muestra una demo local.
@@ -863,13 +876,28 @@ const D = {
   async topicsByBoard(boardId){const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.lr||0)-(a.lr||0));},
   async posts(t){const s=await getDocs(query(collection(db,"posts"),where("tp","==",t)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.ts||0)-(b.ts||0));},
   async topic(t){const s=await getDoc(doc(db,"topics",t));return s.exists()?{id:s.id,...s.data()}:null;},
-  async ratings(t){const s=await getDocs(collection(db,"topics",t,"ratings"));return s.docs.map(d=>({id:d.id,...d.data()}));},
+  async ratings(t){const s=await getDocs(collection(db,"topics",t,"ratings"));return uniqueTopicRatings(s.docs.map(d=>({id:d.id,...d.data(),uid:d.data().uid||d.id})));},
   async rateTopic(t,stars){
     requireRegisteredMember("valorar este tema");await assertCurrentUserNotBanned();
     const value=Number(stars);
     if(!Number.isInteger(value)||value<1||value>5)throw new Error("Elige entre 1 y 5 estrellas.");
     const uid=auth.currentUser.uid;
-    await setDoc(doc(db,"topics",t,"ratings",uid),{uid,stars:value,ts:Date.now()});
+    const ratingsRef=collection(db,"topics",t,"ratings");
+    const existing=await getDocs(ratingsRef);
+    const duplicates=existing.docs.filter(item=>item.id!==uid&&item.data().uid===uid);
+    const canonicalRef=doc(ratingsRef,uid);
+    const vote={uid,stars:value,ts:Date.now()};
+    if(!duplicates.length){
+      await setDoc(canonicalRef,vote);
+      return;
+    }
+    for(let offset=0;offset<duplicates.length;offset+=450){
+      const batch=writeBatch(db);
+      const group=duplicates.slice(offset,offset+450);
+      group.forEach(item=>batch.delete(item.ref));
+      if(offset+450>=duplicates.length)batch.set(canonicalRef,vote);
+      await batch.commit();
+    }
   },
   async newT(b,t,x,gallery=[]){
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
@@ -1017,7 +1045,7 @@ const Demo = {
   async topicsByBoard(boardId){return demo.t.filter(t=>t.b===boardId).sort((a,b)=>b.lr-a.lr);},
   async posts(t){return demo.p.filter(p=>p.tp===t).sort((a,b)=>a.ts-b.ts);},
   async topic(t){return demo.t.find(x=>x.id===t)||null;},
-  async ratings(t){return demo.t.find(x=>x.id===t)?.ratings||[];},
+  async ratings(t){return uniqueTopicRatings(demo.t.find(x=>x.id===t)?.ratings||[]);},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
   async newT(b,t,x,gallery=[]){const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30):[];demo.t.push({id,b,t,u:demo.m,staffBadge:false,lastStaffBadge:false,gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:false,x,ts:n});saveDemo();return id;},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
@@ -1129,17 +1157,20 @@ async function thr(m,id){
     const [count,profile]=await Promise.all([Store.cnt(u),Store.prof(u)]);
     counts[u]=count;profiles[u]=profile;
   }));
-  const ratingCount=R.length;
-  const ratingAverage=ratingCount?R.reduce((sum,r)=>sum+(Number(r.stars)||0),0)/ratingCount:0;
-  const myRating=R.find(r=>r.uid===auth?.currentUser?.uid)?.stars||0;
+  const normalizedRatings=uniqueTopicRatings(R);
+  const ratingCount=normalizedRatings.length;
+  const ratingAverage=ratingCount?normalizedRatings.reduce((sum,r)=>sum+r.stars,0)/ratingCount:0;
+  const currentVoterId=configured?(auth?.currentUser?.uid||""):(Store.me()||"");
+  const myRating=Number(normalizedRatings.find(r=>r.uid===currentVoterId)?.stars||0);
+  const averageWholeStars=Math.floor(ratingAverage+1e-9);
   const ratingPanel=
     '<section class="topicRating"><div><b>⭐ VALORACIÓN DEL TEMA</b><br>'+
     (ratingCount
-      ? '<span class="ratingAverage">'+ratingAverage.toFixed(1)+'/5</span> '+ "★".repeat(Math.round(ratingAverage))+"☆".repeat(5-Math.round(ratingAverage))+' <small>('+ratingCount+' voto'+(ratingCount===1?'':'s')+')</small>'
+      ? '<span class="ratingAverage">'+ratingAverage.toFixed(1)+'/5</span> '+ "★".repeat(averageWholeStars)+"☆".repeat(5-averageWholeStars)+' <small>('+ratingCount+' voto'+(ratingCount===1?'':'s')+')</small>'
       : '<small>Este tema todavía no tiene valoraciones.</small>')+
     '</div><div class="ratingControls">'+
     (canRate
-      ? '<span>Tu puntuación:</span> '+[1,2,3,4,5].map(star=>'<button type="button" class="ratingStar'+(Number(myRating)>=star?' selected':'')+'" data-rating="'+star+'" aria-label="Valorar con '+star+' estrellas" title="'+star+' estrellas">'+(Number(myRating)>=star?'★':'☆')+'</button>').join("")+' <small>'+(myRating?'Puedes cambiar tu voto.':'Vota una sola vez; puedes modificarlo después.')+'</small>'
+      ? '<span>Tu puntuación:</span> '+[1,2,3,4,5].map(star=>'<button type="button" class="ratingStar'+(Number(myRating)>=star?' selected':'')+'" data-rating="'+star+'" aria-label="Valorar con '+star+' estrellas" title="'+star+' estrellas">'+(Number(myRating)>=star?'★':'☆')+'</button>').join("")+' <small>'+(myRating?'Tu voto actual: '+myRating+'/5 · Puedes modificarlo.':'Todavía no votaste. Puedes votar una vez y después actualizar tu voto.')+'</small>'
       : !isRegisteredMember()?'<small>Inicia sesión para valorar este tema.</small>':locked?'<small>Este tema está cerrado a valoraciones.</small>':'<small>Verifica tu correo para poder comentar; puedes valorar al iniciar sesión.</small>')+
     '</div></section>';
   const comments=P.length>1?P.length-1:0;
@@ -1164,7 +1195,7 @@ async function thr(m,id){
   m.querySelectorAll("[data-rating]").forEach(button=>button.addEventListener("click",async()=>{
     const stars=Number(button.dataset.rating);
     m.querySelectorAll("[data-rating]").forEach(b=>b.disabled=true);
-    try{await Store.rateTopic(id,stars);if(!configured)await refreshRouteContent();}
+    try{await Store.rateTopic(id,stars);await refreshRouteContent();}
     catch(e){alert(errText(e));m.querySelectorAll("[data-rating]").forEach(b=>b.disabled=false);}
   }));
   m.querySelectorAll("[data-q]").forEach(a=>a.onclick=e=>{
