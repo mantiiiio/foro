@@ -174,7 +174,7 @@ table{max-width:100%;table-layout:auto}
 td,th{overflow-wrap:anywhere}
 input,textarea,select{max-width:100%}
 #m img,#m video,#m iframe,#chatMessages img,#chatMessages video,#chatMessages iframe{max-width:100%}
-@media(min-width:1195px){
+@media(min-width:1200px){
   body{
     grid-template-columns:minmax(0,920px) 250px;
     max-width:1182px;
@@ -1718,6 +1718,11 @@ function watchCurrentModeration(user){
   if(moderationUnsub){moderationUnsub();moderationUnsub=null;}
   moderationUid=uid;currentModerationData=null;moderationLoadedUid="";moderationLoadErrorUid="";lastModerationBanned=null;
   renderModerationNotice();
+  if(firebaseReady){
+    stopChatSubscription();
+    $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=true;$("#ann").hidden=true;
+    if(location.hash!=="#/out")go();
+  }
   if(!user||!db){moderationLoadedUid=uid;return;}
   moderationUnsub=onSnapshot(doc(db,"moderation",uid),snapshot=>{
     currentModerationData=snapshot.exists()?snapshot.data():null;
