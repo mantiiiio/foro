@@ -1208,9 +1208,54 @@ async function thr(m,id){
     watchRouteData(collection(db,"topics",id,"ratings"),routeRenderId);
   }
 }
+function topicDraftStorageKey(boardId){
+  const account=auth?.currentUser?.uid||Store.me()||"guest";
+  return "mantipobres_new_topic_draft_v1:"+encodeURIComponent(account)+":"+encodeURIComponent(String(boardId||""));
+}
+function loadTopicDraft(boardId){
+  try{
+    const raw=sessionStorage.getItem(topicDraftStorageKey(boardId));
+    if(!raw)return null;
+    const draft=JSON.parse(raw);
+    return draft&&typeof draft==="object"?draft:null;
+  }catch{return null;}
+}
+function saveTopicDraft(boardId){
+  const form=$("#nf"),items=$("#topicGalleryItems");
+  if(!form||!items)return;
+  const gallery=Array.from(items.querySelectorAll(".topicGalleryRow")).slice(0,10).map(row=>({
+    type:row.querySelector("[data-gallery-type]")?.value==="link"?"link":"image",
+    url:row.querySelector("[data-gallery-url]")?.value||"",
+    caption:row.querySelector("[data-gallery-caption]")?.value||""
+  }));
+  const draft={
+    title:$("#ti")?.value||"",
+    message:$("#tx")?.value||"",
+    gallery,
+    galleryOpen:!$("#topicGalleryEditor").hidden,
+    helpOpen:!$("#topicGalleryHelp").hidden
+  };
+  const hasContent=!!(draft.title.trim()||draft.message.trim()||gallery.length);
+  try{
+    const key=topicDraftStorageKey(boardId);
+    if(hasContent)sessionStorage.setItem(key,JSON.stringify(draft));
+    else sessionStorage.removeItem(key);
+  }catch{}
+}
+function saveTopicDraftForRoute(route){
+  const parts=String(route||"").replace(/^#\\/?/,"").split("/");
+  if(parts[0]!=="n"||!parts[1])return;
+  let boardId=parts.slice(1).join("/");
+  try{boardId=decodeURIComponent(boardId);}catch{}
+  saveTopicDraft(boardId);
+}
+function clearTopicDraft(boardId){
+  try{sessionStorage.removeItem(topicDraftStorageKey(boardId));}catch{}
+}
 function neu(m,id){
   if(!Store.me()||id==="reglas"&&!isStaff())return location.hash=Store.me()?"#/b/"+id:"#/login";
   if(configured&&!emailVerified()){m.innerHTML=`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>`;return;}
+  const savedDraft=loadTopicDraft(id);
   m.innerHTML=`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea></td></tr><tr><td colspan="2">
     <section class="topicGalleryComposer" aria-label="Galería opcional del tema">
       <div class="topicGalleryBar">
@@ -1242,13 +1287,15 @@ function neu(m,id){
     galleryEditor.hidden=!open;
     $("#topicGalleryToggle").textContent=(open?"▾":"▸")+" Agregar imágenes o enlaces (opcional)";
     $("#topicGalleryToggle").setAttribute("aria-expanded",String(open));
+    saveTopicDraft(id);
   });
   $("#topicGalleryHelpToggle").addEventListener("click",()=>{
     const help=$("#topicGalleryHelp"),open=help.hidden;
     help.hidden=!open;
     $("#topicGalleryHelpToggle").setAttribute("aria-expanded",String(open));
+    saveTopicDraft(id);
   });
-  function addGalleryRow(){
+  function addGalleryRow(entry=null){
     const count=galleryItems.querySelectorAll(".topicGalleryRow").length;
     if(count>=10){$("#er").textContent="La galería admite un máximo de 10 elementos.";return;}
     const rowId=galleryRowId++;
@@ -1258,10 +1305,42 @@ function neu(m,id){
       <div class="topicGalleryField"><label for="galleryCaption${rowId}">Descripción (opcional)</label><input id="galleryCaption${rowId}" data-gallery-caption type="text" maxlength="80" placeholder="Imagen 1, mis gatos..."></div>
       <button type="button" class="topicGalleryRemove" data-gallery-remove>Quitar</button>
     </div>`);
-    galleryItems.querySelector('[data-gallery-row="'+rowId+'"] [data-gallery-remove]').addEventListener("click",e=>e.currentTarget.closest(".topicGalleryRow").remove());
+    const row=galleryItems.querySelector('[data-gallery-row="'+rowId+'"]');
+    if(entry){
+      row.querySelector("[data-gallery-type]").value=entry.type==="link"?"link":"image";
+      row.querySelector("[data-gallery-url]").value=String(entry.url||"").slice(0,2048);
+      row.querySelector("[data-gallery-caption]").value=String(entry.caption||"").slice(0,80);
+    }
+    row.querySelector("[data-gallery-remove]").addEventListener("click",e=>{
+      e.currentTarget.closest(".topicGalleryRow").remove();
+      saveTopicDraft(id);
+    });
     $("#er").textContent="";
+    saveTopicDraft(id);
   }
   $("#topicGalleryAdd").addEventListener("click",addGalleryRow);
+  $("#nf").addEventListener("input",()=>saveTopicDraft(id));
+  $("#nf").addEventListener("change",()=>saveTopicDraft(id));
+
+  if(savedDraft){
+    $("#ti").value=String(savedDraft.title||"").slice(0,100);
+    $("#tx").value=String(savedDraft.message||"").slice(0,6000);
+    const savedGallery=Array.isArray(savedDraft.gallery)?savedDraft.gallery.slice(0,10):[];
+    if(savedGallery.length){
+      galleryEditor.hidden=false;
+      $("#topicGalleryToggle").textContent="▾ Agregar imágenes o enlaces (opcional)";
+      $("#topicGalleryToggle").setAttribute("aria-expanded","true");
+      savedGallery.forEach(entry=>addGalleryRow(entry));
+    }else if(savedDraft.galleryOpen){
+      galleryEditor.hidden=false;
+      $("#topicGalleryToggle").textContent="▾ Agregar imágenes o enlaces (opcional)";
+      $("#topicGalleryToggle").setAttribute("aria-expanded","true");
+    }
+    if(savedDraft.helpOpen){
+      $("#topicGalleryHelp").hidden=false;
+      $("#topicGalleryHelpToggle").setAttribute("aria-expanded","true");
+    }
+  }
 
   $("#nf").onsubmit=async e=>{
     e.preventDefault();
@@ -1280,7 +1359,9 @@ function neu(m,id){
     publish.disabled=true;$("#er").textContent="Publicando tema...";
     try{
       if(await autoModerationGate(t+"\n"+x,"tema")){publish.disabled=false;$("#er").textContent="";return;}
-      location.hash="#/t/"+await Store.newT(id,t,x,gallery);
+      const createdTopicId=await Store.newT(id,t,x,gallery);
+      clearTopicDraft(id);
+      location.hash="#/t/"+createdTopicId;
     }catch(z){$("#er").textContent=errText(z);publish.disabled=false;}
   };
 }
@@ -1552,7 +1633,10 @@ addEventListener("scroll",()=>{
   if(scrollSaveTimer)clearTimeout(scrollSaveTimer);
   scrollSaveTimer=setTimeout(()=>saveRouteScroll(),120);
 },{passive:true});
-addEventListener("pagehide",()=>saveRouteScroll(activeRouteKey));
+addEventListener("pagehide",()=>{
+  saveRouteScroll(activeRouteKey);
+  saveTopicDraftForRoute(activeRouteKey);
+});
 function restoreLastRoute(){
   if(location.hash)return;
   try{
@@ -1569,6 +1653,7 @@ async function go(){
   if(sameRoute){
     ["rx","ti","tx"].forEach(id=>{const field=$("#"+id);if(field)drafts[id]=field.value;});
   }
+  saveTopicDraftForRoute(activeRouteKey);
   clearRouteLive();
   activeRouteKey=routeKey;
   try{localStorage.setItem(ROUTE_MEMORY_KEY,routeKey);}catch{}
