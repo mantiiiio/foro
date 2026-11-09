@@ -5,6 +5,10 @@ service firebase.storage {
     function isAdmin() {
       return signedIn() && request.auth.uid in ['PEGA_AQUI_TU_UID_ADMIN'];
     }
+    function isModerator() {
+      return signedIn() && request.auth.uid in ['PEGA_AQUI_TU_UID_MODERADOR'];
+    }
+    function isStaff() { return isAdmin() || isModerator(); }
 
     match /chat/{uid}/{fileName} {
       allow read: if true;
@@ -18,7 +22,7 @@ service firebase.storage {
             && request.resource.size <= 25 * 1024 * 1024)
         );
       allow update: if false;
-      allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow delete: if isStaff() || (signedIn() && request.auth.uid == uid);
     }
 
     match /avatars/{uid}/{fileName} {
@@ -28,7 +32,7 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(jpeg|png|gif|webp)')
         && request.resource.size <= 5 * 1024 * 1024;
       allow update: if false;
-      allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow delete: if isStaff() || (signedIn() && request.auth.uid == uid);
     }
   }
 }
