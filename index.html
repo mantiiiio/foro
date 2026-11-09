@@ -346,7 +346,7 @@ input,textarea,select{max-width:100%}
 </div>
 
 <template id="faqt">
-  <p><b>¿Cómo me registro?</b><br>Elige un nombre de usuario, introduce un correo real, crea una contraseña y acepta las reglas. Si tienes una invitación del staff, puedes pegarla también en el campo opcional. Te enviaremos un enlace para verificar el correo; la invitación se activa al verificarlo.</p>
+  <p><b>¿Cómo me registro?</b><br>Elige un nombre de usuario, introduce un correo de un proveedor permitido, crea una contraseña y acepta las reglas. Si tienes una invitación del staff, puedes pegarla también en el campo opcional. Te enviaremos un enlace para verificar el correo; la invitación se activa al verificarlo.</p>
   <p><b>¿Cómo inicio sesión?</b><br>Usa el correo electrónico y la contraseña con los que te registraste. Las cuentas antiguas pueden intentar entrar con su nombre de usuario.</p>
   <p><b>¿Cómo verifico mi correo?</b><br>Abre el enlace que te enviamos. Si no llegó, usa el botón «Reenviar correo» que aparece arriba. Después pulsa «Ya verifiqué».</p>
   <p><b>¿Puedo recuperar mi clave?</b><br>Sí. En la pantalla Entrar, escribe tu correo y pulsa «Recuperar contraseña por correo».</p>
@@ -530,7 +530,7 @@ function setSuspendedShell(hidden){
   // Al ocultar el foro por una suspensión, se cierra; al mostrarlo, permanece cerrada.
   const shortcuts=$("#chatShortcutDialog");
   if(hidden&&shortcuts)shortcuts.hidden=true;
-  if(!hidden){$("#sr").hidden=false;$("#chatBox").hidden=false;}
+  if(!hidden){const guest=firebaseReady&&!isRegisteredMember();$("#sr").hidden=guest;$("#chatBox").hidden=guest;}
 }
 function getActiveBanDetails(data=currentModerationData){
   if(!auth?.currentUser||isOwner()||!data)return null;
@@ -1599,7 +1599,7 @@ async function setup(m){
   m.innerHTML='<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>'+
     (firebaseReady?"Firebase conectado":"Firebase pendiente de configurar")+'</b><br>'+
     (firebaseReady?"La aplicación está conectada. Inicia sesión para editar tu perfil y subir archivos.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio.")+
-    '</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta para compartir enlaces; para publicar en los foros necesitan verificar el correo.</li><li>El propietario se detecta automáticamente por el UID de Firebase configurado en <code>OWNER_UID</code>. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Sesión actual:</b> '+
+    '</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los visitantes sin sesión solo pueden ver la página de inicio, ayuda, registro y acceso. Para ver foros, temas, comentarios, enlaces, adjuntos y chat necesitas iniciar sesión con una cuenta registrada.</li><li>El propietario se detecta automáticamente por el UID de Firebase configurado en <code>OWNER_UID</code>. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Sesión actual:</b> '+
     (owner?"<strong>OWNER detectado correctamente.</strong>":"Sesión de invitado. Pulsa Entrar para acceder con tu cuenta.")+
     '</p><p><b>Perfiles y archivos:</b> al iniciar sesión podrás cambiar tu foto y subir archivos desde el foro mediante Catbox. Firebase Storage permanece desactivado.</p></td></tr></table>';
 }
@@ -1653,6 +1653,8 @@ async function refreshRouteContent(expectedRenderId=routeRenderId){
   if(expectedRenderId!==routeRenderId||routeKey!==activeRouteKey)return;
   const parts=routeKey.replace(/^#\/?/,"").split("/");
   const routeName=parts[0]||"",arg=parts.slice(1).join("/");
+  const publicRoutes=new Set(["login","reg","faq","setup","out"]);
+  if(firebaseReady&&!isRegisteredMember()&&!publicRoutes.has(routeName)){go();return;}
   const renderer=ROUTES[routeName]||idx,m=$("#m");
   if(!m)return;
   const y=window.scrollY||0,drafts={};
@@ -1730,6 +1732,16 @@ async function go(){
     setSuspendedShell(false);
     $("#tk").hidden=false;
     renderModerationNotice();
+  }
+  const publicRoutes=new Set(["login","reg","faq","setup","out"]);
+  if(firebaseReady&&!isRegisteredMember()&&!publicRoutes.has(r)){
+    stopChatSubscription();
+    $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=false;
+    $("#chatShortcutDialog").hidden=true;
+    $("#accountNotice").hidden=true;$("#moderationNotice").hidden=true;$("#ann").hidden=true;
+    $("#nav").innerHTML='🏠 <a href="#/">Inicio</a> ❓ <a href="#/faq">Ayuda</a> 🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>';
+    m.innerHTML='<section class="notice"><h2>🔒 Inicia sesión para acceder al foro</h2><p>Los temas, comentarios, imágenes, enlaces, archivos y el chat están disponibles únicamente para cuentas registradas.</p><p>La sesión de invitado no permite leer contenido de la comunidad.</p><p><a class="bt" href="#/login">Entrar a mi cuenta</a> <a class="bt" href="#/reg">Crear una cuenta gratis</a></p></section>';
+    return;
   }
   renderAccountNotice();
   $("#nav").innerHTML=
@@ -1928,6 +1940,14 @@ function renderChat(items){
 }
 function subscribeChat(){
   if(chatUnsub){chatUnsub();chatUnsub=null;}
+  if(firebaseReady&&!isRegisteredMember()){
+    chatCache=[];
+    $("#sr").hidden=true;$("#chatBox").hidden=true;
+    $("#chatState").textContent="INICIA SESIÓN PARA VER EL CHAT";
+    $("#chatMessages").innerHTML='<div class="chatEmpty">Inicia sesión para ver los mensajes, enlaces y archivos del chat.</div>';
+    $("#chatCatboxForm").hidden=true;
+    return;
+  }
   if(firebaseReady&&moderationAccessState()!=="ready"){
     $("#sr").hidden=true;$("#chatBox").hidden=true;
     $("#chatState").textContent="VERIFICANDO ACCESO...";
@@ -2048,11 +2068,11 @@ async function startFirebase(){
         await loadCurrentStaffRole(user);
         watchCurrentModeration(user);
         if(!resolved){resolved=true;resolve();}
-        if(firebaseReady){updateAdminUI();renderAccountNotice();renderModerationNotice();renderChat(chatCache);go();$("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;}
+        if(firebaseReady){updateAdminUI();renderAccountNotice();renderModerationNotice();subscribeChat();go();}
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
-    $("#chatHint").textContent="Invitados: solo texto. Cuentas con sesión iniciada: pueden adjuntar archivos o pegar enlaces HTTPS, aunque no hayan verificado el correo. Para publicar temas y respuestas sí se necesita verificarlo. Enter envía · Shift+Enter nueva línea · ? atajos."; 
+    $("#chatHint").textContent="Inicia sesión con una cuenta registrada para ver el chat, temas, enlaces y archivos. La sesión de invitado no tiene acceso al contenido. Para publicar temas y respuestas sí se necesita verificarlo. Enter envía · Shift+Enter nueva línea · ? atajos."; 
     subscribeChat();updateAdminUI();renderAccountNotice();watchCurrentModeration(auth.currentUser);renderModerationNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
