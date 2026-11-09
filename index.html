@@ -338,7 +338,7 @@ input,textarea,select{max-width:100%}
         <tr><td><kbd>?</kbd></td><td>Abrir esta ventana de ayuda (cuando no estás escribiendo).</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Cerrar esta ayuda o salir del chat ampliado.</td></tr>
       </table>
-      <p><b>Otros controles:</b> 📎 Adjuntar archivo permite elegir un archivo de tu dispositivo y subirlo a Catbox; copia el enlace que aparece en la otra pestaña y pégalo en el chat. Cualquier cuenta con sesión iniciada puede compartir enlaces; los invitados solo pueden enviar texto. ⛶ Ampliar abre el chat en pantalla grande.</p>
+      <p><b>Acceso:</b> debes iniciar sesión con una cuenta registrada para ver y usar el chat. Los mensajes, enlaces y archivos no se muestran a visitantes anónimos. 📎 Adjuntar archivo permite subir a Catbox y compartir el enlace dentro del chat. ⛶ Ampliar abre el chat en pantalla grande.</p>
       <p><small>En móviles, puedes usar los botones de la pantalla. Durante la composición de texto, Enter respeta Shift+Enter y las teclas especiales del teclado.</small></p>
       <div style="text-align:right"><button type="button" id="chatShortcutDone">Entendido</button></div>
     </div>
@@ -353,10 +353,10 @@ input,textarea,select{max-width:100%}
   <p><b>¿Cómo cito un mensaje?</b><br>Abre un tema y pulsa [citar] bajo el mensaje.</p>
   <p><b>¿Cómo se suben los rangos?</b><br>Por mensajes: Novato, Miembro (5), Habitual (25) y Veterano (100).</p>
   <p><b>¿Quién modera?</b><br>El administrador configurado por UID puede borrar temas, respuestas y mensajes del chat. Las reglas del foro solo las publica el staff.</p>
-  <p><b>¿Puedo entrar sin registrarme?</b><br>Sí. El chat permite invitados anónimos; para crear temas y responder en los foros necesitas una cuenta y verificar tu correo.</p>
+  <p><b>¿Puedo entrar sin registrarme?</b><br>Puedes abrir la página, la FAQ, el registro y el acceso. Para ver temas, comentarios, perfiles, valoraciones, el chat, enlaces y archivos debes iniciar sesión con una cuenta registrada.</p>
   <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Apenas inicias sesión puedes editar tu propio perfil. En tu perfil, selecciona una imagen desde tu dispositivo, súbela a Catbox y pega el enlace que devuelve para guardar tu foto. No necesitas verificar el correo para cambiar el avatar.</p>
   <p><b>¿Qué enlaces multimedia reconoce el chat?</b><br>Detecta varios enlaces por mensaje. Muestra imágenes y GIF directos de distintos alojamientos, reproductores de GIPHY, Tenor, YouTube, Vimeo, RedGIFs, Streamable, SoundCloud y Spotify, y tarjetas para enlaces de archivos o páginas externas. Si un alojamiento bloquea la vista previa, el enlace sigue apareciendo para abrirlo en su sitio original.</p>
-  <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Cualquier cuenta registrada con sesión iniciada puede compartir enlaces y archivos, aunque todavía no haya verificado el correo. Los invitados anónimos solo pueden enviar texto. Para subir un archivo, pulsa «Adjuntar archivo» en el chat, elige el archivo, pulsa «Subir archivo» y copia el enlace que Catbox abre en otra pestaña.</p>
+  <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Solo las cuentas registradas con sesión iniciada pueden ver el contenido de los foros y el chat, incluidos sus enlaces y archivos. También pueden compartir enlaces y subir archivos desde el chat o Configuración. Los enlaces externos siguen dependiendo de la privacidad del alojamiento que los sirve.</p>
   <p><b>¿Cómo funcionan las invitaciones del staff?</b><br>Solo el propietario, co-owner o administrador puede generarlas desde Administración. Cada invitación concede un único rol a una cuenta con correo verificado, se usa una sola vez y queda bloqueada permanentemente. Las invitaciones vencen a los 7 días si nadie las utiliza.</p>
 </template>
 
@@ -1772,7 +1772,7 @@ async function go(){
   }
 }
 
-// Chat: suscripción Firestore en vivo, con invitado anónimo y cuenta registrada.
+// Chat: suscripción Firestore en vivo, solo para cuentas registradas.
 function safeWebUrl(value){
   try{
     const url=new URL(String(value||""));
@@ -2003,7 +2003,7 @@ async function uploadChatFile(file){
 let chatSending=false;
 $("#chatForm").addEventListener("submit",async e=>{
   e.preventDefault();const x=$("#chatText").value.trim();if(!x||uploadBusy||chatSending)return;
-  if(containsExternalLink(x)&&!isRegisteredMember()){alert("Inicia sesión con una cuenta registrada para compartir enlaces. Los invitados solo pueden enviar texto.");return;}
+  if(!isRegisteredMember()){alert("Inicia sesión con una cuenta registrada para usar el chat.");return;}
   chatSending=true;$("#chatSend").disabled=true;
   try{if(await autoModerationGate(x,"chat"))return;await Store.chatSend(x,null);$("#chatText").value="";}catch(z){alert(errText(z));}
   finally{chatSending=false;$("#chatSend").disabled=false;}
@@ -2041,7 +2041,7 @@ document.addEventListener("keydown",e=>{
   if(!typing&&e.altKey&&e.key.toLowerCase()==="m"){e.preventDefault();$("#chatText").focus();}
 });
 $("#chatCatbox").addEventListener("click",()=>{
-  if(!isRegisteredMember()){alert("Inicia sesión con una cuenta registrada para adjuntar archivos. Los invitados solo pueden enviar texto.");return;}
+  if(!isRegisteredMember()){alert("Inicia sesión con una cuenta registrada para usar el chat y adjuntar archivos.");return;}
   const panel=$("#chatCatboxForm");panel.hidden=!panel.hidden;
   if(!panel.hidden)$("#chatCatboxFile").focus();
 });
