@@ -678,7 +678,11 @@ async function thr(m,id){
     ratingPanel+
     '<h3 id="topicComments">💬 Comentarios y conversación · '+comments+'</h3>'+
     '<table><tr><th width="120">Autor</th><th>Publicación / comentario</th></tr>'+
-    P.map((p,i)=>'<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"")+'<br><b><a href="#/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a></b><br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+'<br>Mensajes: '+(counts[p.u]||0)+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+fmt(p.x)+externalMediaPreview(p.x)+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(isStaff()?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>').join("")+
+     P.map((p,i)=>{
+       const ownPost=configured?!!auth?.currentUser&&p.uid===auth.currentUser.uid:!!Store.me()&&p.u===Store.me();
+       const canEditPost=isStaff()||ownPost,canDeletePost=isStaff()||ownPost;
+       return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b><a href="#/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a></b><br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+'<br>Mensajes: '+(counts[p.u]||0)+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+fmt(p.x)+externalMediaPreview(p.x)+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>';
+     }).join("")+
     '</table>'+
     (canReply
       ? '<form id="rf" class="commentForm"><b>✍️ Añadir un comentario</b><br><textarea id="rx" rows="5" style="width:100%" maxlength="6000" placeholder="Escribe tu comentario o respuesta..."></textarea><br><button class="bt">Publicar comentario</button> <span id="er" class="err"></span></form>'
@@ -687,7 +691,7 @@ async function thr(m,id){
   m.querySelectorAll("[data-rating]").forEach(button=>button.addEventListener("click",async()=>{
     const stars=Number(button.dataset.rating);
     m.querySelectorAll("[data-rating]").forEach(b=>b.disabled=true);
-    try{await Store.rateTopic(id,stars);await go();}
+    try{await Store.rateTopic(id,stars);if(!configured)await refreshRouteContent();}
     catch(e){alert(errText(e));m.querySelectorAll("[data-rating]").forEach(b=>b.disabled=false);}
   }));
   m.querySelectorAll("[data-q]").forEach(a=>a.onclick=e=>{
@@ -697,11 +701,21 @@ async function thr(m,id){
     x.value+=p.u+" escribió:\n"+p.x.split("\n").map(l=>"> "+l).join("\n")+"\n\n";
     x.focus();
   });
+  m.querySelectorAll("[data-edit]").forEach(a=>a.onclick=async e=>{
+    e.preventDefault();
+    const post=P[Number(a.dataset.edit)];if(!post)return;
+    const edited=prompt("Edita tu publicación o comentario:",post.x||"");
+    if(edited===null)return;
+    if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}
+    a.textContent="[guardando…]";
+    try{await Store.editPost(post.id,edited);if(!configured)await refreshRouteContent();}
+    catch(z){alert(errText(z));a.textContent="[editar]";}
+  });
   m.querySelectorAll("[data-d]").forEach(a=>a.onclick=async e=>{
     e.preventDefault();
     const i=Number(a.dataset.d);
     if(!confirm(i?"¿Borrar este comentario?":"¿Borrar la publicación y todo el tema?"))return;
-    try{if(i>0){await Store.del("p",P[i].id,id);await go();}else{await Store.del("t",id);location.hash="#/b/"+t.b;}}
+    try{if(i>0){await Store.del("p",P[i].id,id);if(!configured)await refreshRouteContent();}else{await Store.del("t",id);location.hash="#/b/"+t.b;}}
     catch(z){alert(errText(z));}
   });
   if(canReply){
@@ -710,7 +724,7 @@ async function thr(m,id){
       const x=$("#rx").value.trim();
       if(!x)return;
       const button=$("#rf button");button.disabled=true;
-      try{await Store.reply(id,x);if($("#rx"))$("#rx").value="";await go();}
+      try{await Store.reply(id,x);if($("#rx"))$("#rx").value="";if(!configured)await refreshRouteContent();}
       catch(z){$("#er").textContent=errText(z);button.disabled=false;}
     };
   }
