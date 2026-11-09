@@ -1019,7 +1019,7 @@ const Demo = {
   async topic(t){return demo.t.find(x=>x.id===t)||null;},
   async ratings(t){return demo.t.find(x=>x.id===t)?.ratings||[];},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
-  async newT(b,t,x,gallery=[]){const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,10):[];demo.t.push({id,b,t,u:demo.m,staffBadge:false,lastStaffBadge:false,gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:false,x,ts:n});saveDemo();return id;},
+  async newT(b,t,x,gallery=[]){const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30):[];demo.t.push({id,b,t,u:demo.m,staffBadge:false,lastStaffBadge:false,gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:false,x,ts:n});saveDemo();return id;},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
   async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
   async members(){return Object.keys(demo.u).length;},
