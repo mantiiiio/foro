@@ -34,14 +34,15 @@ La configuración de `firebase.json` habilita Email/Password y Anonymous y vincu
 
 En Firebase Console → Authentication → Settings → Authorized domains, comprueba que estén autorizados:
 
-- `foro-66dd5.web.app`
+- `mantipobres.web.app`
+- `foro-66dd5.web.app` (dirección alternativa)
 - `foro-66dd5.firebaseapp.com`
 
 ## Registro y acceso
 
 El registro pide un nombre de usuario (3–16 caracteres: letras, números o guion bajo), correo real y contraseña (mínimo 6 caracteres), y exige aceptar las reglas. Se envía un correo de verificación. Los usuarios deben verificarlo para publicar temas y respuestas. Se puede solicitar restablecer la contraseña desde la pantalla Entrar.
 
-Las cuentas antiguas que se crearon con alias `@foro.local` no tienen una dirección real a la que enviar verificación o recuperación. Para publicar con la nueva versión, crea una cuenta nueva con tu correo real.
+Las cuentas antiguas que se crearon con alias `@foro.local` no tienen una dirección real a la que enviar verificación o recuperación. Para publicar con la nueva versión, crea una cuenta nueva con tu correo real. El campo opcional **Invitación del staff** aparece tanto al registrarse como al iniciar sesión. Si se introduce durante el registro, se comprueba que el código esté disponible y se conserva solo su hash en la pestaña; el rol se concede cuando se verifica el correo. También puede pegarse al iniciar sesión después de verificar el correo.
 
 ## Personal y roles administrativos
 
@@ -52,7 +53,7 @@ Los roles no se conceden por nombre de usuario ni por texto del navegador. El pr
 - **Moderador:** puede moderar temas y respuestas; no puede elevarse de rol ni emitir invitaciones.
 - **Ayudante:** distintivo de personal sin permisos de moderación.
 
-Solo el propietario/co-owner/administrador ve el apartado **Administración**. Los tokens se generan con aleatoriedad criptográfica, se guarda únicamente SHA-256, vencen a los 7 días y se pueden usar una sola vez. Al reclamarse, el token queda bloqueado permanentemente y el rol se vincula al UID de Firebase. El titular debe iniciar sesión con una cuenta cuyo correo esté verificado. El token anterior de verificación genérica quedó retirado y no es válido para este sistema.
+Solo el propietario/co-owner/administrador ve el apartado **Administración**. El generador requiere elegir el rol y describir el propósito de cada invitación. Los tokens se generan con aleatoriedad criptográfica, se guarda únicamente SHA-256, vencen a los 7 días y se pueden usar una sola vez. Al reclamarse, el token queda bloqueado permanentemente y el rol se vincula al UID de Firebase. El titular debe usar una cuenta cuyo correo esté verificado. **Owner no es un rol emitible por token**: existe un único propietario y se configura directamente por UID. El token anterior de verificación genérica quedó retirado y no es válido para este sistema.
 
 Para activar el propietario, copia tu UID de Firebase desde tu perfil o Firebase Console → Authentication → Users y reemplaza `PEGA_AQUI_TU_UID_ADMIN` en `index.html`, `firestore.rules` y `storage.rules`. Después despliega las reglas de Firestore. El UID no es una contraseña. Nunca guardes contraseñas, tokens privados ni claves de servicio en el HTML o en el repositorio.
 
