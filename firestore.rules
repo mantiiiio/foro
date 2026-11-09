@@ -231,11 +231,8 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('avatarUrl', '') == request.resource.data.avatarUrl)
         )
         && (request.resource.data.x.size() > 0 || request.resource.data.media is map)
-        && (
-          (request.resource.data.media == null && !containsLink(request.resource.data.x))
-          || (verifiedMember() && request.resource.data.media == null && containsLink(request.resource.data.x))
-          || (verifiedMember() && validChatMedia(request.resource.data.media))
-        );
+        && request.resource.data.media == null
+        && (!containsLink(request.resource.data.x) || verifiedMember());
       allow update: if false;
       allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
