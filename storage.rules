@@ -3,7 +3,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() { return request.auth != null; }
     function isOwner() {
-      return signedIn() && request.auth.uid == 'PEGA_AQUI_TU_UID_ADMIN';
+      return signedIn() && request.auth.uid == 'YgTAVFNclBgScVybW82xE0jKJg32';
     }
     function hasStaffRole(role) {
       return signedIn()
