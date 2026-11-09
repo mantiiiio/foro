@@ -1064,9 +1064,22 @@ function renderChat(items){
 }
 function subscribeChat(){
   if(chatUnsub){chatUnsub();chatUnsub=null;}
-  if(!configured){$("#chatState").textContent="DEMO LOCAL · no es un chat compartido";renderChat(demo.chat||[]);$("#chatHint").textContent="Modo demo: los mensajes solo se guardan en este navegador. Configura Firebase para chat en vivo. Enter envía · Shift+Enter nueva línea · ? atajos.";return;}
+  if(!configured){
+    $("#chatState").textContent="DEMO LOCAL · no es un chat compartido";
+    renderChat(demo.chat||[]);
+    $("#chatHint").textContent="Modo demo: los mensajes solo se guardan en este navegador. Configura Firebase para chat en vivo. Enter envía · Shift+Enter nueva línea · ? atajos.";
+    return;
+  }
   const q=query(collection(db,"chatMessages"),orderBy("ts","desc"),limit(CHAT_LIMIT));
-  chatUnsub=onSnapshot(q,s=>{chatCache=s.docs.map(d=>({id:d.id,...d.data()})).reverse();renderChat(chatCache);$("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;},e=>{$("#chatState").textContent="ERROR DE CHAT · revisa reglas Firestore";console.error(e);});
+  $("#chatState").textContent="CONECTANDO AL CHAT...";
+  chatUnsub=onSnapshot(q,s=>{
+    chatCache=s.docs.map(d=>({id:d.id,...d.data()})).reverse();
+    renderChat(chatCache);
+    $("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;
+  },e=>{
+    $("#chatState").textContent="ERROR DE CHAT · "+errText(e);
+    console.error("Error en la suscripción del chat:",e);
+  });
 }
 async function uploadChatFile(file){
   requireVerifiedMember("subir archivos al chat");
@@ -1160,6 +1173,12 @@ async function startFirebase(){
     subscribeChat();updateAdminUI();renderAccountNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
+addEventListener("online",()=>{
+  if(firebaseReady){subscribeChat();go();}
+});
+document.addEventListener("visibilitychange",()=>{
+  if(firebaseReady&&document.visibilityState==="visible"){subscribeChat();go();}
+});
 function updateAdminUI(){
   const admin=isAdmin();$("#chatAdmin").hidden=!admin;
   if(admin){$("#chatAdminInfo").textContent=isOwner()?"OWNER detectado por UID. Tu cuenta tiene administración permanente.":"Permisos administrativos verificados por UID y roles protegidos en Firestore.";}
