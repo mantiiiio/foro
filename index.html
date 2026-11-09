@@ -341,6 +341,7 @@ const AUTO_MODERATION_REASONS = {
   repeated:"texto repetitivo"
 };
 const autoModActivity = new Map();
+const autoModWarnCooldown = new Map();
 function autoModerationReason(text,channel="chat"){
   const content=String(text||"").split("\n").filter(line=>!line.trimStart().startsWith(">")).join("\n").replace(/\u2063MPQ:[A-Za-z0-9_-]+\u2063/g,"").trim();
   if(!content)return "";
@@ -354,8 +355,8 @@ function autoModerationReason(text,channel="chat"){
   const uid=auth?.currentUser?.uid||"guest",now=Date.now(),norm=content.toLowerCase().replace(/\s+/g," ").slice(0,500);
   const state=autoModActivity.get(uid)||[];
   const recent=state.filter(item=>now-item.at<60000);
-  if(recent.some(item=>item.text===norm))return "duplicate";
-  if(channel==="chat"&&recent.filter(item=>now-item.at<12000).length>=5)return "flood";
+  if(recent.some(item=>item.channel===channel&&item.text===norm))return "duplicate";
+  if(channel==="chat"&&recent.filter(item=>item.channel==="chat"&&now-item.at<12000).length>=5)return "flood";
   return "";
 }
 async function assertCurrentUserNotBanned(){
@@ -367,13 +368,17 @@ async function assertCurrentUserNotBanned(){
   if(mod.status==="temporary"&&until&&until.getTime()>Date.now())throw new Error("Tu cuenta está suspendida hasta "+dt(until)+". Motivo: "+(mod.banReason||"incumplimiento de las normas."));
 }
 async function autoModerationGate(text,channel="chat"){
+  if(isOwner())return false;
   await assertCurrentUserNotBanned();
   const issue=autoModerationReason(text,channel),uid=auth?.currentUser?.uid||"guest",now=Date.now();
-  if(!issue){const norm=String(text||"").toLowerCase().replace(/\s+/g," ").trim().slice(0,500),recent=(autoModActivity.get(uid)||[]).filter(item=>now-item.at<60000);recent.push({text:norm,at:now});autoModActivity.set(uid,recent.slice(-12));return false;}
+  if(!issue){const norm=String(text||"").toLowerCase().replace(/\s+/g," ").trim().slice(0,500),recent=(autoModActivity.get(uid)||[]).filter(item=>now-item.at<60000);recent.push({text:norm,at:now,channel});autoModActivity.set(uid,recent.slice(-12));return false;}
+  const cooldownKey=uid+":"+issue,lastWarning=autoModWarnCooldown.get(cooldownKey)||0;
+  if(lastWarning&&now-lastWarning<20000){alert("AutoModeración: mensaje bloqueado. Ya se registró un aviso por este mismo motivo; espera un poco antes de volver a intentarlo.");return true;}
   const description=AUTO_MODERATION_REASONS[issue]||"contenido no permitido";
   let result;
   try{result=await Store.autoWarn(issue,channel);}
   catch(error){console.error("No se pudo registrar el aviso automático:",error);alert("AutoModeración bloqueó el contenido, pero no pudo guardar el aviso. No se publicó. "+errText(error));return true;}
+  autoModWarnCooldown.set(cooldownKey,Date.now());
   const count=result.warningCount||0;
   alert(count>=3?"AutoModeración: "+description+". Llegaste a 3/3 avisos; tu cuenta recibió un ban permanente.":"AutoModeración: "+description+". Se registró tu aviso "+count+"/3. Al tercer aviso se aplicará un ban permanente.");
   return true;
@@ -691,13 +696,15 @@ const D = {
     if(!isStaff())throw new Error("No tienes permiso para banear.");
     if(uid===OWNER_UID||uid===auth.currentUser.uid)throw new Error("No puedes banear esta cuenta.");
     const targetStaff=await getDoc(doc(db,"staff",uid));if(targetStaff.exists()&&!isAdmin())throw new Error("Solo un administrador puede banear a otro miembro del staff.");
+    if(!["temporary","permanent"].includes(type))throw new Error("Tipo de ban no válido.");
     if(type==="permanent"&&!isAdmin())throw new Error("Solo un administrador puede aplicar un ban permanente manual.");
     const clean=String(reason||"").trim().slice(0,240);if(clean.length<3)throw new Error("Escribe un motivo de al menos 3 caracteres.");
     if(type==="temporary"&&(!Number.isFinite(durationMs)||durationMs<60000||durationMs>30*86400000))throw new Error("Duración temporal no válida.");
     const ref=doc(db,"moderation",uid);
     await runTransaction(db,async tx=>{
       const snap=await tx.get(ref),before=snap.exists()?snap.data():{warnings:[],warningCount:0};
-      const data={warnings:Array.isArray(before.warnings)?before.warnings.slice(0,3):[],warningCount:Math.min(3,Number(before.warningCount)||0),status:type,banUntil:type==="temporary"?new Date(Date.now()+durationMs):null,banReason:clean,updatedAt:Date.now(),lastActionBy:auth.currentUser.uid};
+      const warnings=Array.isArray(before.warnings)?before.warnings.slice(0,3):[];
+      const data={warnings,warningCount:warnings.length,status:type,banUntil:type==="temporary"?new Date(Date.now()+durationMs):null,banReason:clean,updatedAt:Date.now(),lastActionBy:auth.currentUser.uid};
       tx.set(ref,data);
     });
   },
@@ -989,7 +996,7 @@ async function prf(m,u){
   let moderationHtml="";
   if(isStaff()&&auth?.currentUser&&auth.currentUser.uid!==f.uid&&f.uid!==OWNER_UID){
     try{
-      const [mod,targetRole]=await Promise.all([Store.moderation(f.uid),isAdmin()?Store.moderationMember(f.uid):Promise.resolve("")]);
+      const [mod,targetRole]=await Promise.all([Store.moderation(f.uid),Store.moderationMember(f.uid)]);
       if(!targetRole||isAdmin())moderationHtml=moderationPanelHtml(f.uid,mod,u);
     }catch(error){console.warn("No se pudo cargar el panel de moderación",error);}
   }
@@ -1010,9 +1017,10 @@ function moderationPanelHtml(uid,data,username){
   const warnings=Array.isArray(data.warnings)?data.warnings:[];
   const until=data.banUntil?.toDate?data.banUntil.toDate():data.banUntil?new Date(data.banUntil):null;
   const activeTemp=data.status==="temporary"&&until&&until.getTime()>Date.now();
+  const permanent=data.status==="permanent";
   const status=data.status==="permanent"?"BAN PERMANENTE":activeTemp?"SUSPENDIDO HASTA "+dt(until):"ACTIVO";
   const history=warnings.map((item,index)=>`<li><b>Aviso ${index+1}/3:</b> ${E(item.reason||"Incumplimiento")} <small>(${E(item.source==="automod"?"AutoMod":"Staff")} · ${dt(item.at)})</small></li>`).join("");
-  return `<section class="moderationPanel"><h3>🛡 Moderación de ${E(username)}</h3><p>Estado: <b>${E(status)}</b> · Avisos: <b>${warnings.length}/3</b></p>${data.banReason?`<p>Motivo de sanción: ${E(data.banReason)}</p>`:""}${history?`<ol class="moderationHistory">${history}</ol>`:"<p><small>Sin avisos registrados.</small></p>"}${warnings.length>=3?`<p><b>Se alcanzó el máximo de 3 avisos.</b></p>`:""}<label for="modDuration">Duración de suspensión:</label> <select id="modDuration"><option value="3600000">1 hora</option><option value="86400000" selected>24 horas</option><option value="604800000">7 días</option><option value="2592000000">30 días</option></select><div class="modActions"><button type="button" id="modWarn" ${warnings.length>=3?"disabled":""}>Dar aviso (${warnings.length}/3)</button><button type="button" id="modTempBan">Ban temporal</button>${isAdmin()?`<button type="button" id="modPermanentBan">Ban permanente</button><button type="button" id="modUnban">Levantar ban y reiniciar avisos</button>`:""}</div><small>El tercer aviso provoca un ban permanente. Moderadores pueden dar avisos y suspensiones temporales; solo administradores pueden aplicar o levantar bans permanentes.</small></section>`;
+  return `<section class="moderationPanel"><h3>🛡 Moderación de ${E(username)}</h3><p>Estado: <b>${E(status)}</b> · Avisos: <b>${warnings.length}/3</b></p>${data.banReason?`<p>Motivo de sanción: ${E(data.banReason)}</p>`:""}${history?`<ol class="moderationHistory">${history}</ol>`:"<p><small>Sin avisos registrados.</small></p>"}${warnings.length>=3?`<p><b>Se alcanzó el máximo de 3 avisos.</b></p>`:""}<label for="modDuration">Duración de suspensión:</label> <select id="modDuration"><option value="3600000">1 hora</option><option value="86400000" selected>24 horas</option><option value="604800000">7 días</option><option value="2592000000">30 días</option></select><div class="modActions"><button type="button" id="modWarn" ${warnings.length>=3?"disabled":""}>Dar aviso (${warnings.length}/3)</button><button type="button" id="modTempBan" ${permanent?"disabled":""}>Ban temporal</button>${isAdmin()?`<button type="button" id="modPermanentBan">Ban permanente</button><button type="button" id="modUnban">Levantar ban y reiniciar avisos</button>`:""}</div><small>El tercer aviso provoca un ban permanente. Moderadores pueden dar avisos y suspensiones temporales; solo administradores pueden aplicar o levantar bans permanentes.</small></section>`;
 }
 function faq(m){m.innerHTML=`<table><tr><th>FAQ / Ayuda</th></tr><tr><td>${$("#faqt").innerHTML}</td></tr></table>`;}
 async function staffPanel(m){
