@@ -2,13 +2,23 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function isAdmin() {
-      return signedIn() && request.auth.uid in ['PEGA_AQUI_TU_UID_ADMIN'];
+    function isOwner() { return signedIn() && request.auth.uid == 'PEGA_AQUI_TU_UID_ADMIN'; }
+    function hasStaffRole(role) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
+        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == role;
     }
-    function isModerator() {
-      return signedIn() && request.auth.uid in ['PEGA_AQUI_TU_UID_MODERADOR'];
+    function isAdmin() { return isOwner() || hasStaffRole('co_owner') || hasStaffRole('admin'); }
+    function isModerator() { return isAdmin() || hasStaffRole('moderator'); }
+    function isStaff() { return isModerator(); }
+    function canManageStaff() { return isAdmin(); }
+    function canIssueStaffRole(role) {
+      return (isOwner() && role in ['co_owner','admin','moderator','helper'])
+        || (isAdmin() && !isOwner() && role in ['moderator','helper']);
     }
-    function isStaff() { return isAdmin() || isModerator(); }
+    function canManageInviteRole(role) {
+      return isOwner() || (isAdmin() && role in ['moderator','helper']);
+    }
     function registered() {
       return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
@@ -71,26 +81,6 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    function isOwner() {
-      return signedIn() && request.auth.uid == 'PEGA_AQUI_TU_UID_ADMIN';
-    }
-    function hasStaffRole(role) {
-      return signedIn()
-        && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
-        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == role;
-    }
-    function isAdmin() { return isOwner() || hasStaffRole('co_owner') || hasStaffRole('admin'); }
-    function isModerator() { return isAdmin() || hasStaffRole('moderator'); }
-    function isStaff() { return isModerator(); }
-    function canManageStaff() { return isAdmin(); }
-    function canIssueStaffRole(role) {
-      return (isOwner() && role in ['co_owner','admin','moderator','helper'])
-        || (isAdmin() && !isOwner() && role in ['moderator','helper']);
-    }
-    function canManageInviteRole(role) {
-      return isOwner() || (isAdmin() && role in ['moderator','helper']);
-    }
-
     // Roles persistentes: nadie puede otorgarse un rol sin una invitación válida.
     match /staff/{uid} {
       allow get: if signedIn() && (request.auth.uid == uid || canManageStaff());
@@ -116,8 +106,11 @@ service cloud.firestore {
       allow get: if signedIn();
       allow list: if canManageStaff();
       allow create: if canIssueStaffRole(request.resource.data.role)
-        && request.resource.data.keys().hasOnly(['role','status','createdBy','createdAt','expiresAt'])
+        && request.resource.data.keys().hasOnly(['role','description','status','createdBy','createdAt','expiresAt'])
         && request.resource.data.role in ['co_owner','admin','moderator','helper']
+        && request.resource.data.description is string
+        && request.resource.data.description.size() >= 3
+        && request.resource.data.description.size() <= 140
         && request.resource.data.status == 'available'
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time
