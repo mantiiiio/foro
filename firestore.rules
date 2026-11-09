@@ -241,11 +241,25 @@ service cloud.firestore {
       allow update: if isStaff() || (
         verifiedMember()
         && resource.data.uid == request.auth.uid
+        && resource.data.get('deleted', false) != true
         && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x'])
         && request.resource.data.x is string
         && request.resource.data.x.size() > 0
         && request.resource.data.x.size() <= 6000
+      ) || (
+        registered()
+        && resource.data.uid == request.auth.uid
+        && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
+        && resource.data.get('deleted', false) != true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x','deleted','deletedBy','deletedByUid','deletedAt','deletedQuoteHash'])
+        && request.resource.data.x == ''
+        && request.resource.data.deleted == true
+        && request.resource.data.deletedBy == 'usuario'
+        && request.resource.data.deletedByUid == request.auth.uid
+        && request.resource.data.deletedAt is int
+        && request.resource.data.deletedQuoteHash is string
+        && request.resource.data.deletedQuoteHash.size() <= 16
       );
       allow delete: if isStaff() || (
         registered()
@@ -281,13 +295,27 @@ service cloud.firestore {
         && (request.resource.data.x.size() > 0 || request.resource.data.media is map)
         && (request.resource.data.media == null || validChatMedia(request.resource.data.media))
         && (!containsLink(request.resource.data.x) || registered());
-      allow update: if signedIn()
+      allow update: if (
+        signedIn()
         && resource.data.uid == request.auth.uid
+        && resource.data.get('deleted', false) != true
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x'])
         && request.resource.data.x is string
         && request.resource.data.x.size() <= 1500
         && (request.resource.data.x.size() > 0 || resource.data.media is map)
-        && (!containsLink(request.resource.data.x) || registered());
+        && (!containsLink(request.resource.data.x) || registered())
+      ) || (
+        signedIn()
+        && (isAdmin() || resource.data.uid == request.auth.uid)
+        && resource.data.get('deleted', false) != true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x','media','deleted','deletedBy','deletedAt','deletedByUid'])
+        && request.resource.data.x == ''
+        && request.resource.data.media == null
+        && request.resource.data.deleted == true
+        && request.resource.data.deletedBy == (isAdmin() ? 'administrador' : 'usuario')
+        && request.resource.data.deletedAt is int
+        && request.resource.data.deletedByUid == request.auth.uid
+      );
       allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
   }
