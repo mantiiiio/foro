@@ -232,6 +232,9 @@ input,textarea,select{max-width:100%}
 .banAccessPanel .moderationHistory li{margin:5px 0}
 .banAccessPanel .banActions a{background:#a40000!important;color:#fff!important;border:2px solid #780000!important;padding:8px 13px!important}
 
+
+/* El atributo hidden debe prevalecer sobre los display definidos por el diseño. */
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -488,7 +491,7 @@ async function autoModerationGate(text,channel="chat"){
   return true;
 }
 function setSuspendedShell(hidden){
-  ["#hd","#st","#nav","#accountNotice","#moderationNotice","#tk","#ann","#ft","#sl","#sr","#chatShortcutDialog"].forEach(selector=>{
+  ["#hd","#st","#nav","#accountNotice","#moderationNotice","#tk","#ann","#ft","#sl","#sr","#chatBox","#chatShortcutDialog"].forEach(selector=>{
     const element=$(selector);if(element)element.hidden=hidden;
   });
   if(!hidden){$("#sr").hidden=false;$("#chatBox").hidden=false;}
@@ -544,10 +547,18 @@ function stopChatSubscription(){
 function refreshModerationAccess(){
   if(!firebaseReady||moderationAccessState()!=="ready")return;
   const banned=!!getActiveBanDetails();
-  if(lastModerationBanned===banned)return;
+  if(lastModerationBanned===banned){
+    if(banned)setSuspendedShell(true);
+    return;
+  }
   lastModerationBanned=banned;
   renderModerationNotice();
-  if(banned)stopChatSubscription();
+  if(banned){
+    setSuspendedShell(true);
+    stopChatSubscription();
+    if(location.hash!=="#/out")go();
+    return;
+  }
   if(location.hash!=="#/out")go();
   subscribeChat();
 }
