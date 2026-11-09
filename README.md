@@ -45,7 +45,7 @@ Las cuentas antiguas que se crearon con alias `@foro.local` no tienen una direcc
 
 ## Administrador
 
-El rol de administrador se configura por UID; no se concede por nombre de usuario ni por el contenido del navegador.
+Los roles de administrador y moderador se configuran por UID; no se conceden por nombre de usuario ni por el contenido del navegador.
 
 1. Registra la cuenta de administrador con un correo real y verifica el correo.
 2. Firebase Console → Authentication → Users: copia el UID de esa cuenta.
