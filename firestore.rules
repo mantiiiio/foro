@@ -64,6 +64,10 @@ service cloud.firestore {
         )
       );
     }
+    // Solo cuentas registradas (no sesiones anónimas) pueden leer el contenido comunitario.
+    function canReadCommunity() {
+      return registered() && canParticipate();
+    }
     function canModerateTarget(uid) {
       return isStaff()
         && uid != request.auth.uid
@@ -319,7 +323,7 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if true;
+      allow read: if canReadCommunity();
       allow create: if registered()
         && allowedRegistrationEmail()
         && request.auth.uid == uid
@@ -354,7 +358,7 @@ service cloud.firestore {
 
     // Reserva pública del nombre de usuario; nunca almacena el correo privado.
     match /usernames/{username} {
-      allow read: if true;
+      allow read: if canReadCommunity();
       allow create: if registered()
         && allowedRegistrationEmail()
         && request.resource.data.keys().hasOnly(['u', 'uid', 'ts'])
@@ -394,7 +398,7 @@ service cloud.firestore {
 
     // Solo el personal administrador emite invitaciones. El ID del documento es SHA-256 del código.
     match /staffInvites/{tokenHash} {
-      allow get: if signedIn();
+      allow get: if registered();
       allow list: if canManageStaff();
       allow create: if canIssueStaffRole(request.resource.data.role)
         && request.resource.data.keys().hasOnly(['role','description','status','createdBy','createdAt','expiresAt'])
@@ -431,7 +435,7 @@ service cloud.firestore {
     }
 
     match /topics/{topicId} {
-      allow read: if canParticipate();
+      allow read: if canReadCommunity();
       allow create: if verifiedMember()
         && canParticipate()
         && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n','staffBadge','lastStaffBadge','gallery'])
@@ -481,7 +485,7 @@ service cloud.firestore {
       );
 
       match /ratings/{ratingUid} {
-        allow read: if canParticipate();
+        allow read: if canReadCommunity();
         allow create: if registered()
           && canParticipate()
           && request.auth.uid == ratingUid
@@ -506,7 +510,7 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if canParticipate();
+      allow read: if canReadCommunity();
       allow create: if verifiedMember()
         && canParticipate()
         && hasFreshPostRateLimit(request.auth.uid, postId)
@@ -560,7 +564,7 @@ service cloud.firestore {
     }
 
     match /chatMessages/{messageId} {
-      allow read: if canParticipate();
+      allow read: if canReadCommunity();
       allow create: if signedIn()
         && canParticipate()
         && hasFreshChatRateLimit(request.auth.uid, messageId)
