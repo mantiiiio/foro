@@ -491,9 +491,13 @@ async function autoModerationGate(text,channel="chat"){
   return true;
 }
 function setSuspendedShell(hidden){
-  ["#hd","#st","#nav","#accountNotice","#moderationNotice","#tk","#ann","#ft","#sl","#sr","#chatBox","#chatShortcutDialog"].forEach(selector=>{
+  ["#hd","#st","#nav","#accountNotice","#moderationNotice","#tk","#ann","#ft","#sl","#sr","#chatBox"].forEach(selector=>{
     const element=$(selector);if(element)element.hidden=hidden;
   });
+  // La ayuda del chat solo se abre mediante el botón ? o su atajo de teclado.
+  // Al ocultar el foro por una suspensión, se cierra; al mostrarlo, permanece cerrada.
+  const shortcuts=$("#chatShortcutDialog");
+  if(hidden&&shortcuts)shortcuts.hidden=true;
   if(!hidden){$("#sr").hidden=false;$("#chatBox").hidden=false;}
 }
 function getActiveBanDetails(data=currentModerationData){
@@ -1684,7 +1688,12 @@ $("#chatForm").addEventListener("submit",async e=>{
 });
 
 const shortcutDialog=$("#chatShortcutDialog");
-function openChatShortcuts(){shortcutDialog.hidden=false;$("#chatShortcutClose").focus();}
+function openChatShortcuts(){
+  if(!shortcutDialog)return;
+  if(firebaseReady&&(moderationAccessState()!=="ready"||getActiveBanDetails()))return;
+  shortcutDialog.hidden=false;
+  $("#chatShortcutClose").focus();
+}
 function closeChatShortcuts(){if(shortcutDialog.hidden)return;shortcutDialog.hidden=true;$("#chatShortcuts").focus();}
 $("#chatShortcuts").addEventListener("click",openChatShortcuts);
 $("#chatShortcutClose").addEventListener("click",closeChatShortcuts);
