@@ -235,7 +235,7 @@ service cloud.firestore {
 
     // Roles persistentes: nadie puede otorgarse un rol sin una invitación válida.
     match /staff/{uid} {
-      allow get: if signedIn() && (request.auth.uid == uid || canManageStaff());
+      allow get: if signedIn() && (request.auth.uid == uid || isStaff());
       allow list: if canManageStaff();
       allow create: if verifiedMember()
         && request.auth.uid == uid
