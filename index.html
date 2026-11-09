@@ -220,7 +220,7 @@ const D = {
       await runTransaction(db,async tx=>{
         const existing=await tx.get(handleRef);
         if(existing.exists())throw new Error("Ese nombre de usuario ya está ocupado. Prueba otro.");
-        tx.set(userRef,{u:n,ts:now});
+        tx.set(userRef,{u:n,ts:now,rulesAcceptedAt:now});
         tx.set(handleRef,{u:n,uid:cred.user.uid,ts:now});
       });
     }catch(e){
@@ -328,7 +328,8 @@ async function idx(m){
 async function brd(m,id){
   const B=BL.find(x=>x[0]===id);if(!B)return m.innerHTML="Foro inexistente";
   const T=(await Store.topics()).filter(t=>t.b===id),isRules=id==="reglas";
-  m.innerHTML=`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${isRules&&!isStaff()?"":`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`}</p><table><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${T.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>${isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:""}`;
+  const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican al foro y al chat. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
+  m.innerHTML=rulesIntro+`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${isRules&&!isStaff()?"":`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`}</p><table><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${T.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>${isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:""}`;
 }
 async function thr(m,id){
   const t=await Store.topic(id);if(!t)return m.innerHTML="Tema inexistente";
