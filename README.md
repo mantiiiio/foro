@@ -16,9 +16,9 @@ MantiPobres es un foro retro en español alojado en Firebase Hosting, con cuenta
 - Chat en tiempo real con mensajes de texto y borrado de mensajes propios.
 - Herramientas de administración por UID.
 - Anuncios y panel lateral editables directamente en `index.html`.
-- Perfiles editables por su propio titular con correo verificado; fotos mediante enlace HTTPS o subida con ImageKit al configurarlo.
-- Chat abierto para texto, pero los enlaces y adjuntos quedan reservados a cuentas registradas con correo verificado (incluye al staff).
-- Adjuntos preparados para ImageKit: imágenes, GIF, vídeos, PDF, TXT, CSV y ZIP, con límites por archivo.
+- Perfiles editables por su propio titular con correo verificado; las fotos se guardan como enlaces HTTPS externos.
+- Chat abierto para texto; compartir enlaces externos queda reservado a cuentas registradas con correo verificado (incluye al staff).
+- Multimedia compartida mediante enlaces externos, sin almacenamiento ni costes de subida para el foro.
 
 ## Configuración y despliegue
 
@@ -44,7 +44,7 @@ En Firebase Console → Authentication → Settings → Authorized domains, comp
 
 El registro pide un nombre de usuario (3–16 caracteres: letras, números o guion bajo), correo real y contraseña (mínimo 6 caracteres), y exige aceptar las reglas. Se envía un correo de verificación. Los usuarios deben verificarlo para publicar temas y respuestas. Se puede solicitar restablecer la contraseña desde la pantalla Entrar.
 
-Las cuentas antiguas que se crearon con alias `@foro.local` no tienen una dirección real a la que enviar verificación o recuperación. Para publicar con la nueva versión, crea una cuenta nueva con tu correo real. El campo opcional **Invitación del staff** aparece tanto al registrarse como al iniciar sesión. Si se introduce durante el registro, se comprueba que el código esté disponible y se conserva solo su hash en la pestaña; el rol se concede cuando se verifica el correo. También puede pegarse al iniciar sesión después de verificar el correo.
+Las cuentas antiguas que se crearon con alias `@foro.local` no tienen una dirección real a la que enviar verificación o recuperación. Para publicar con la nueva versión, crea una cuenta nueva con tu correo real. Después, para volver a entrar, usa siempre **Entrar** con esa misma cuenta: no vuelvas a pulsar Registrarse. Firebase conserva la sesión en el navegador. Usa siempre `https://mantipobres.web.app/`; el dominio alternativo `foro-66dd5.web.app` puede guardar una sesión separada. El campo opcional **Invitación del staff** aparece tanto al registrarse como al iniciar sesión. Si se introduce durante el registro, se comprueba que el código esté disponible y se conserva solo su hash en la pestaña; el rol se concede cuando se verifica el correo. También puede pegarse al iniciar sesión después de verificar el correo.
 
 ## Personal y roles administrativos
 
@@ -71,40 +71,31 @@ Selecciona `mantiiiio/foro` y la rama `main`. Si pregunta si debe sobrescribir l
 
 ## Multimedia y permisos
 
-Los invitados anónimos pueden enviar mensajes de texto en el chat, pero **no pueden** compartir enlaces, imágenes, vídeos ni archivos. Esas acciones requieren una cuenta registrada y correo verificado. El staff también puede hacerlo porque sus invitaciones solo se activan después de verificar el correo.
+Los invitados anónimos pueden enviar mensajes de texto en el chat, pero **no pueden** compartir enlaces. Compartir enlaces externos requiere una cuenta registrada y correo verificado. El staff también puede hacerlo porque sus invitaciones solo se activan después de verificar el correo.
 
-Cada usuario puede editar únicamente su propio avatar. Los cambios de perfil también requieren correo verificado. Las reglas de Firestore aplican estos controles en el backend; no dependen solamente de ocultar botones en la página.
+Cada usuario puede editar únicamente su propio avatar. Los cambios de perfil también requieren correo verificado. Las reglas de Firestore aplican estos controles en el backend.
 
-### Almacenamiento
+### Alojamiento externo
 
-Firebase Storage permanece desactivado (STORAGE_ENABLED=false) para evitar activar el plan Blaze. Las subidas se prepararon para ImageKit, pero no estarán activas hasta configurar las claves y el Worker de autenticación. Los límites de la interfaz son:
+El foro no sube ni almacena archivos. Para compartir multimedia:
 
-- Avatar: JPG, PNG, GIF o WEBP, máximo 5 MB.
-- Chat: JPG, PNG, GIF o WEBP, máximo 8 MB.
-- Vídeo: MP4 o WEBM, máximo 25 MB.
-- Documentos: PDF, TXT, CSV o ZIP, máximo 10 MB.
+1. Abre [Catbox](https://catbox.moe/).
+2. Sube el archivo y copia el enlace que devuelve.
+3. Vuelve a MantiPobres y pega el enlace en el chat. Para el avatar, pega la URL directa en tu perfil.
 
-Los enlaces HTTPS pueden compartirse en mensajes del chat por cuentas verificadas. Los enlaces directos a imágenes, GIF y vídeos muestran vista previa; los enlaces a documentos conocidos muestran un enlace para abrir el archivo. El foro no aloja el contenido de enlaces externos.
+Catbox indica un máximo de **200 MB por archivo**. Su FAQ dice que los archivos subidos de forma anónima se eliminan después de dos años sin accesos; los vinculados a una cuenta se conservan permanentemente. Catbox no publica una cuota total ilimitada garantizada. Revisa siempre sus [FAQ y condiciones](https://catbox.moe/faq.php), no subas documentos privados ni material que no tengas derecho a compartir y guarda una copia propia de lo importante.
 
-### Activar subidas directas con ImageKit
+Firebase Storage permanece desactivado (`STORAGE_ENABLED=false`), así que no hace falta activar Blaze. Los enlaces de imágenes, GIF, vídeos y documentos compatibles se muestran o abren desde el chat cuando la URL permite identificar el tipo de archivo.
 
-1. Crea una cuenta en https://imagekit.io/ y abre Developer options / API keys. Copia tu public key y private key. La private key nunca debe ponerse en el HTML, en GitHub ni compartirse por chat.
-2. En https://dash.cloudflare.com/, abre Workers & Pages y crea un Worker. Pega el contenido completo de cloudflare/imagekit-auth-worker.js y publícalo.
-3. En la configuración del Worker, abre Settings → Variables and Secrets y crea estas tres variables:
-   - FIREBASE_WEB_API_KEY: la Web API Key que aparece en la configuración de tu app web de Firebase.
-   - IMAGEKIT_PUBLIC_KEY: la public key de ImageKit.
-   - IMAGEKIT_PRIVATE_KEY: la private key de ImageKit, guardada como Secret (no como texto público).
-4. Vuelve a publicar el Worker. Su dirección será parecida a https://nombre-del-worker.tu-cuenta.workers.dev. El endpoint que usará el foro es esa dirección seguida por /auth.
-5. En index.html, completa estas dos constantes con tus valores públicos:
-   ```js
-   const IMAGEKIT_AUTH_ENDPOINT = "https://nombre-del-worker.tu-cuenta.workers.dev/auth";
-   const IMAGEKIT_PUBLIC_KEY = "public_TU_CLAVE";
-   ```
-6. Guarda y publica el cambio en GitHub. Al cargar el foro, los botones de adjuntar se habilitarán automáticamente.
+### Publicar las reglas de Firestore
 
-El Worker consulta a Firebase para verificar que la cuenta tenga una sesión válida y correo confirmado. Solo entonces genera una firma de corta duración para ImageKit. La clave privada permanece en Cloudflare. ImageKit exige que las firmas se generen en el servidor y que no se exponga la private key en el navegador (documentación: https://imagekit.io/docs/integration/javascript).
+GitHub Actions publica Hosting, pero no actualiza las reglas de Firestore. Después de traer los cambios, ejecuta desde la carpeta del proyecto:
 
-Cloudflare Workers Free tiene una cuota de 100.000 solicitudes por día y 10 ms de CPU por solicitud, según sus límites publicados en octubre de 2026 (https://developers.cloudflare.com/workers/platform/limits/). ImageKit también tiene cuotas gratuitas y límites propios: no es almacenamiento ilimitado. Revisa el consumo desde su panel y no subas material sensible. No actives Firebase Storage ni Blaze para seguir esta guía.
+```cmd
+firebase deploy --only firestore:rules --project foro-66dd5
+```
+
+El Owner se identifica por el UID configurado en `index.html` y `firestore.rules`. Para conservar tu administración, inicia sesión con la cuenta original usando **Entrar** (no crees una cuenta nueva cada vez) y visita siempre el mismo dominio del foro.
 
 ## Personalización
 
