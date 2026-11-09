@@ -129,6 +129,92 @@ input,textarea,select{max-width:100%}
   .chatActions button{flex:1 1 auto}
 }
 
+
+/* Diseño estable al cambiar el zoom: una columna o dos, sin tercera columna lateral. */
+body{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  align-items:start;
+  justify-content:center;
+  gap:12px;
+  width:calc(100% - 16px);
+  max-width:920px;
+  margin:8px auto;
+}
+#w{
+  grid-column:1;
+  width:100%;
+  max-width:920px;
+  min-width:0;
+  margin:0;
+  justify-self:center;
+}
+#sl{display:none!important}
+.sd{
+  position:static!important;
+  inset:auto!important;
+  width:100%;
+  max-width:920px;
+  min-width:0;
+  margin:0;
+}
+.sd#sr{
+  grid-column:1;
+  width:100%;
+  max-width:920px;
+  justify-self:center;
+}
+#chatBox{width:100%}
+#m{min-width:0;overflow-x:auto}
+#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+#nav a{margin:0;white-space:normal}
+#hd>#lg{min-width:0;flex:1 1 260px}
+#ban{max-width:100%;flex:0 1 auto}
+table{max-width:100%;table-layout:auto}
+td,th{overflow-wrap:anywhere}
+input,textarea,select{max-width:100%}
+#m img,#m video,#m iframe,#chatMessages img,#chatMessages video,#chatMessages iframe{max-width:100%}
+@media(min-width:1195px){
+  body{
+    grid-template-columns:minmax(0,920px) 250px;
+    max-width:1182px;
+  }
+  #w{grid-column:1}
+  .sd#sr{
+    grid-column:2;
+    width:250px;
+    max-width:250px;
+    justify-self:stretch;
+  }
+}
+@media(max-width:700px){
+  body{width:calc(100% - 8px);margin:4px auto;gap:8px}
+  #w{padding:4px}
+  #hd{padding:8px;gap:6px}
+  #nm{font-size:clamp(25px,8vw,34px)}
+  #lg i{font-size:10px}
+  #ban{font-size:8px;line-height:9px;padding:5px;max-width:100%;overflow-x:auto}
+  #nav{gap:7px 10px;font-size:11px}
+  #m table{font-size:10px}
+  #m td,#m th{padding:4px}
+  .topicRating{align-items:flex-start}
+  .chat-expanded{inset:2vh 2vw!important}
+}
+.banAccessPanel{
+  margin:10px 0;
+  padding:clamp(12px,3vw,22px);
+  border:2px solid #a32a20;
+  background:linear-gradient(#fff8f6,#f3e4e1);
+  box-shadow:4px 4px 0 #c3aaa5;
+  color:#321b18;
+  line-height:1.55;
+}
+.banAccessPanel h2{margin:0 0 10px;color:#8a1c12;font-size:clamp(17px,3vw,22px)}
+.banAccessPanel .banMeta{margin:8px 0;padding:8px;background:#fff;border:1px solid #d2aaa4}
+.banAccessPanel .banActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.banAccessPanel .banActions a{display:inline-block;padding:6px 10px;border:2px outset #fff;background:linear-gradient(#fff,#d8e0e4);font-weight:bold;text-decoration:none}
+.moderationLoading{margin:12px 0;padding:14px;border:1px solid #9bb2bd;background:#f4f7f8;color:#345}
+
 </style>
 </head>
 <body>
@@ -330,7 +416,7 @@ function renderTopicPostBody(post,allPosts){
   }
   flush();return output;
 }
-let currentModerationData=null,moderationUnsub=null,moderationUid="";
+let currentModerationData=null,moderationUnsub=null,moderationUid="",moderationLoadedUid="",moderationLoadErrorUid="",lastModerationBanned=null;
 const AUTO_MODERATION_REASONS = {
   threat:"amenazas directas",
   harassment:"insultos dirigidos",
@@ -384,6 +470,61 @@ async function autoModerationGate(text,channel="chat"){
   alert(count>=3?"AutoModeración: "+description+". Llegaste a 3/3 avisos; tu cuenta recibió un ban permanente.":"AutoModeración: "+description+". Se registró tu aviso "+count+"/3. Al tercer aviso se aplicará un ban permanente.");
   return true;
 }
+function getActiveBanDetails(data=currentModerationData){
+  if(!auth?.currentUser||isOwner()||!data)return null;
+  const warnings=Array.isArray(data.warnings)?data.warnings:[];
+  if(data.status==="permanent"){
+    return {kind:"permanent",reason:data.banReason||"Incumplimiento de las normas.",warnings:warnings.length,until:null};
+  }
+  const until=data.banUntil?.toDate?data.banUntil.toDate():data.banUntil?new Date(data.banUntil):null;
+  if(data.status==="temporary"&&until&&Number.isFinite(until.getTime())&&until.getTime()>Date.now()){
+    return {kind:"temporary",reason:data.banReason||"Incumplimiento de las normas.",warnings:warnings.length,until};
+  }
+  return null;
+}
+function moderationAccessState(){
+  const uid=auth?.currentUser?.uid||"";
+  if(!uid)return "ready";
+  if(moderationLoadErrorUid===uid)return "error";
+  return moderationLoadedUid===uid?"ready":"loading";
+}
+function renderBannedAccess(m,ban){
+  $("#sr").hidden=true;
+  $("#chatBox").hidden=true;
+  $("#tk").hidden=true;
+  $("#ann").hidden=true;
+  $("#moderationNotice").hidden=true;
+  $("#nav").innerHTML='<b>⛔ CUENTA RESTRINGIDA</b> · <a href="#/out">Cerrar sesión</a>';
+  const untilLine=ban.kind==="temporary"
+    ?'<div class="banMeta"><b>Suspensión hasta:</b> '+E(dt(ban.until))+'</div>'
+    :'<div class="banMeta"><b>Duración:</b> permanente</div>';
+  m.innerHTML='<section class="banAccessPanel" role="alert">'
+    +'<h2>⛔ Acceso al foro suspendido</h2>'
+    +'<p>Esta cuenta está baneada. Mientras la suspensión esté activa no puedes ver los foros, los temas, las respuestas ni el chat, ni participar en la comunidad.</p>'
+    +untilLine
+    +'<div class="banMeta"><b>Motivo:</b> '+E(ban.reason)+'</div>'
+    +'<div class="banMeta"><b>Avisos acumulados:</b> '+ban.warnings+'/3</div>'
+    +'<p>Si crees que se trata de un error, contacta al equipo de MantiPobres por un medio externo.</p>'
+    +'<div class="banActions"><a href="#/out">Cerrar sesión</a></div>'
+    +'</section>';
+}
+function stopChatSubscription(){
+  if(chatUnsub){chatUnsub();chatUnsub=null;}
+  chatCache=[];
+  const box=$("#chatMessages");
+  if(box)box.innerHTML='<div class="chatEmpty">El chat no está disponible para esta cuenta.</div>';
+}
+function refreshModerationAccess(){
+  if(!firebaseReady||moderationAccessState()!=="ready")return;
+  const banned=!!getActiveBanDetails();
+  if(lastModerationBanned===banned)return;
+  lastModerationBanned=banned;
+  renderModerationNotice();
+  if(banned)stopChatSubscription();
+  if(location.hash!=="#/out")go();
+  subscribeChat();
+}
+
 function renderModerationNotice(){
   const box=$("#moderationNotice"),user=auth?.currentUser;
   if(!box)return;
@@ -1224,6 +1365,27 @@ async function go(){
   const parts=routeKey.replace(/^#\/?/,"").split("/");
   const r=parts[0]||"",a=parts.slice(1).join("/");
   const m=$("#m");
+  const accessState=moderationAccessState();
+  if(firebaseReady&&r!=="out"&&accessState!=="ready"){
+    $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=true;$("#ann").hidden=true;
+    $("#moderationNotice").hidden=true;
+    $("#nav").innerHTML='<b>VERIFICANDO ACCESO...</b> · <a href="#/out">Cerrar sesión</a>';
+    m.innerHTML=accessState==="error"
+      ?'<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, el contenido de la comunidad permanece oculto. Recarga la página o vuelve a iniciar sesión.</p><button type="button" onclick="location.reload()">Recargar</button></div>'
+      :'<div class="moderationLoading">Comprobando el estado de tu cuenta antes de mostrar el foro...</div>';
+    return;
+  }
+  const activeBan=getActiveBanDetails();
+  if(activeBan){
+    stopChatSubscription();
+    if(r!=="out"){renderBannedAccess(m,activeBan);return;}
+    $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=true;$("#ann").hidden=true;
+    $("#moderationNotice").hidden=true;
+    $("#nav").innerHTML='<b>⛔ CUENTA RESTRINGIDA</b>';
+  }else{
+    $("#sr").hidden=false;$("#chatBox").hidden=false;$("#tk").hidden=false;
+    renderModerationNotice();
+  }
   renderAccountNotice();
   $("#nav").innerHTML=
     '🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> '+
@@ -1421,6 +1583,19 @@ function renderChat(items){
 }
 function subscribeChat(){
   if(chatUnsub){chatUnsub();chatUnsub=null;}
+  if(firebaseReady&&moderationAccessState()!=="ready"){
+    $("#sr").hidden=true;$("#chatBox").hidden=true;
+    $("#chatState").textContent="VERIFICANDO ACCESO...";
+    $("#chatMessages").innerHTML='<div class="chatEmpty">Verificando cuenta...</div>';
+    return;
+  }
+  if(getActiveBanDetails()){
+    $("#sr").hidden=true;$("#chatBox").hidden=true;
+    $("#chatState").textContent="CHAT NO DISPONIBLE";
+    $("#chatMessages").innerHTML='<div class="chatEmpty">El chat no está disponible para esta cuenta.</div>';
+    return;
+  }
+  $("#sr").hidden=false;$("#chatBox").hidden=false;
   if(!configured){
     $("#chatState").textContent="DEMO LOCAL · no es un chat compartido";
     renderChat(demo.chat||[]);
@@ -1541,13 +1716,20 @@ function watchCurrentModeration(user){
   const uid=user?.uid||"";
   if(moderationUid===uid&&moderationUnsub)return;
   if(moderationUnsub){moderationUnsub();moderationUnsub=null;}
-  moderationUid=uid;currentModerationData=null;renderModerationNotice();
-  if(!user||!db)return;
+  moderationUid=uid;currentModerationData=null;moderationLoadedUid="";moderationLoadErrorUid="";lastModerationBanned=null;
+  renderModerationNotice();
+  if(!user||!db){moderationLoadedUid=uid;return;}
   moderationUnsub=onSnapshot(doc(db,"moderation",uid),snapshot=>{
     currentModerationData=snapshot.exists()?snapshot.data():null;
+    moderationLoadedUid=uid;moderationLoadErrorUid="";
     renderModerationNotice();
-    if(location.hash.startsWith("#/u/")&&firebaseReady)refreshRouteContent();
-  },error=>console.warn("No se pudo cargar el estado de moderación:",error));
+    if(firebaseReady)refreshModerationAccess();
+    if(location.hash.startsWith("#/u/")&&firebaseReady&&!getActiveBanDetails())refreshRouteContent();
+  },error=>{
+    console.warn("No se pudo cargar el estado de moderación:",error);
+    moderationLoadErrorUid=uid;
+    if(firebaseReady&&location.hash!=="#/out")go();
+  });
 }
 function updateAdminUI(){
   const admin=isAdmin();$("#chatAdmin").hidden=!admin;
@@ -1556,7 +1738,7 @@ function updateAdminUI(){
 
 // Cabecera, reloj y routing
 $("#ban").textContent=`+${"-".repeat(46)}+\n| ${NAME.padEnd(44)} |\n| ${"BBS/USENET REVIVAL  *  CARRIER 56000  *  8N1".padEnd(44)} |\n+${"-".repeat(46)}+`;
-$("#nl").textContent=NAME;const ck=()=>$("#clk").textContent=new Date().toLocaleString("es-UY");ck();setInterval(ck,1000);
+$("#nl").textContent=NAME;const ck=()=>{$("#clk").textContent=new Date().toLocaleString("es-UY");refreshModerationAccess();};ck();setInterval(ck,1000);
 $("#ft").innerHTML=(configured?"Modo: ONLINE (Firebase)":"Modo: LOCAL (demo, solo este navegador)")+` · <a href="#/setup">Configuración</a><br>Mejor visto con Netscape 4.7 / IE 6 a 800x600<br>MantiPobres · BBS/USENET Revival`;
 restoreLastRoute();
 addEventListener("hashchange",go);
