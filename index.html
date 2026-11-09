@@ -1292,6 +1292,14 @@ function saveTopicDraftForRoute(route){
   try{boardId=decodeURIComponent(boardId);}catch{}
   saveTopicDraft(boardId);
 }
+
+// Guarda el borrador del tema mientras se escribe, no solamente al salir de la página.
+document.addEventListener("input",event=>{
+  if(event.target instanceof HTMLElement&&event.target.closest("#nf"))saveTopicDraftForRoute(activeRouteKey);
+});
+document.addEventListener("change",event=>{
+  if(event.target instanceof HTMLElement&&event.target.closest("#nf"))saveTopicDraftForRoute(activeRouteKey);
+});
 function clearTopicDraft(boardId){
   try{sessionStorage.removeItem(topicDraftStorageKey(boardId));}catch{}
 }
@@ -2080,10 +2088,13 @@ async function startFirebase(){
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
 addEventListener("online",()=>{
-  if(firebaseReady){subscribeChat();go();}
+  // Reanuda el chat al recuperar conexión sin reconstruir el formulario activo.
+  if(firebaseReady)subscribeChat();
 });
 document.addEventListener("visibilitychange",()=>{
-  if(firebaseReady&&document.visibilityState==="visible"){subscribeChat();go();}
+  // Volver a esta pestaña no debe volver a ejecutar go(): eso destruye el DOM
+  // del formulario y puede borrar texto que el usuario todavía no publicó.
+  if(firebaseReady&&document.visibilityState==="visible")subscribeChat();
 });
 function applyOwnModerationSnapshot(uid,snapshot){
   if(uid!==(auth?.currentUser?.uid||""))return;
