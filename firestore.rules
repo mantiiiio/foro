@@ -8,6 +8,9 @@ service cloud.firestore {
     function registered() {
       return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
+    function verifiedMember() {
+      return registered() && request.auth.token.email_verified == true;
+    }
     function shortString(value, max) {
       return value is string && value.size() > 0 && value.size() <= max;
     }
@@ -38,9 +41,22 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /topics/{topicId} {
+    // Reserva pública del nombre de usuario; nunca almacena el correo privado.
+    match /usernames/{username} {
       allow read: if true;
       allow create: if registered()
+        && request.resource.data.keys().hasOnly(['u', 'uid', 'ts'])
+        && request.resource.data.u == username
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.ts is int
+        && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid))
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == username;
+      allow update, delete: if isAdmin();
+    }
+
+    match /topics/{topicId} {
+      allow read: if true;
+      allow create: if verifiedMember()
         && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n'])
         && request.resource.data.uid == request.auth.uid
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -53,7 +69,7 @@ service cloud.firestore {
         && request.resource.data.lr is int
         && (request.resource.data.b != 'reglas' || isAdmin());
       allow update: if isAdmin() || (
-        registered()
+        verifiedMember()
         && resource.data.b != 'reglas'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lr','lu','n'])
         && request.resource.data.n == resource.data.n + 1
@@ -67,7 +83,7 @@ service cloud.firestore {
 
     match /posts/{postId} {
       allow read: if true;
-      allow create: if registered()
+      allow create: if verifiedMember()
         && request.resource.data.keys().hasOnly(['tp','u','uid','x','ts'])
         && request.resource.data.uid == request.auth.uid
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
