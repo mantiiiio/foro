@@ -191,6 +191,33 @@ service cloud.firestore {
         && !value.matches('(?is).*(https?://.*https?://.*https?://.*https?://|www\\..*www\\..*www\\..*www\\.).*')
         && !value.matches('(?s)^(?:[^a-záéíóúüñ]*[A-ZÁÉÍÓÚÜÑ]){28,}[^a-záéíóúüñ]*$');
     }
+    function validTopicGalleryItem(item) {
+      return item is map
+        && item.keys().hasOnly(['type','url','caption'])
+        && item.keys().hasAll(['type','url','caption'])
+        && item.type in ['image','link']
+        && item.url is string
+        && item.url.size() >= 9
+        && item.url.size() <= 2048
+        && item.url.matches('https://.*')
+        && item.caption is string
+        && item.caption.size() <= 80;
+    }
+    function validTopicGallery(gallery) {
+      return gallery is list
+        && gallery.size() <= 10
+        && (gallery.size() < 1 || validTopicGalleryItem(gallery[0]))
+        && (gallery.size() < 2 || validTopicGalleryItem(gallery[1]))
+        && (gallery.size() < 3 || validTopicGalleryItem(gallery[2]))
+        && (gallery.size() < 4 || validTopicGalleryItem(gallery[3]))
+        && (gallery.size() < 5 || validTopicGalleryItem(gallery[4]))
+        && (gallery.size() < 6 || validTopicGalleryItem(gallery[5]))
+        && (gallery.size() < 7 || validTopicGalleryItem(gallery[6]))
+        && (gallery.size() < 8 || validTopicGalleryItem(gallery[7]))
+        && (gallery.size() < 9 || validTopicGalleryItem(gallery[8]))
+        && (gallery.size() < 10 || validTopicGalleryItem(gallery[9]));
+    }
+
     function validChatMedia(media) {
       return media is map
         && media.keys().hasOnly(['url','path','type','name','size'])
@@ -376,10 +403,11 @@ service cloud.firestore {
       allow read: if canParticipate();
       allow create: if verifiedMember()
         && canParticipate()
-        && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n','staffBadge','lastStaffBadge'])
+        && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n','staffBadge','lastStaffBadge','gallery'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.staffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
         && request.resource.data.lastStaffBadge == request.resource.data.staffBadge
+        && (!('gallery' in request.resource.data) || validTopicGallery(request.resource.data.gallery))
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
         && shortString(request.resource.data.b, 24)
