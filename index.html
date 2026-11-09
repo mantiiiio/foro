@@ -582,19 +582,19 @@ function stopChatSubscription(){
 }
 function refreshModerationAccess(){
   if(!firebaseReady||moderationAccessState()!=="ready")return;
-  const banned=!!getActiveBanDetails();
-  if(lastModerationBanned===banned){
-    if(banned)setSuspendedShell(true);
-    return;
-  }
-  lastModerationBanned=banned;
-  renderModerationNotice();
+  const ban=getActiveBanDetails(),banned=!!ban;
   if(banned){
+    lastModerationBanned=true;
+    renderModerationNotice();
     setSuspendedShell(true);
     stopChatSubscription();
-    if(location.hash!=="#/out")go();
+    // Mantiene el aviso visible y cierra el chat incluso si algún evento intenta reabrirlo.
+    if(location.hash!=="#/out"&&!$("#m .banAccessPanel"))renderBannedAccess($("#m"),ban);
     return;
   }
+  if(lastModerationBanned===false)return;
+  lastModerationBanned=false;
+  renderModerationNotice();
   if(location.hash!=="#/out")go();
   subscribeChat();
 }
@@ -1997,6 +1997,7 @@ function subscribeChat(){
     return;
   }
   if(getActiveBanDetails()){
+    stopChatSubscription();
     $("#sr").hidden=true;$("#chatBox").hidden=true;
     $("#chatState").textContent="CHAT NO DISPONIBLE";
     $("#chatMessages").innerHTML='<div class="chatEmpty">El chat no está disponible para esta cuenta.</div>';
@@ -2016,8 +2017,17 @@ function subscribeChat(){
     renderChat(chatCache);
     $("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;
   },e=>{
-    $("#chatState").textContent="ERROR DE CHAT · "+errText(e);
     console.error("Error en la suscripción del chat:",e);
+    if(e?.code==="permission-denied"){
+      stopChatSubscription();
+      setSuspendedShell(true);
+      if($("#m"))$("#m").innerHTML='<div class="moderationLoading"><b>Verificando el acceso de tu cuenta...</b><p>El contenido permanece oculto hasta comprobar el estado de moderación.</p></div>';
+      refreshOwnModerationFromServer();
+      return;
+    }
+    chatCache=[];
+    $("#chatMessages").innerHTML='<div class="chatEmpty">No se pudo cargar el chat. Vuelve a intentarlo.</div>';
+    $("#chatState").textContent="ERROR DE CHAT · "+errText(e);
   });
 }
 async function uploadChatFile(file){
@@ -2119,13 +2129,12 @@ async function startFirebase(){
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
 addEventListener("online",()=>{
-  // Reanuda el chat al recuperar conexión sin reconstruir el formulario activo.
-  if(firebaseReady)subscribeChat();
+  // Revalida el estado de moderación antes de volver a abrir el chat.
+  if(firebaseReady)refreshOwnModerationFromServer();
 });
 document.addEventListener("visibilitychange",()=>{
-  // Volver a esta pestaña no debe volver a ejecutar go(): eso destruye el DOM
-  // del formulario y puede borrar texto que el usuario todavía no publicó.
-  if(firebaseReady&&document.visibilityState==="visible")subscribeChat();
+  // Al regresar a la pestaña se consulta el ban en servidor; no se reconstruyen formularios.
+  if(firebaseReady&&document.visibilityState==="visible")refreshOwnModerationFromServer();
 });
 function applyOwnModerationSnapshot(uid,snapshot){
   if(uid!==(auth?.currentUser?.uid||""))return;
@@ -2134,6 +2143,26 @@ function applyOwnModerationSnapshot(uid,snapshot){
   renderModerationNotice();
   if(firebaseReady)refreshModerationAccess();
   if(location.hash.startsWith("#/u/")&&firebaseReady&&!getActiveBanDetails())refreshRouteContent();
+}
+function failClosedModerationAccess(uid,error){
+  if(uid!==(auth?.currentUser?.uid||""))return;
+  console.error("No se pudo verificar la moderación de la cuenta:",error);
+  moderationLoadErrorUid=uid;moderationLoadedUid="";
+  stopChatSubscription();
+  setSuspendedShell(true);
+  if(location.hash!=="#/out"&&$("#m")){
+    $("#m").innerHTML='<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, los foros, enlaces, archivos y el chat permanecen ocultos. Comprueba tu conexión y recarga la página.</p><button type="button" onclick="location.reload()">Recargar</button></div>';
+  }
+}
+async function refreshOwnModerationFromServer(){
+  const user=auth?.currentUser;
+  if(!firebaseReady||!db||!user||user.isAnonymous)return;
+  const uid=user.uid;
+  try{
+    const snapshot=await getDocFromServer(doc(db,"moderation",uid));
+    applyOwnModerationSnapshot(uid,snapshot);
+    if(!moderationUnsub)watchCurrentModeration(user);
+  }catch(error){failClosedModerationAccess(uid,error);}
 }
 function watchCurrentModeration(user){
   const uid=user?.uid||"";
@@ -2151,19 +2180,14 @@ function watchCurrentModeration(user){
   getDocFromServer(moderationRef).then(snapshot=>{
     applyOwnModerationSnapshot(uid,snapshot);
   }).catch(error=>{
-    console.warn("No se pudo comprobar el estado de moderación en el servidor:",error);
-    if(uid!==(auth?.currentUser?.uid||""))return;
-    moderationLoadErrorUid=uid;moderationLoadedUid="";
-    if(firebaseReady&&location.hash!=="#/out")go();
+    failClosedModerationAccess(uid,error);
   });
   moderationUnsub=onSnapshot(moderationRef,{includeMetadataChanges:true},snapshot=>{
     if(snapshot.metadata?.fromCache)return;
     applyOwnModerationSnapshot(uid,snapshot);
   },error=>{
-    console.warn("No se pudo cargar el estado de moderación:",error);
-    if(uid!==(auth?.currentUser?.uid||""))return;
-    moderationLoadErrorUid=uid;moderationLoadedUid="";
-    if(firebaseReady&&location.hash!=="#/out")go();
+    moderationUnsub=null;
+    failClosedModerationAccess(uid,error);
   });
 }
 function updateAdminUI(){
