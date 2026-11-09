@@ -233,6 +233,33 @@ input,textarea,select{max-width:100%}
 .banAccessPanel .banActions a{background:#a40000!important;color:#fff!important;border:2px solid #780000!important;padding:8px 13px!important}
 
 
+/* Editor de galería disponible únicamente al crear un tema. */
+.topicGalleryComposer{border:1px solid #9bb2bd;background:#f4f7f8;margin:8px 0;padding:7px}
+.topicGalleryBar{display:flex;gap:6px;align-items:center}
+.topicGalleryBar button:first-child{flex:1;text-align:left;font-weight:bold}
+.topicGalleryHelp{margin:7px 0;padding:8px;border:1px dashed #b18b42;background:#fff8dc;color:#59451c;line-height:1.5}
+#topicGalleryItems{display:grid;gap:7px;margin:8px 0}
+.topicGalleryRow{display:grid;grid-template-columns:minmax(110px,145px) minmax(130px,1fr) minmax(120px,.8fr) auto;gap:6px;align-items:end;padding:7px;border:1px solid #b8c8ce;background:#fff}
+.topicGalleryField{display:flex;flex-direction:column;gap:3px;min-width:0}
+.topicGalleryField label{font-size:10px;font-weight:bold;color:#345}
+.topicGalleryField input,.topicGalleryField select{width:100%;min-width:0}
+.topicGalleryRemove{color:#a40000}
+.topicGalleryNote{display:block;margin-top:6px;color:#456;line-height:1.4}
+.topicGalleryViewer{margin:10px 0 14px;border:2px solid #006699;background:#f2f6f8;box-shadow:3px 3px 0 #b5c1c6}
+.topicGalleryViewer h3{margin:0;padding:7px 9px;color:#ffbd7b;background:linear-gradient(#2d86b8,#004d75);font-size:12px}
+.topicGalleryStage{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;gap:5px;align-items:center;padding:8px}
+.topicGalleryNav{min-width:34px;min-height:42px;font-size:22px;font-weight:bold}
+.topicGallerySlide{min-width:0;min-height:100px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:7px;padding:7px;background:#fff;border:1px solid #b8c8ce}
+.topicGalleryImageLink{display:block;max-width:100%;text-decoration:none}
+.topicGalleryImage{display:block;max-width:100%;max-height:420px;object-fit:contain;margin:auto;background:#edf1f3}
+.topicGalleryExternalLink{display:flex;flex-direction:column;gap:5px;max-width:100%;overflow-wrap:anywhere;padding:14px 18px;border:1px solid #9bb2bd;background:#f4f7f8;font-weight:bold}
+.topicGalleryExternalLink small{font-weight:normal;overflow-wrap:anywhere}
+.topicGalleryCaption{margin:0;padding:0 8px 4px;font-size:11px;color:#345;overflow-wrap:anywhere}
+.topicGalleryFooter{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 9px;border-top:1px solid #b8c8ce;background:#e5edf0}
+.topicGalleryDots{display:flex;gap:5px;flex-wrap:wrap}
+.topicGalleryDot{min-width:12px;width:12px;height:12px;padding:0;border-radius:50%;border:1px solid #006699;background:#fff}
+.topicGalleryDot[aria-current="true"]{background:#006699}
+@media(max-width:600px){.topicGalleryRow{grid-template-columns:1fr 1fr}.topicGalleryRemove{grid-column:1/-1}.topicGalleryStage{grid-template-columns:30px minmax(0,1fr) 30px;padding:5px}.topicGalleryNav{min-width:28px;padding:2px}.topicGalleryImage{max-height:260px}}
 /* Etiqueta de personal: arcoíris si el navegador admite texto con fondo recortado; rojo como alternativa. */
 .staffBadge{display:inline-block;margin-left:4px;white-space:nowrap;vertical-align:baseline;font:bold 9px Verdana,Arial,sans-serif;color:#c00000!important}
 @supports ((background-clip:text) or (-webkit-background-clip:text)){
@@ -844,10 +871,12 @@ const D = {
     const uid=auth.currentUser.uid;
     await setDoc(doc(db,"topics",t,"ratings",uid),{uid,stars:value,ts:Date.now()});
   },
-  async newT(b,t,x){
+  async newT(b,t,x,gallery=[]){
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
-    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,staffBadge,lastStaffBadge:staffBadge,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,staffBadge,x,ts:n});await batch.commit();return topicRef.id;
+    const cleanGallery=Array.isArray(gallery)?gallery.slice(0,10).map(item=>({type:item.type,url:safeHttps(item.url),caption:String(item.caption||"").slice(0,80)})):[];
+    if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");
+    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,staffBadge,lastStaffBadge:staffBadge,gallery:cleanGallery,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,staffBadge,x,ts:n});await batch.commit();return topicRef.id;
   },
   async reply(t,x){
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
@@ -990,7 +1019,7 @@ const Demo = {
   async topic(t){return demo.t.find(x=>x.id===t)||null;},
   async ratings(t){return demo.t.find(x=>x.id===t)?.ratings||[];},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
-  async newT(b,t,x){const n=Date.now(),id=String(n);demo.t.push({id,b,t,u:demo.m,staffBadge:false,lastStaffBadge:false,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:false,x,ts:n});saveDemo();return id;},
+  async newT(b,t,x,gallery=[]){const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,10):[];demo.t.push({id,b,t,u:demo.m,staffBadge:false,lastStaffBadge:false,gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:false,x,ts:n});saveDemo();return id;},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
   async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
   async members(){return Object.keys(demo.u).length;},
@@ -1028,6 +1057,65 @@ async function brd(m,id){
   m.innerHTML=rulesIntro+`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${isRules&&!isStaff()?"":`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`}</p><table><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${T.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>${isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:""}`;
   if(configured)watchRouteData(query(collection(db,"topics"),where("b","==",id),limit(300)),routeRenderId);
 }
+function cleanTopicGallery(items){
+  if(!Array.isArray(items))return [];
+  return items.slice(0,10).filter(item=>item&&["image","link"].includes(item.type)&&safeHttps(item.url)).map(item=>({
+    type:item.type,
+    url:safeHttps(item.url),
+    caption:String(item.caption||"").slice(0,80)
+  }));
+}
+function renderTopicGallery(items){
+  const gallery=cleanTopicGallery(items);
+  if(!gallery.length)return "";
+  return \`<section class="topicGalleryViewer" data-topic-gallery>
+    <h3>📎 MATERIAL ADJUNTO DEL TEMA</h3>
+    <div class="topicGalleryStage">
+      <button type="button" class="topicGalleryNav" data-gallery-prev aria-label="Elemento anterior" title="Anterior">‹</button>
+      <div class="topicGallerySlide" data-gallery-slide aria-live="polite"></div>
+      <button type="button" class="topicGalleryNav" data-gallery-next aria-label="Elemento siguiente" title="Siguiente">›</button>
+    </div>
+    <div class="topicGalleryFooter"><span data-gallery-count></span><div class="topicGalleryDots" data-gallery-dots></div></div>
+  </section>\`;
+}
+function bindTopicGallery(root,items){
+  const gallery=cleanTopicGallery(items);
+  const viewer=root.querySelector("[data-topic-gallery]");
+  if(!viewer||!gallery.length)return;
+  const slide=viewer.querySelector("[data-gallery-slide]");
+  const count=viewer.querySelector("[data-gallery-count]");
+  const dots=viewer.querySelector("[data-gallery-dots]");
+  const previous=viewer.querySelector("[data-gallery-prev]");
+  const next=viewer.querySelector("[data-gallery-next]");
+  let index=0;
+  function draw(){
+    const item=gallery[index];
+    slide.innerHTML=item.type==="image"
+      ? '<a class="topicGalleryImageLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><img class="topicGalleryImage" src="'+E(item.url)+'" alt="'+E(item.caption||"Imagen del tema")+'" loading="lazy"></a>'
+      : '<a class="topicGalleryExternalLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><b>🔗 Abrir enlace</b><small>'+E(item.url)+'</small></a>';
+    if(item.caption){
+      const caption=document.createElement("p");
+      caption.className="topicGalleryCaption";caption.textContent=item.caption;slide.appendChild(caption);
+    }
+    const image=slide.querySelector("img");
+    if(image)image.addEventListener("error",()=>{
+      image.remove();
+      const error=document.createElement("small");
+      error.className="topicGalleryCaption";error.textContent="No se pudo cargar la imagen. Puedes abrir su dirección original.";
+      slide.prepend(error);
+    },{once:true});
+    count.textContent=(index+1)+" / "+gallery.length;
+    dots.innerHTML=gallery.map((_,i)=>'<button type="button" class="topicGalleryDot" data-gallery-dot="'+i+'" aria-label="Ver elemento '+(i+1)+'" aria-current="'+(i===index?"true":"false")+'"></button>').join("");
+    dots.querySelectorAll("[data-gallery-dot]").forEach(button=>button.addEventListener("click",()=>{
+      index=Number(button.dataset.galleryDot);draw();
+    }));
+    previous.disabled=gallery.length<2;next.disabled=gallery.length<2;
+  }
+  previous.addEventListener("click",()=>{index=(index-1+gallery.length)%gallery.length;draw();});
+  next.addEventListener("click",()=>{index=(index+1)%gallery.length;draw();});
+  draw();
+}
+
 async function thr(m,id){
   const t=await Store.topic(id);
   if(!t)return m.innerHTML="Tema inexistente";
@@ -1057,6 +1145,7 @@ async function thr(m,id){
   const comments=P.length>1?P.length-1:0;
   m.innerHTML=
     '<p><a href="#/">🏠 Inicio</a> &raquo; <a href="#/b/'+E(t.b)+'">'+E(B[2])+'</a> &raquo; <b>'+E(t.t)+'</b> <a class="bt" href="#/b/'+E(t.b)+'">Volver al foro</a></p>'+
+    renderTopicGallery(t.gallery)+
     ratingPanel+
     '<h3 id="topicComments">💬 Comentarios y conversación · '+comments+'</h3>'+
     '<table><tr><th width="120">Autor</th><th>Publicación / comentario</th></tr>'+
@@ -1070,6 +1159,7 @@ async function thr(m,id){
     (canReply
       ? '<form id="rf" class="commentForm"><b>✍️ Añadir un comentario</b><br><textarea id="rx" rows="5" style="width:100%" maxlength="6000" placeholder="Escribe tu comentario o respuesta..."></textarea><br><button class="bt">Publicar comentario</button> <span id="er" class="err"></span></form>'
       : '<p class="notice">'+(locked?"Este foro es de solo lectura: publica solo el staff.":!name?'Debes <a href="#/login">iniciar sesión</a> para comentar.':'Para comentar, verifica tu correo desde el aviso superior.')+'</p>');
+  bindTopicGallery(m,t.gallery);
 
   m.querySelectorAll("[data-rating]").forEach(button=>button.addEventListener("click",async()=>{
     const stars=Number(button.dataset.rating);
@@ -1120,9 +1210,79 @@ async function thr(m,id){
 }
 function neu(m,id){
   if(!Store.me()||id==="reglas"&&!isStaff())return location.hash=Store.me()?"#/b/"+id:"#/login";
-  if(configured&&!emailVerified()){m.innerHTML=`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>`;return;}
-  m.innerHTML=`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea></td></tr><tr><td colspan="2" class="c"><button class="bt">Publicar</button> <span id="er" class="err"></span></td></tr></table></form>`;
-  $("#nf").onsubmit=async e=>{e.preventDefault();const t=$("#ti").value.trim(),x=$("#tx").value.trim();if(!t||!x)return $("#er").textContent="Faltan asunto o mensaje";try{if(await autoModerationGate(t+"\n"+x,"tema"))return;location.hash="#/t/"+await Store.newT(id,t,x);}catch(z){$("#er").textContent=errText(z);}};
+  if(configured&&!emailVerified()){m.innerHTML=\`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>\`;return;}
+  m.innerHTML=\`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea></td></tr><tr><td colspan="2">
+    <section class="topicGalleryComposer" aria-label="Galería opcional del tema">
+      <div class="topicGalleryBar">
+        <button type="button" id="topicGalleryToggle" aria-expanded="false">▸ Agregar imágenes o enlaces (opcional)</button>
+        <button type="button" id="topicGalleryHelpToggle" aria-expanded="false" aria-controls="topicGalleryHelp" title="Cómo funciona la galería">?</button>
+      </div>
+      <div id="topicGalleryHelp" class="topicGalleryHelp" hidden>
+        <b>¿Cómo funciona?</b>
+        <ol>
+          <li>Pulsa «Agregar elemento» y elige si vas a poner una imagen o un enlace.</li>
+          <li>Pega una dirección pública que empiece con <b>https://</b>. Para imágenes, usa el enlace directo de la imagen.</li>
+          <li>Opcionalmente escribe un texto corto para describirla.</li>
+          <li>Cuando publiques el tema, aparecerá un visor con flechas para recorrer los elementos.</li>
+        </ol>
+        <b>Importante:</b> la galería forma parte solamente del tema original. No aparece en comentarios ni respuestas. Puedes añadir hasta 10 elementos.
+      </div>
+      <div id="topicGalleryEditor" hidden>
+        <div id="topicGalleryItems"></div>
+        <button type="button" id="topicGalleryAdd">＋ Agregar elemento</button>
+        <small class="topicGalleryNote">Usa enlaces HTTPS públicos. Las imágenes deben tener una URL directa; los enlaces normales se mostrarán como tarjetas que se pueden abrir.</small>
+      </div>
+    </section>
+  </td></tr><tr><td colspan="2" class="c"><button class="bt">Publicar</button> <span id="er" class="err"></span></td></tr></table></form>\`;
+
+  const galleryEditor=$("#topicGalleryEditor"),galleryItems=$("#topicGalleryItems");
+  let galleryRowId=0;
+  $("#topicGalleryToggle").addEventListener("click",()=>{
+    const open=galleryEditor.hidden;
+    galleryEditor.hidden=!open;
+    $("#topicGalleryToggle").textContent=(open?"▾":"▸")+" Agregar imágenes o enlaces (opcional)";
+    $("#topicGalleryToggle").setAttribute("aria-expanded",String(open));
+  });
+  $("#topicGalleryHelpToggle").addEventListener("click",()=>{
+    const help=$("#topicGalleryHelp"),open=help.hidden;
+    help.hidden=!open;
+    $("#topicGalleryHelpToggle").setAttribute("aria-expanded",String(open));
+  });
+  function addGalleryRow(){
+    const count=galleryItems.querySelectorAll(".topicGalleryRow").length;
+    if(count>=10){$("#er").textContent="La galería admite un máximo de 10 elementos.";return;}
+    const rowId=galleryRowId++;
+    galleryItems.insertAdjacentHTML("beforeend",\`<div class="topicGalleryRow" data-gallery-row="\${rowId}">
+      <div class="topicGalleryField"><label for="galleryType\${rowId}">Tipo</label><select id="galleryType\${rowId}" data-gallery-type><option value="image">Imagen</option><option value="link">Enlace</option></select></div>
+      <div class="topicGalleryField"><label for="galleryUrl\${rowId}">URL HTTPS</label><input id="galleryUrl\${rowId}" data-gallery-url type="url" maxlength="2048" placeholder="https://..." required></div>
+      <div class="topicGalleryField"><label for="galleryCaption\${rowId}">Descripción (opcional)</label><input id="galleryCaption\${rowId}" data-gallery-caption type="text" maxlength="80" placeholder="Imagen 1, mis gatos..."></div>
+      <button type="button" class="topicGalleryRemove" data-gallery-remove>Quitar</button>
+    </div>\`);
+    galleryItems.querySelector('[data-gallery-row="'+rowId+'"] [data-gallery-remove]').addEventListener("click",e=>e.currentTarget.closest(".topicGalleryRow").remove());
+    $("#er").textContent="";
+  }
+  $("#topicGalleryAdd").addEventListener("click",addGalleryRow);
+
+  $("#nf").onsubmit=async e=>{
+    e.preventDefault();
+    const t=$("#ti").value.trim(),x=$("#tx").value.trim();
+    if(!t||!x){$("#er").textContent="Faltan asunto o mensaje";return;}
+    const gallery=[];
+    for(const row of galleryItems.querySelectorAll(".topicGalleryRow")){
+      const type=row.querySelector("[data-gallery-type]").value;
+      const rawUrl=row.querySelector("[data-gallery-url]").value.trim();
+      const caption=row.querySelector("[data-gallery-caption]").value.trim();
+      const url=safeHttps(rawUrl);
+      if(!url){$("#er").textContent="Cada elemento de la galería necesita una URL HTTPS válida.";row.querySelector("[data-gallery-url]").focus();return;}
+      gallery.push({type,url,caption});
+    }
+    const publish=$("#nf button[type=submit]");
+    publish.disabled=true;$("#er").textContent="Publicando tema...";
+    try{
+      if(await autoModerationGate(t+"\n"+x,"tema")){publish.disabled=false;$("#er").textContent="";return;}
+      location.hash="#/t/"+await Store.newT(id,t,x,gallery);
+    }catch(z){$("#er").textContent=errText(z);publish.disabled=false;}
+  };
 }
 function frm(m,a,r){
   const rg=r==="reg";
