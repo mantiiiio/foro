@@ -23,3 +23,19 @@ jobs:
           channelId: live
           projectId: foro-66dd5
           target: main
+
+      - name: Authenticate for Firestore rules deployment
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORO_66DD5 }}
+
+      - name: Set up Node.js for Firebase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Deploy Firestore rules automatically
+        run: firebase deploy --only firestore:rules --project foro-66dd5 --non-interactive
