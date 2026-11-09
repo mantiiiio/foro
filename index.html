@@ -659,6 +659,14 @@ async function loadCurrentStaffRole(user){
 }
 const isRegisteredMember = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous);
 const emailVerified = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.emailVerified);
+// Solo se aceptan dominios de proveedores de correo reconocidos. Firestore aplica la misma lista.
+const ALLOWED_EMAIL_DOMAINS = new Set(["gmail.com","googlemail.com","outlook.com","outlook.es","outlook.fr","outlook.de","outlook.it","outlook.co.uk","outlook.com.ar","hotmail.com","hotmail.es","hotmail.fr","hotmail.de","hotmail.it","hotmail.co.uk","hotmail.com.ar","live.com","live.com.ar","live.co.uk","live.fr","live.de","msn.com","yahoo.com","yahoo.com.ar","yahoo.com.uy","yahoo.es","yahoo.co.uk","yahoo.fr","yahoo.de","yahoo.it","yahoo.ca","yahoo.com.br","yahoo.com.mx","yahoo.com.au","yahoo.co.in","ymail.com","rocketmail.com","proton.me","protonmail.com","protonmail.ch","pm.me","duck.com","icloud.com","me.com","mac.com","aol.com","aim.com","gmx.com","gmx.net","gmx.de","gmx.at","gmx.ch","gmx.us","mail.com","email.com","web.de","t-online.de","freenet.de","fastmail.com","fastmail.fm","fastmail.us","hey.com","hushmail.com","mailfence.com","posteo.de","mailbox.org","runbox.com","disroot.org","riseup.net","tuta.com","tuta.io","tutamail.com","tutanota.com","tutanota.de","keemail.me","zoho.com","zohomail.com","zoho.eu","zoho.in","yandex.com","yandex.ru","yandex.kz","yandex.by","yandex.com.tr","ya.ru","mail.ru","inbox.ru","list.ru","bk.ru","internet.ru","qq.com","foxmail.com","163.com","126.com","sina.com","sina.cn","sohu.com","yeah.net","naver.com","daum.net","hanmail.net","nate.com","rediffmail.com","rediff.com","wp.pl","onet.pl","interia.pl","o2.pl","seznam.cz","centrum.cz","volny.cz","libero.it","virgilio.it","tin.it","alice.it","free.fr","laposte.net","wanadoo.fr","orange.fr","sfr.fr","voila.fr","neuf.fr","uol.com.br","bol.com.br","ig.com.br","terra.com.br","globo.com","r7.com","comcast.net","xfinity.com","verizon.net","att.net","sbcglobal.net","bellsouth.net","charter.net","spectrum.net","cox.net","earthlink.net","frontier.com","optonline.net","roadrunner.com","twc.com","juno.com","netzero.net","windstream.net","shaw.ca","rogers.com","bell.net","telstra.com","optusnet.com.au","bigpond.com","adinet.com.uy"]);
+function emailProviderAllowed(address){
+  const email=String(address||'').trim().toLowerCase();
+  const at=email.lastIndexOf('@');
+  return at>0 && ALLOWED_EMAIL_DOMAINS.has(email.slice(at+1));
+}
+const EMAIL_PROVIDER_HELP = 'Usa un proveedor autorizado: Gmail, Outlook/Hotmail, Yahoo, Proton, DuckDuckGo, iCloud, Tuta, Zoho, GMX, Fastmail y otros. No se aceptan correos temporales ni dominios no incluidos.';
 const containsExternalLink = value => /(?:https?:\/\/|www\.)/i.test(String(value||""));
 function requireRegisteredMember(action="usar esta función"){
   if(!isRegisteredMember())throw new Error(`Para ${action}, inicia sesión con una cuenta registrada. Los invitados no pueden hacerlo.`);
@@ -743,6 +751,7 @@ const saveDemo = () => localStorage.setItem("mantipobres_demo",JSON.stringify(de
 const D = {
   me,
   async reg(n,email,p,inviteToken=""){
+    if(!emailProviderAllowed(email))throw new Error(EMAIL_PROVIDER_HELP);
     const cred=await createUserWithEmailAndPassword(auth,email,p);
     try{
       const cleanToken=String(inviteToken||"").trim();
@@ -1405,7 +1414,7 @@ function neu(m,id){
 }
 function frm(m,a,r){
   const rg=r==="reg";
-  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${configured?`<tr><td class="b">Invitación del staff (opcional)</td><td><input id="accessToken" type="text" maxlength="48" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"><br><small>Solo sirve un código emitido desde Administración. Se usa una vez y queda bloqueado para siempre.</small></td></tr>`:""}${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · verifica tu correo":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
+  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${configured?`<tr><td class="b">Invitación del staff (opcional)</td><td><input id="accessToken" type="text" maxlength="48" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"><br><small>Solo sirve un código emitido desde Administración. Se usa una vez y queda bloqueado para siempre.</small></td></tr>`:""}${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · solo proveedores autorizados, sin correos temporales":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
   $("#lf").onsubmit=async e=>{
     e.preventDefault();const p=$("#pw").value,er=$("#er");er.className="err";
     try{
@@ -1414,6 +1423,7 @@ function frm(m,a,r){
         if(!/^[a-z0-9_]{3,16}$/.test(n))return er.textContent="Usuario inválido: usa 3-16 letras, números o _";
         if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return er.textContent="Introduce un correo electrónico válido.";
         if(p.length<6)return er.textContent="La contraseña debe tener al menos 6 caracteres.";
+        if(!emailProviderAllowed(email))return er.textContent=EMAIL_PROVIDER_HELP;
         if(!$("#ok").checked)return er.textContent="Debes aceptar las reglas.";
         const invite=$("#accessToken")?.value.trim()||"";
         await Store.reg(n,email,p,invite);
