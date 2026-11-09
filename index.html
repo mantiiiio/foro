@@ -874,7 +874,7 @@ const D = {
   async newT(b,t,x,gallery=[]){
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
-    const cleanGallery=Array.isArray(gallery)?gallery.slice(0,10).map(item=>({type:item.type,url:safeHttps(item.url),caption:String(item.caption||"").slice(0,80)})):[];
+    const cleanGallery=Array.isArray(gallery)?gallery.slice(0,30).map(item=>({type:item.type,url:safeHttps(item.url),caption:String(item.caption||"").slice(0,80)})):[];
     if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");
     const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,staffBadge,lastStaffBadge:staffBadge,gallery:cleanGallery,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,staffBadge,x,ts:n});await batch.commit();return topicRef.id;
   },
@@ -1059,7 +1059,7 @@ async function brd(m,id){
 }
 function cleanTopicGallery(items){
   if(!Array.isArray(items))return [];
-  return items.slice(0,10).filter(item=>item&&["image","link"].includes(item.type)&&safeHttps(item.url)).map(item=>({
+  return items.slice(0,30).filter(item=>item&&["image","link"].includes(item.type)&&safeHttps(item.url)).map(item=>({
     type:item.type,
     url:safeHttps(item.url),
     caption:String(item.caption||"").slice(0,80)
@@ -1223,7 +1223,7 @@ function loadTopicDraft(boardId){
 function saveTopicDraft(boardId){
   const form=$("#nf"),items=$("#topicGalleryItems");
   if(!form||!items)return;
-  const gallery=Array.from(items.querySelectorAll(".topicGalleryRow")).slice(0,10).map(row=>({
+  const gallery=Array.from(items.querySelectorAll(".topicGalleryRow")).slice(0,30).map(row=>({
     type:row.querySelector("[data-gallery-type]")?.value==="link"?"link":"image",
     url:row.querySelector("[data-gallery-url]")?.value||"",
     caption:row.querySelector("[data-gallery-caption]")?.value||""
@@ -1271,7 +1271,7 @@ function neu(m,id){
           <li>Opcionalmente escribe un texto corto para describirla.</li>
           <li>Cuando publiques el tema, aparecerá un visor con flechas para recorrer los elementos.</li>
         </ol>
-        <b>Importante:</b> la galería forma parte solamente del tema original. No aparece en comentarios ni respuestas. Puedes añadir hasta 10 elementos.
+        <b>Importante:</b> la galería forma parte solamente del tema original. No aparece en comentarios ni respuestas. Puedes añadir hasta 30 elementos.
       </div>
       <div id="topicGalleryEditor" hidden>
         <div id="topicGalleryItems"></div>
@@ -1298,7 +1298,7 @@ function neu(m,id){
   });
   function addGalleryRow(entry=null){
     const count=galleryItems.querySelectorAll(".topicGalleryRow").length;
-    if(count>=10){$("#er").textContent="La galería admite un máximo de 10 elementos.";return;}
+    if(count>=30){$("#er").textContent="La galería admite un máximo de 30 elementos.";return;}
     const rowId=galleryRowId++;
     galleryItems.insertAdjacentHTML("beforeend",`<div class="topicGalleryRow" data-gallery-row="${rowId}">
       <div class="topicGalleryField"><label for="galleryType${rowId}">Tipo</label><select id="galleryType${rowId}" data-gallery-type><option value="image">Imagen</option><option value="link">Enlace</option></select></div>
@@ -1326,7 +1326,7 @@ function neu(m,id){
   if(savedDraft){
     $("#ti").value=String(savedDraft.title||"").slice(0,100);
     $("#tx").value=String(savedDraft.message||"").slice(0,6000);
-    const savedGallery=Array.isArray(savedDraft.gallery)?savedDraft.gallery.slice(0,10):[];
+    const savedGallery=Array.isArray(savedDraft.gallery)?savedDraft.gallery.slice(0,30):[];
     if(savedGallery.length){
       galleryEditor.hidden=false;
       $("#topicGalleryToggle").textContent="▾ Agregar imágenes o enlaces (opcional)";
