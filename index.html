@@ -29,7 +29,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
 .sd{position:absolute;top:16px;width:172px}.sd#sl{left:calc(50% - 651px)}.sd#sr{left:calc(50% + 479px);width:250px}.ad{background:#fff;border:2px solid var(--blue);margin-bottom:10px;box-shadow:3px 3px 0 #aab6bb;font-size:11px}.ad h4{margin:0;padding:3px 6px;font-size:11px;color:var(--orange);background:linear-gradient(#2d86b8,#006699 55%,#004d75);text-shadow:1px 1px #00304a}.ad img,.ph{display:block;width:100%;box-sizing:border-box}.ph{display:flex;align-items:center;justify-content:center;text-align:center;background:repeating-linear-gradient(45deg,#e7edf0 0 8px,#d3dce1 8px 16px);color:#678;font:bold 10px Verdana}.tx{padding:5px 6px;line-height:1.35}.ad.s{text-align:center;padding:3px;font-weight:bold;background:#fff8c6;border-color:#c9b64a}
 /* Chat retro */
 #chatBox{background:#f4f6f7;border:2px solid var(--blue);box-shadow:3px 3px 0 #aab6bb;margin-bottom:10px;font-size:11px}#chatHead{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:5px 6px;color:var(--orange);background:linear-gradient(#2d86b8,#006699 55%,#004d75);font-weight:bold}#chatHead button{padding:2px 5px;font-size:10px}.chatHeadActions{display:flex;align-items:center;gap:4px}#chatShortcuts{width:23px;height:22px;padding:0;font:bold 13px Georgia,serif;border:2px outset #fff;border-radius:2px;color:#003b59;background:linear-gradient(#fff,#d8e0e4)}#chatShortcuts:focus-visible,#chatExpand:focus-visible{outline:2px solid #ffb44f;outline-offset:2px}#chatState{padding:3px 6px;background:#e5edf0;border-bottom:1px solid #b7c9d1;color:#345;font:10px "Courier New",monospace}#chatMessages{height:290px;overflow-y:auto;padding:5px;background:#fff;border-bottom:1px solid #9bb2bd;overscroll-behavior:contain}.cm{display:grid;grid-template-columns:27px 1fr;gap:5px;padding:5px 1px;border-bottom:1px dotted #b9c8ce}.cm:last-child{border-bottom:0}.cm .ava{width:25px;height:25px}.cmhead{font:10px "Courier New",monospace;color:#345;margin-bottom:3px;overflow-wrap:anywhere}.cmhead b{color:#005b86}.cmtxt{font:11px/1.35 "Courier New",monospace;white-space:pre-wrap;overflow-wrap:anywhere}.cmmedia{display:block;max-width:100%;max-height:180px;margin-top:5px;border:1px solid #9bb2bd;background:#eee}.cmvideo{width:100%;max-height:180px;margin-top:5px}.cmtools{font-size:9px;margin-top:3px}.cmtools button{font-size:9px;padding:1px 4px}.chatEmpty{color:#678;text-align:center;font:11px "Courier New",monospace;padding:18px 4px}.chatForm{padding:5px;background:#e8eef1}.chatForm textarea{width:100%;height:54px;resize:vertical;font:11px "Courier New",monospace}.chatActions{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:4px}.chatActions button{padding:3px 6px;font-size:10px}.chatHint{font-size:9px;color:#567;margin-top:4px;line-height:1.3}.chatAdmin{padding:5px;background:#fff5d8;border-top:1px dashed #c9b64a;font-size:10px}.chatAdmin summary{cursor:pointer;font-weight:bold;color:#704500}.chat-expanded{position:fixed!important;z-index:99999!important;inset:4vh 4vw!important;width:auto!important;max-width:none!important;margin:0!important;box-shadow:0 0 0 100vmax rgba(0,0,0,.72)!important;display:flex;flex-direction:column}.chat-expanded #chatMessages{height:auto;flex:1;min-height:120px}.chat-expanded .cmmedia,.chat-expanded .cmvideo{max-height:36vh} .chat-expanded .chatForm textarea{height:70px}
-.profileAvatarBox{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.profileAvatarBox .profileAvatar{width:88px;height:88px;object-fit:cover;border:2px solid var(--blue);background:#fff}.profilePhotoPanel{border:1px solid #9bb2bd;background:#f4f7f8;padding:9px;margin-top:8px}.profilePhotoPanel p{margin:5px 0;line-height:1.45}.profilePhotoActions{display:flex;gap:5px;flex-wrap:wrap}.profilePhotoStatus{font:10px 'Courier New',monospace;margin-top:5px;color:#345}
+.profileAvatarBox{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.profileAvatarBox .profileAvatar{width:88px;height:88px;object-fit:cover;border:2px solid var(--blue);background:#fff}.profilePhotoPanel{border:1px solid #9bb2bd;background:#f4f7f8;padding:9px;margin-top:8px}.profilePhotoPanel p{margin:5px 0;line-height:1.45}.profilePhotoActions{display:flex;gap:5px;flex-wrap:wrap}.profilePhotoStatus{font:10px 'Courier New',monospace;margin-top:5px;color:#345}.catboxUploadPanel{border:1px dashed #9bb2bd;background:#fff;padding:8px;margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.catboxUploadPanel label{font-weight:bold}.catboxUploadPanel input[type=file]{max-width:100%}.catboxUploadPanel[hidden]{display:none!important}
 #chatShortcutDialog[hidden]{display:none!important}#chatShortcutDialog{position:fixed;z-index:100001;inset:0;background:rgba(0,20,32,.72);display:flex;align-items:center;justify-content:center;padding:14px}#chatShortcutPanel{width:min(440px,100%);max-height:86vh;overflow:auto;background:#f4f6f7;border:3px ridge #98aab1;box-shadow:5px 5px 0 rgba(0,0,0,.4);color:#111;padding:0}#chatShortcutTitle{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;color:#ffa34f;background:linear-gradient(#2d86b8,#006699 55%,#004d75);font-weight:bold}#chatShortcutTitle button{padding:1px 7px;font-size:16px}#chatShortcutPanel .shortcutBody{padding:9px}#chatShortcutPanel table{margin:0 0 8px}#chatShortcutPanel td:first-child{white-space:nowrap;width:42%}#chatShortcutPanel kbd{display:inline-block;padding:2px 5px;background:#fff;border:1px solid #8299a3;border-bottom-width:2px;border-radius:2px;font:bold 11px 'Courier New',monospace}#chatShortcutPanel p{line-height:1.45;margin:7px 0}
 #chatFile{display:none}.notice{border:1px solid #c9b64a;background:#fff8c6;padding:7px;margin:7px 0;color:#573d00}.accountNotice{border:1px solid #c99b35;background:#fff4cf;color:#593b00;padding:7px;margin:6px 0;font-size:11px;line-height:1.5}.accountNotice button{margin:3px 3px 0 0;padding:3px 7px}.accountNotice[hidden]{display:none!important}.setupgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.setupgrid>div{border:1px solid #9bb2bd;background:#f4f7f8;padding:8px}
 @media(max-width:1330px){.sd{position:static;width:auto;max-width:934px;margin:8px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px}.sd#sl,.sd#sr{left:auto;width:auto}.sd .ad{width:172px}#chatBox{width:min(100%,420px)}}
@@ -72,9 +72,17 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
       <textarea id="chatText" maxlength="1500" placeholder="Escribe un mensaje... (Enter para enviar · Shift+Enter para nueva línea)" aria-label="Mensaje de chat"></textarea>
       <div class="chatActions">
         <button type="submit" id="chatSend">Enviar</button>
-        <button type="button" id="chatCatbox" title="Abrir Catbox para subir un archivo">📦 Subir a Catbox</button>
+        <button type="button" id="chatCatbox" title="Seleccionar y subir un archivo desde tu dispositivo">📎 Adjuntar archivo</button>
       </div>
       <div class="chatHint" id="chatHint">Enter: enviar · Shift+Enter: nueva línea · pulsa ? para ver todos los atajos.</div>
+    </form>
+    <form class="catboxUploadPanel" id="chatCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank" hidden>
+      <input type="hidden" name="reqtype" value="fileupload">
+      <label for="chatCatboxFile">Archivo para compartir:</label>
+      <input id="chatCatboxFile" type="file" name="fileToUpload" required>
+      <button type="submit">Subir archivo</button>
+      <button type="button" id="chatCatboxCancel">Cancelar</button>
+      <p class="profilePhotoStatus" id="chatCatboxStatus">El archivo se sube a Catbox. Copia el enlace que aparecerá en la otra pestaña y pégalo en el chat.</p>
     </form>
     <details class="chatAdmin" id="chatAdmin" hidden>
       <summary>⚙ Panel de administración</summary>
@@ -96,7 +104,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
         <tr><td><kbd>?</kbd></td><td>Abrir esta ventana de ayuda (cuando no estás escribiendo).</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Cerrar esta ayuda o salir del chat ampliado.</td></tr>
       </table>
-      <p><b>Otros controles:</b> 📦 Subir a Catbox abre el alojamiento externo; copia el enlace y pégalo en el chat. Solo las cuentas registradas con correo verificado pueden compartir enlaces. Los invitados solo pueden enviar texto. ⛶ Ampliar abre el chat en pantalla grande.</p>
+      <p><b>Otros controles:</b> 📎 Adjuntar archivo permite elegir un archivo de tu dispositivo y subirlo a Catbox; copia el enlace que aparece en la otra pestaña y pégalo en el chat. Cualquier cuenta con sesión iniciada puede compartir enlaces; los invitados solo pueden enviar texto. ⛶ Ampliar abre el chat en pantalla grande.</p>
       <p><small>En móviles, puedes usar los botones de la pantalla. Durante la composición de texto, Enter respeta Shift+Enter y las teclas especiales del teclado.</small></p>
       <div style="text-align:right"><button type="button" id="chatShortcutDone">Entendido</button></div>
     </div>
@@ -112,8 +120,8 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
   <p><b>¿Cómo se suben los rangos?</b><br>Por mensajes: Novato, Miembro (5), Habitual (25) y Veterano (100).</p>
   <p><b>¿Quién modera?</b><br>El administrador configurado por UID puede borrar temas, respuestas y mensajes del chat. Las reglas del foro solo las publica el staff.</p>
   <p><b>¿Puedo entrar sin registrarme?</b><br>Sí. El chat permite invitados anónimos; para crear temas y responder en los foros necesitas una cuenta y verificar tu correo.</p>
-  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Cada cuenta registrada con correo verificado puede cambiar su propia foto pegando una URL HTTPS pública de imagen, por ejemplo una imagen alojada en Catbox.</p>
-  <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Solo las cuentas registradas con correo verificado, incluido todo el personal. Los invitados pueden enviar mensajes de texto, pero no enlaces. Para compartir multimedia, sube el archivo a un alojamiento externo como Catbox y pega el enlace en el chat.</p>
+  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Apenas inicias sesión puedes editar tu propio perfil. En tu perfil, selecciona una imagen desde tu dispositivo, súbela a Catbox y pega el enlace que devuelve para guardar tu foto. No necesitas verificar el correo para cambiar el avatar.</p>
+  <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Cualquier cuenta registrada con sesión iniciada puede compartir enlaces y archivos, aunque todavía no haya verificado el correo. Los invitados anónimos solo pueden enviar texto. Para subir un archivo, pulsa «Adjuntar archivo» en el chat, elige el archivo, pulsa «Subir archivo» y copia el enlace que Catbox abre en otra pestaña.</p>
   <p><b>¿Cómo funcionan las invitaciones del staff?</b><br>Solo el propietario, co-owner o administrador puede generarlas desde Administración. Cada invitación concede un único rol a una cuenta con correo verificado, se usa una sola vez y queda bloqueada permanentemente. Las invitaciones vencen a los 7 días si nadie las utiliza.</p>
 </template>
 
@@ -213,8 +221,12 @@ async function loadCurrentStaffRole(user){
   try{const s=await getDoc(doc(db,"staff",user.uid));if(s.exists())currentStaffRole=s.data().role||"";}
   catch(e){console.warn("No se pudo leer el rol del usuario",e);}
 }
+const isRegisteredMember = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous);
 const emailVerified = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.emailVerified);
 const containsExternalLink = value => /(?:https?:\/\/|www\.)/i.test(String(value||""));
+function requireRegisteredMember(action="usar esta función"){
+  if(!isRegisteredMember())throw new Error(`Para ${action}, inicia sesión con una cuenta registrada. Los invitados no pueden hacerlo.`);
+}
 function requireVerifiedMember(action="compartir enlaces o multimedia"){
   if(!emailVerified())throw new Error(`Para ${action}, inicia sesión con una cuenta registrada y verifica tu correo electrónico.`);
 }
@@ -444,7 +456,7 @@ const D = {
     return url;
   },
   async setAvatarUrl(url){
-    requireVerifiedMember("cambiar tu foto de perfil");
+    requireRegisteredMember("cambiar tu foto de perfil");
     const safe=safeHttps(url);
     if(!safe)throw new Error("Usa una URL HTTPS pública y directa de una imagen o GIF.");
     const userRef=doc(db,"users",auth.currentUser.uid),before=await getDoc(userRef),oldPath=before.exists()?before.data().avatarPath||"":"";
@@ -454,7 +466,7 @@ const D = {
     return safe;
   },
   async removeAvatar(){
-    requireVerifiedMember("quitar tu foto de perfil");
+    requireRegisteredMember("quitar tu foto de perfil");
     const userRef=doc(db,"users",auth.currentUser.uid),before=await getDoc(userRef),oldPath=before.exists()?before.data().avatarPath||"":"";
     await updateDoc(userRef,{avatarUrl:"",avatarPath:""});await updateProfile(auth.currentUser,{photoURL:null});
     if(oldPath&&storage){try{await deleteObject(storageRef(storage,oldPath));}catch(e){console.warn("La foto anterior no pudo borrarse",e);}}
@@ -468,7 +480,7 @@ const D = {
   },
   async chatSend(x,media=null){
     if(!auth.currentUser)throw new Error("Inicia sesión para participar en el chat.");
-    if(media||containsExternalLink(x))requireVerifiedMember("compartir enlaces o archivos en el chat");
+    if(media||containsExternalLink(x))requireRegisteredMember("compartir enlaces o archivos en el chat");
     const uid=auth.currentUser.uid,p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid));const avatarUrl=p?.exists()?p.data().avatarUrl||"":"";return addDoc(collection(db,"chatMessages"),{uid,u:chatName(),avatarUrl,x,media,ts:Date.now()});
   },
   async chatDelete(id,path){await deleteDoc(doc(db,"chatMessages",id));if(path&&storage){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("No se pudo borrar el archivo asociado",e);}}},
@@ -542,14 +554,15 @@ function frm(m,a,r){
         if(!$("#ok").checked)return er.textContent="Debes aceptar las reglas.";
         const invite=$("#accessToken")?.value.trim()||"";
         await Store.reg(n,email,p,invite);
-        location.hash="#/";
+        location.hash="#/u/"+encodeURIComponent(n);
         if(invite)alert("Cuenta creada. Verifica tu correo y pulsa «Ya verifiqué» para activar la invitación. También podrás pegar el mismo código al iniciar sesión después de verificar el correo.");
       }else{
         const identity=$("#identity").value.trim();
         if(!identity.includes("@")&&!/^[a-z0-9_]{3,16}$/i.test(identity))return er.textContent="Introduce tu correo o el usuario de una cuenta antigua.";
         const token=$("#accessToken")?.value.trim()||"";
         await Store.login(identity,p,token);
-        location.hash="#/";
+        const ownProfile=await Store.profByUid(auth.currentUser.uid);
+        location.hash=ownProfile?.u?"#/u/"+encodeURIComponent(ownProfile.u):"#/";
         if(token){const role=STAFF_ROLE_LABELS[currentStaffRole]||"personal";alert("Invitación utilizada correctamente. Tu cuenta recibió el rol: "+role+". Este token quedó bloqueado para siempre.");}
       }
     }catch(z){er.textContent=errText(z);}
@@ -561,14 +574,45 @@ function frm(m,a,r){
     catch(z){er.textContent=errText(z);}
   });
 }
+function bindCatboxUpload(formSelector,fileSelector,statusSelector,imageOnly=false){
+  const form=$(formSelector),fileInput=$(fileSelector);
+  if(!form||!fileInput)return;
+  form.addEventListener("submit",event=>{
+    const file=fileInput.files?.[0];
+    if(!isRegisteredMember()){
+      event.preventDefault();
+      alert("Inicia sesión con una cuenta registrada antes de subir archivos.");
+      return;
+    }
+    if(!file){
+      event.preventDefault();
+      alert("Selecciona un archivo primero.");
+      return;
+    }
+    if(file.size>200*1024*1024){
+      event.preventDefault();
+      alert("Catbox admite archivos de hasta 200 MB por archivo.");
+      return;
+    }
+    if(imageOnly&&!["image/jpeg","image/png","image/gif","image/webp"].includes(file.type)){
+      event.preventDefault();
+      alert("Para el avatar usa JPG, PNG, GIF o WEBP.");
+      return;
+    }
+    const status=statusSelector?$(statusSelector):null;
+    if(status)status.textContent="Enviando el archivo a Catbox. Se abrirá otra pestaña con el enlace; cópialo y pégalo aquí.";
+  });
+}
+
 async function prf(m,u){
   const [f,c]=await Promise.all([Store.prof(u),Store.cnt(u)]);if(!f)return m.innerHTML="Usuario inexistente";
   const owner=!!(auth?.currentUser&&!auth.currentUser.isAnonymous&&auth.currentUser.uid===f.uid);
-  const canEditProfile=owner&&emailVerified();
-  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen a <a href="https://catbox.moe/" target="_blank" rel="noopener noreferrer">Catbox</a> y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><div class="profilePhotoStatus" id="profilePhotoStatus">Solo se guarda el enlace; la imagen permanece alojada fuera del foro.</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
+  const canEditProfile=owner;
+  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen a <a href="https://catbox.moe/" target="_blank" rel="noopener noreferrer">Catbox</a> y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><form class="catboxUploadPanel" id="avatarCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank"><input type="hidden" name="reqtype" value="fileupload"><label for="avatarCatboxFile">O sube una imagen desde tu PC:</label><input id="avatarCatboxFile" type="file" name="fileToUpload" accept="image/jpeg,image/png,image/gif,image/webp" required><button type="submit">Subir imagen</button></form><div class="profilePhotoStatus" id="profilePhotoStatus">Después de subirla, copia el enlace que aparece en la otra pestaña, pégalo arriba y pulsa «Guardar URL».</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
   if(canEditProfile){
     $("#avatarUrlSave")?.addEventListener("click",async()=>{const status=$("#profilePhotoStatus"),button=$("#avatarUrlSave");button.disabled=true;try{await Store.setAvatarUrl($("#avatarUrlInput").value.trim());await prf(m,u);}catch(z){status.textContent=errText(z);button.disabled=false;}});
     $("#avatarRemove")?.addEventListener("click",async()=>{if(!confirm("¿Quitar tu foto de perfil?"))return;const status=$("#profilePhotoStatus");$("#avatarRemove").disabled=true;try{await Store.removeAvatar();await prf(m,u);}catch(z){status.textContent=errText(z);$("#avatarRemove").disabled=false;}});
+    bindCatboxUpload("#avatarCatboxForm","#avatarCatboxFile","#profilePhotoStatus",true);
   }
 }
 function faq(m){m.innerHTML=`<table><tr><th>FAQ / Ayuda</th></tr><tr><td>${$("#faqt").innerHTML}</td></tr></table>`;}
@@ -619,17 +663,47 @@ async function staffPanel(m){
   };
   try{await render();}catch(e){m.innerHTML=`<span class="err">${E(errText(e))}</span>`;}
 }
-function setup(m){
-  const owner = isOwner();
-  const user = auth?.currentUser;
-  m.innerHTML=`<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>${firebaseReady?"Firebase conectado":"Firebase pendiente de configurar"}</b><br>${firebaseReady?"La aplicación ya inició sesión con Firebase. El acceso al foro depende de las reglas publicadas.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio."}</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta verificada para publicar en los foros.</li><li>El propietario se detecta automáticamente por el UID de Firebase configurado en <code>OWNER_UID</code>. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Sesión actual:</b> ${owner?"<strong>OWNER detectado correctamente.</strong>":user&&!user.isAnonymous?"Cuenta registrada, pero esta sesión no corresponde al UID Owner configurado. Entra con tu cuenta de propietario; no crees otra.":"Sesión de invitado. Pulsa Entrar para acceder con tu cuenta Owner."}</p><p><b>Enlaces multimedia y avatares:</b> el foro no aloja archivos. Para compartir imágenes, vídeos y documentos, usa un alojamiento externo como <a href="https://catbox.moe/" target="_blank" rel="noopener noreferrer">Catbox</a> y pega el enlace HTTPS. Solo las cuentas verificadas pueden compartir enlaces.</p></td></tr></table>`;
+async function setup(m){
+  const user=auth?.currentUser;
+  if(user&&!user.isAnonymous){
+    const profile=await Store.profByUid(user.uid);
+    const username=profile?.u||me();
+    const profileHref=profile?.u?"#/u/"+encodeURIComponent(profile.u):"#/";
+    const verification=user.emailVerified
+      ? '<span class="ok">Correo verificado</span>'
+      : '<span class="err">Correo sin verificar: puedes editar el perfil y subir archivos ahora; para publicar temas y respuestas debes verificarlo.</span>';
+    m.innerHTML=
+      '<table><tr><th>MI CUENTA · '+(isOwner()?"OWNER":"SESIÓN ACTIVA")+'</th></tr><tr><td>'+
+      '<p><b>Sesión iniciada correctamente.</b><br>Cuenta: '+E(user.email||username)+'</p>'+
+      '<p>Estado del correo: '+verification+'</p>'+
+      '<p><a class="bt" href="'+E(profileHref)+'">👤 Editar mi perfil y foto</a> <a class="bt" href="#/">Volver al foro y chat</a></p>'+
+      '</td></tr></table>'+
+      '<table><tr><th>SUBIR ARCHIVOS</th></tr><tr><td>'+
+      '<p>Elige un archivo de tu PC. Catbox lo subirá y abrirá otra pestaña con el enlace directo. Copia ese enlace para pegarlo en el chat o en el editor de tu foto de perfil. Máximo 200 MB por archivo.</p>'+
+      '<form class="catboxUploadPanel" id="setupCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank">'+
+      '<input type="hidden" name="reqtype" value="fileupload">'+
+      '<label for="setupCatboxFile">Seleccionar archivo:</label>'+
+      '<input id="setupCatboxFile" type="file" name="fileToUpload" required>'+
+      '<button type="submit">📦 Subir archivo a Catbox</button>'+
+      '</form><p class="profilePhotoStatus" id="setupCatboxStatus">No necesitas verificar el correo para editar tu perfil ni para compartir enlaces. La verificación sí es necesaria para publicar en los foros.</p>'+
+      '</td></tr></table>';
+    bindCatboxUpload("#setupCatboxForm","#setupCatboxFile","#setupCatboxStatus",false);
+    return;
+  }
+  const owner=isOwner();
+  m.innerHTML='<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>'+
+    (firebaseReady?"Firebase conectado":"Firebase pendiente de configurar")+'</b><br>'+
+    (firebaseReady?"La aplicación está conectada. Inicia sesión para editar tu perfil y subir archivos.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio.")+
+    '</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta para compartir enlaces; para publicar en los foros necesitan verificar el correo.</li><li>El propietario se detecta automáticamente por el UID de Firebase configurado en <code>OWNER_UID</code>. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Sesión actual:</b> '+
+    (owner?"<strong>OWNER detectado correctamente.</strong>":"Sesión de invitado. Pulsa Entrar para acceder con tu cuenta.")+
+    '</p><p><b>Perfiles y archivos:</b> al iniciar sesión podrás cambiar tu foto y subir archivos desde el foro mediante Catbox. Firebase Storage permanece desactivado.</p></td></tr></table>';
 }
 function renderAccountNotice(){
   const box=$("#accountNotice"),user=auth?.currentUser;
   if(!box)return;
   if(!user||user.isAnonymous||user.emailVerified){box.hidden=true;box.innerHTML="";return;}
   box.hidden=false;
-  box.innerHTML=`<b>Verifica tu correo para publicar.</b> Enviamos un enlace a <b>${E(user.email||"tu correo")}</b>. Revisa también Spam. <button type="button" id="resendVerification">Reenviar correo</button> <button type="button" id="refreshVerification">Ya verifiqué</button>`;
+  box.innerHTML=`<b>Verifica tu correo para publicar temas y respuestas.</b> Enviamos un enlace a <b>${E(user.email||"tu correo")}</b>. Ya puedes editar tu perfil y compartir archivos desde tu cuenta. Revisa también Spam. <button type="button" id="resendVerification">Reenviar correo</button> <button type="button" id="refreshVerification">Ya verifiqué</button>`;
   $("#resendVerification").addEventListener("click",async()=>{
     const b=$("#resendVerification");b.disabled=true;
     try{await Store.resendVerification();alert("Te enviamos otro enlace de verificación. Revisa tu bandeja y Spam.");}
@@ -709,7 +783,7 @@ async function uploadChatFile(file){
 let chatSending=false;
 $("#chatForm").addEventListener("submit",async e=>{
   e.preventDefault();const x=$("#chatText").value.trim();if(!x||uploadBusy||chatSending)return;
-  if(containsExternalLink(x)&&!emailVerified()){alert("Solo las cuentas registradas y con correo verificado pueden compartir enlaces. Regístrate o inicia sesión y verifica tu correo.");return;}
+  if(containsExternalLink(x)&&!isRegisteredMember()){alert("Inicia sesión con una cuenta registrada para compartir enlaces. Los invitados solo pueden enviar texto.");return;}
   chatSending=true;$("#chatSend").disabled=true;
   try{await Store.chatSend(x,null);$("#chatText").value="";}catch(z){alert(errText(z));}
   finally{chatSending=false;$("#chatSend").disabled=false;}
@@ -742,9 +816,12 @@ document.addEventListener("keydown",e=>{
   if(!typing&&e.altKey&&e.key.toLowerCase()==="m"){e.preventDefault();$("#chatText").focus();}
 });
 $("#chatCatbox").addEventListener("click",()=>{
-  if(!emailVerified()){alert("Solo las cuentas registradas y con correo verificado pueden compartir multimedia. Inicia sesión y verifica tu correo.");return;}
-  window.open("https://catbox.moe/","_blank","noopener,noreferrer");
+  if(!isRegisteredMember()){alert("Inicia sesión con una cuenta registrada para adjuntar archivos. Los invitados solo pueden enviar texto.");return;}
+  const panel=$("#chatCatboxForm");panel.hidden=!panel.hidden;
+  if(!panel.hidden)$("#chatCatboxFile").focus();
 });
+$("#chatCatboxCancel").addEventListener("click",()=>{$("#chatCatboxForm").hidden=true;$("#chatCatboxFile").value="";});
+bindCatboxUpload("#chatCatboxForm","#chatCatboxFile","#chatCatboxStatus",false);
 $("#chatExpand").addEventListener("click",()=>{const box=$("#chatBox"),expanded=box.classList.toggle("chat-expanded");$("#chatExpand").textContent=expanded?"✕ Cerrar":"⛶ Ampliar";$("#chatExpand").setAttribute("aria-expanded",String(expanded));});
 $("#chatClear").addEventListener("click",async()=>{if(!isAdmin())return alert("No autorizado.");if(!confirm("¿Vaciar los últimos 500 mensajes del chat? Esta acción no se puede deshacer."))return;try{await Store.chatClear();}catch(z){alert(errText(z));}});
 
@@ -769,7 +846,7 @@ async function startFirebase(){
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
-    $("#chatHint").textContent="Invitados: solo texto. Cuentas registradas con correo verificado: pueden compartir enlaces HTTPS de Catbox u otros alojamientos. Pega el enlace en el mensaje. Enter envía · Shift+Enter nueva línea · ? atajos."; 
+    $("#chatHint").textContent="Invitados: solo texto. Cuentas con sesión iniciada: pueden adjuntar archivos o pegar enlaces HTTPS, aunque no hayan verificado el correo. Para publicar temas y respuestas sí se necesita verificarlo. Enter envía · Shift+Enter nueva línea · ? atajos."; 
     subscribeChat();updateAdminUI();renderAccountNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
