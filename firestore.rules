@@ -41,14 +41,16 @@ service cloud.firestore {
         && getAfter(path).data.lastPostId == postId;
     }
     function canParticipate() {
+      let path = moderationPath(request.auth.uid);
       return signedIn() && (
         isOwner()
-        || !exists(moderationPath(request.auth.uid))
-        || get(moderationPath(request.auth.uid)).data.get('status', 'active') == 'active'
+        || !exists(path)
+        || get(path).data.get('status', '') == 'active'
         || (
-          get(moderationPath(request.auth.uid)).data.get('status', 'active') == 'temporary'
-          && get(moderationPath(request.auth.uid)).data.get('banUntil', request.time) is timestamp
-          && get(moderationPath(request.auth.uid)).data.banUntil <= request.time
+          get(path).data.get('status', '') == 'temporary'
+          && 'banUntil' in get(path).data
+          && get(path).data.banUntil is timestamp
+          && get(path).data.banUntil <= request.time
         )
       );
     }
