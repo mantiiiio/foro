@@ -182,7 +182,7 @@ input,textarea,select{max-width:100%}
     <details class="chatAdmin" id="chatAdmin" hidden>
       <summary>⚙ Panel de administración</summary>
       <p id="chatAdminInfo">Sesión de administrador verificada.</p>
-      <button type="button" id="chatClear">Vaciar mensajes del chat</button>
+      <button type="button" id="chatClear">Marcar mensajes del chat como eliminados</button>
     </details>
   </section>
 </aside>
@@ -635,7 +635,7 @@ const D = {
   },
   async chatEdit(id,x){const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>1500)throw new Error("El mensaje supera el máximo de 1500 caracteres.");await updateDoc(doc(db,"chatMessages",id),{x:value});},
   async chatDelete(id,path){const ref=doc(db,"chatMessages",id),snapshot=await getDoc(ref);if(!snapshot.exists()||snapshot.data().deleted)return;await updateDoc(ref,{x:"",media:null,deleted:true,deletedBy:isAdmin()?"administrador":"usuario",deletedAt:Date.now(),deletedByUid:auth.currentUser.uid});if(path&&storage){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("No se pudo borrar el archivo asociado",e);}}},
-  async chatClear(){const s=await getDocs(query(collection(db,"chatMessages"),orderBy("ts","desc"),limit(500)));if(storage){await Promise.all(s.docs.map(async d=>{const path=d.data().media?.path;if(path){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("Adjunto no encontrado o no borrable",e);}}}));}for(let i=0;i<s.docs.length;i+=400){const batch=writeBatch(db);s.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));await batch.commit();}}
+  async chatClear(){if(!isAdmin())throw new Error("No autorizado.");const s=await getDocs(query(collection(db,"chatMessages"),orderBy("ts","desc"),limit(500))),paths=[],now=Date.now(),uid=auth.currentUser.uid;for(let i=0;i<s.docs.length;i+=400){const batch=writeBatch(db);s.docs.slice(i,i+400).forEach(d=>{const data=d.data();if(data.deleted)return;if(data.media?.path)paths.push(data.media.path);batch.update(d.ref,{x:"",media:null,deleted:true,deletedBy:"administrador",deletedAt:now,deletedByUid:uid});});await batch.commit();}if(storage&&paths.length)await Promise.all(paths.map(async path=>{try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("Adjunto no encontrado o no borrable",e);}}));}
 };
 
 // Modo demostración local: los datos quedan solo en este navegador y NO son compartidos.
@@ -663,7 +663,7 @@ const Demo = {
   async chatSend(x,media=null){demo.chat.push({id:String(Date.now()),uid:demo.m||"anon",u:demo.m||"Invitado-DEMO",x,media,ts:Date.now()});demo.chat=demo.chat.slice(-60);saveDemo();renderChat(demo.chat);},
   async chatEdit(id,x){const message=demo.chat.find(m=>m.id===id);if(!message||message.uid!==demo.m)throw new Error("Solo puedes editar tus propios mensajes.");message.x=String(x||"").trim();saveDemo();renderChat(demo.chat);},
   async chatDelete(id){const message=demo.chat.find(x=>x.id===id);if(message&&!message.deleted){message.x="";message.media=null;message.deleted=true;message.deletedBy="usuario";}saveDemo();renderChat(demo.chat);},
-  async chatClear(){demo.chat=[];saveDemo();renderChat([]);}
+  async chatClear(){demo.chat.forEach(m=>{if(!m.deleted){m.x="";m.media=null;m.deleted=true;m.deletedBy="administrador";}});saveDemo();renderChat(demo.chat);}
 };
 let Store = configured ? D : Demo;
 
@@ -1327,7 +1327,7 @@ $("#chatCatbox").addEventListener("click",()=>{
 $("#chatCatboxCancel").addEventListener("click",()=>{$("#chatCatboxForm").hidden=true;$("#chatCatboxFile").value="";});
 bindCatboxUpload("#chatCatboxForm","#chatCatboxFile","#chatCatboxStatus",false);
 $("#chatExpand").addEventListener("click",()=>{const box=$("#chatBox"),expanded=box.classList.toggle("chat-expanded");$("#chatExpand").textContent=expanded?"✕ Cerrar":"⛶ Ampliar";$("#chatExpand").setAttribute("aria-expanded",String(expanded));});
-$("#chatClear").addEventListener("click",async()=>{if(!isAdmin())return alert("No autorizado.");if(!confirm("¿Vaciar los últimos 500 mensajes del chat? Esta acción no se puede deshacer."))return;try{await Store.chatClear();}catch(z){alert(errText(z));}});
+$("#chatClear").addEventListener("click",async()=>{if(!isAdmin())return alert("No autorizado.");if(!confirm("¿Marcar los últimos 500 mensajes del chat como eliminados? Se conservarán los avisos de eliminación."))return;try{await Store.chatClear();}catch(z){alert(errText(z));}});
 
 // Inicio Firebase y sesión de invitado
 async function startFirebase(){
