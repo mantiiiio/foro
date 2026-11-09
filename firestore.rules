@@ -43,6 +43,10 @@ service cloud.firestore {
             request.resource.data.avatarUrl.matches('https://firebasestorage.googleapis.com/.*')
             && request.resource.data.avatarPath.matches('avatars/.*')
           )
+          || (
+            request.resource.data.avatarUrl.matches('https://.*')
+            && request.resource.data.avatarPath == ''
+          )
         )
       );
       allow delete: if isAdmin();
