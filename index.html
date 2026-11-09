@@ -2012,7 +2012,7 @@ $("#chatForm").addEventListener("submit",async e=>{
 const shortcutDialog=$("#chatShortcutDialog");
 function openChatShortcuts(){
   if(!shortcutDialog)return;
-  if(firebaseReady&&(moderationAccessState()!=="ready"||getActiveBanDetails()))return;
+  if(firebaseReady&&(!isRegisteredMember()||moderationAccessState()!=="ready"||getActiveBanDetails()))return;
   shortcutDialog.hidden=false;
   $("#chatShortcutClose").focus();
 }
