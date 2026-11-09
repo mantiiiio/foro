@@ -1068,7 +1068,7 @@ function cleanTopicGallery(items){
 function renderTopicGallery(items){
   const gallery=cleanTopicGallery(items);
   if(!gallery.length)return "";
-  return \`<section class="topicGalleryViewer" data-topic-gallery>
+  return `<section class="topicGalleryViewer" data-topic-gallery>
     <h3>📎 MATERIAL ADJUNTO DEL TEMA</h3>
     <div class="topicGalleryStage">
       <button type="button" class="topicGalleryNav" data-gallery-prev aria-label="Elemento anterior" title="Anterior">‹</button>
@@ -1076,7 +1076,7 @@ function renderTopicGallery(items){
       <button type="button" class="topicGalleryNav" data-gallery-next aria-label="Elemento siguiente" title="Siguiente">›</button>
     </div>
     <div class="topicGalleryFooter"><span data-gallery-count></span><div class="topicGalleryDots" data-gallery-dots></div></div>
-  </section>\`;
+  </section>`;
 }
 function bindTopicGallery(root,items){
   const gallery=cleanTopicGallery(items);
@@ -1210,8 +1210,8 @@ async function thr(m,id){
 }
 function neu(m,id){
   if(!Store.me()||id==="reglas"&&!isStaff())return location.hash=Store.me()?"#/b/"+id:"#/login";
-  if(configured&&!emailVerified()){m.innerHTML=\`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>\`;return;}
-  m.innerHTML=\`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea></td></tr><tr><td colspan="2">
+  if(configured&&!emailVerified()){m.innerHTML=`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>`;return;}
+  m.innerHTML=`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea></td></tr><tr><td colspan="2">
     <section class="topicGalleryComposer" aria-label="Galería opcional del tema">
       <div class="topicGalleryBar">
         <button type="button" id="topicGalleryToggle" aria-expanded="false">▸ Agregar imágenes o enlaces (opcional)</button>
@@ -1233,7 +1233,7 @@ function neu(m,id){
         <small class="topicGalleryNote">Usa enlaces HTTPS públicos. Las imágenes deben tener una URL directa; los enlaces normales se mostrarán como tarjetas que se pueden abrir.</small>
       </div>
     </section>
-  </td></tr><tr><td colspan="2" class="c"><button class="bt">Publicar</button> <span id="er" class="err"></span></td></tr></table></form>\`;
+  </td></tr><tr><td colspan="2" class="c"><button class="bt">Publicar</button> <span id="er" class="err"></span></td></tr></table></form>`;
 
   const galleryEditor=$("#topicGalleryEditor"),galleryItems=$("#topicGalleryItems");
   let galleryRowId=0;
@@ -1252,12 +1252,12 @@ function neu(m,id){
     const count=galleryItems.querySelectorAll(".topicGalleryRow").length;
     if(count>=10){$("#er").textContent="La galería admite un máximo de 10 elementos.";return;}
     const rowId=galleryRowId++;
-    galleryItems.insertAdjacentHTML("beforeend",\`<div class="topicGalleryRow" data-gallery-row="\${rowId}">
-      <div class="topicGalleryField"><label for="galleryType\${rowId}">Tipo</label><select id="galleryType\${rowId}" data-gallery-type><option value="image">Imagen</option><option value="link">Enlace</option></select></div>
-      <div class="topicGalleryField"><label for="galleryUrl\${rowId}">URL HTTPS</label><input id="galleryUrl\${rowId}" data-gallery-url type="url" maxlength="2048" placeholder="https://..." required></div>
-      <div class="topicGalleryField"><label for="galleryCaption\${rowId}">Descripción (opcional)</label><input id="galleryCaption\${rowId}" data-gallery-caption type="text" maxlength="80" placeholder="Imagen 1, mis gatos..."></div>
+    galleryItems.insertAdjacentHTML("beforeend",`<div class="topicGalleryRow" data-gallery-row="${rowId}">
+      <div class="topicGalleryField"><label for="galleryType${rowId}">Tipo</label><select id="galleryType${rowId}" data-gallery-type><option value="image">Imagen</option><option value="link">Enlace</option></select></div>
+      <div class="topicGalleryField"><label for="galleryUrl${rowId}">URL HTTPS</label><input id="galleryUrl${rowId}" data-gallery-url type="url" maxlength="2048" placeholder="https://..." required></div>
+      <div class="topicGalleryField"><label for="galleryCaption${rowId}">Descripción (opcional)</label><input id="galleryCaption${rowId}" data-gallery-caption type="text" maxlength="80" placeholder="Imagen 1, mis gatos..."></div>
       <button type="button" class="topicGalleryRemove" data-gallery-remove>Quitar</button>
-    </div>\`);
+    </div>`);
     galleryItems.querySelector('[data-gallery-row="'+rowId+'"] [data-gallery-remove]').addEventListener("click",e=>e.currentTarget.closest(".topicGalleryRow").remove());
     $("#er").textContent="";
   }
