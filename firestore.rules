@@ -376,8 +376,10 @@ service cloud.firestore {
       allow read: if canParticipate();
       allow create: if verifiedMember()
         && canParticipate()
-        && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n'])
+        && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n','staffBadge','lastStaffBadge'])
         && request.resource.data.uid == request.auth.uid
+        && request.resource.data.staffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
+        && request.resource.data.lastStaffBadge == request.resource.data.staffBadge
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
         && shortString(request.resource.data.b, 24)
@@ -398,11 +400,12 @@ service cloud.firestore {
         verifiedMember()
         && canParticipate()
         && resource.data.b != 'reglas'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lr','lu','n'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lr','lu','n','lastStaffBadge'])
         && request.resource.data.n == resource.data.n + 1
         && request.resource.data.lr is int
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && request.resource.data.lu == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u
+        && request.resource.data.lastStaffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
         && shortString(request.resource.data.lu, 16)
       ) || (
         registered()
@@ -447,8 +450,9 @@ service cloud.firestore {
       allow create: if verifiedMember()
         && canParticipate()
         && hasFreshPostRateLimit(request.auth.uid, postId)
-        && request.resource.data.keys().hasOnly(['tp','u','uid','x','ts'])
+        && request.resource.data.keys().hasOnly(['tp','u','uid','x','ts','staffBadge'])
         && request.resource.data.uid == request.auth.uid
+        && request.resource.data.staffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
         && shortString(request.resource.data.tp, 200)
@@ -500,8 +504,9 @@ service cloud.firestore {
       allow create: if signedIn()
         && canParticipate()
         && hasFreshChatRateLimit(request.auth.uid, messageId)
-        && request.resource.data.keys().hasOnly(['uid','u','avatarUrl','x','media','ts'])
+        && request.resource.data.keys().hasOnly(['uid','u','avatarUrl','x','media','ts','staffBadge'])
         && request.resource.data.uid == request.auth.uid
+        && request.resource.data.staffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
         && shortString(request.resource.data.u, 32)
         && request.resource.data.avatarUrl is string
         && request.resource.data.avatarUrl.size() <= 2048
