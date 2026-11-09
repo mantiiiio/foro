@@ -46,19 +46,22 @@ service cloud.firestore {
         && getAfter(path).data.lastPostAt == request.time
         && getAfter(path).data.lastPostId == postId;
     }
-    function canParticipate() {
+    function hasActiveBan() {
       let path = moderationPath(request.auth.uid);
-      return signedIn() && (
-        isOwner()
-        || !exists(path)
-        || get(path).data.get('status', '') == 'active'
+      return exists(path) && (
+        get(path).data.get('status', '') == 'permanent'
         || (
           get(path).data.get('status', '') == 'temporary'
-          && 'banUntil' in get(path).data
-          && get(path).data.banUntil is timestamp
-          && get(path).data.banUntil <= request.time
+          && (
+            !('banUntil' in get(path).data)
+            || !(get(path).data.banUntil is timestamp)
+            || get(path).data.banUntil > request.time
+          )
         )
       );
+    }
+    function canParticipate() {
+      return signedIn() && (isOwner() || !hasActiveBan());
     }
     // Solo cuentas registradas (no sesiones anónimas) pueden leer el contenido comunitario.
     function canReadCommunity() {
@@ -475,6 +478,7 @@ service cloud.firestore {
       );
       allow delete: if isStaff() || (
         registered()
+        && canParticipate()
         && resource.data.uid == request.auth.uid
         && resource.data.b != 'reglas'
       );
@@ -500,7 +504,16 @@ service cloud.firestore {
           && request.resource.data.stars >= 1
           && request.resource.data.stars <= 5
           && request.resource.data.ts is int;
-        allow delete: if isAdmin() || (registered() && (request.auth.uid == ratingUid || resource.data.get('uid', '') == request.auth.uid));
+        allow delete: if isStaff() || (
+          registered()
+          && canParticipate()
+          && (
+            request.auth.uid == ratingUid
+            || resource.data.get('uid', '') == request.auth.uid
+            || (exists(/databases/$(database)/documents/topics/$(topicId))
+              && get(/databases/$(database)/documents/topics/$(topicId)).data.uid == request.auth.uid)
+          )
+        );
       }
     }
 
@@ -550,6 +563,7 @@ service cloud.firestore {
       );
       allow delete: if isStaff() || (
         registered()
+        && canParticipate()
         && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
         && (
           resource.data.uid == request.auth.uid
