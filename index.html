@@ -233,6 +233,11 @@ input,textarea,select{max-width:100%}
 .banAccessPanel .banActions a{background:#a40000!important;color:#fff!important;border:2px solid #780000!important;padding:8px 13px!important}
 
 
+/* Etiqueta de personal: arcoíris si el navegador admite texto con fondo recortado; rojo como alternativa. */
+.staffBadge{display:inline-block;margin-left:4px;white-space:nowrap;vertical-align:baseline;font:bold 9px Verdana,Arial,sans-serif;color:#c00000!important}
+@supports ((background-clip:text) or (-webkit-background-clip:text)){
+  .staffBadge{background-image:linear-gradient(90deg,#ff2020 0%,#ff9a00 16%,#e8d400 32%,#20b850 48%,#168de2 64%,#6633cc 80%,#e52c91 100%);background-clip:text;-webkit-background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
+}
 /* El atributo hidden debe prevalecer sobre los display definidos por el diseño. */
 [hidden]{display:none!important}
 </style>
@@ -613,6 +618,8 @@ const isOwner = () => {
 const isAdmin = () => isOwner() || ["co_owner","admin"].includes(currentStaffRole) || !!(auth?.currentUser && ADMINS_UID.includes(auth.currentUser.uid));
 const isModerator = () => isAdmin() || currentStaffRole === "moderator" || !!(auth?.currentUser && MODERATORS_UID.includes(auth.currentUser.uid));
 const isStaff = () => isModerator();
+const hasStaffBadge = () => isOwner() || ["co_owner","admin","moderator","helper"].includes(currentStaffRole) || !!(auth?.currentUser && (ADMINS_UID.includes(auth.currentUser.uid) || MODERATORS_UID.includes(auth.currentUser.uid)));
+const staffTagHtml = enabled => enabled === true ? '<span class="staffBadge">[STAFF]</span>' : "";
 const canManageStaff = () => isAdmin();
 const canIssueStaffRole = role => (isOwner() && ["co_owner","admin","moderator","helper"].includes(role)) || (isAdmin() && !isOwner() && ["moderator","helper"].includes(role));
 const canManageInviteRole = role => isOwner() || (isAdmin() && ["moderator","helper"].includes(role));
@@ -838,14 +845,14 @@ const D = {
     await setDoc(doc(db,"topics",t,"ratings",uid),{uid,stars:value,ts:Date.now()});
   },
   async newT(b,t,x){
-    await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
+    await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
-    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,x,ts:n});await batch.commit();return topicRef.id;
+    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,staffBadge,lastStaffBadge:staffBadge,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,staffBadge,x,ts:n});await batch.commit();return topicRef.id;
   },
   async reply(t,x){
-    await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
+    await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     if(lastMs&&Date.now()-lastMs<3000)throw new Error("POST_RATE_LIMIT");
-    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,x,ts:n});batch.update(topicRef,{lr:n,lu:u,n:increment(1)});await batch.commit();
+    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,staffBadge,x,ts:n});batch.update(topicRef,{lr:n,lu:u,lastStaffBadge:staffBadge,n:increment(1)});await batch.commit();
   },
   async editPost(id,x){requireVerifiedMember("editar tus publicaciones");await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
   async members(){const s=await getCountFromServer(collection(db,"users"));return s.data().count;},
@@ -962,7 +969,7 @@ const D = {
     const p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid)),avatarUrl=p?.exists()?p.data().avatarUrl||"":"";
     const messageRef=doc(collection(db,"chatMessages")),batch=writeBatch(db);
     batch.set(rateRef,{lastChatAt:serverTimestamp(),lastChatMessageId:messageRef.id},{merge:true});
-    batch.set(messageRef,{uid,u:chatName(),avatarUrl,x,media,ts:Date.now()});
+    batch.set(messageRef,{uid,u:chatName(),avatarUrl,x,media,ts:Date.now(),staffBadge:hasStaffBadge()});
     await batch.commit();return {id:messageRef.id};
   },
   async chatEdit(id,x){await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>1500)throw new Error("El mensaje supera el máximo de 1500 caracteres.");await updateDoc(doc(db,"chatMessages",id),{x:value});},
@@ -983,8 +990,8 @@ const Demo = {
   async topic(t){return demo.t.find(x=>x.id===t)||null;},
   async ratings(t){return demo.t.find(x=>x.id===t)?.ratings||[];},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
-  async newT(b,t,x){const n=Date.now(),id=String(n);demo.t.push({id,b,t,u:demo.m,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,x,ts:n});saveDemo();return id;},
-  async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,x,ts:n});saveDemo();},
+  async newT(b,t,x){const n=Date.now(),id=String(n);demo.t.push({id,b,t,u:demo.m,staffBadge:false,lastStaffBadge:false,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:false,x,ts:n});saveDemo();return id;},
+  async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
   async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
   async members(){return Object.keys(demo.u).length;},
   async cnt(n){return demo.p.filter(p=>p.u===n).length;},
@@ -993,7 +1000,7 @@ const Demo = {
   async updateAvatar(){throw new Error("Para subir una foto de perfil necesitas conectar Firebase y activar Storage.");},
   async removeAvatar(){throw new Error("Para cambiar la foto necesitas conectar Firebase y activar Storage.");},
   async del(k,a,b,isOriginal=false){if(k==="t")throw new Error("Los temas se conservan.");const post=demo.p.find(p=>p.id===a);if(post&&!post.deleted){post.deletedQuoteHash=quoteFingerprint(post.u||"",post.x||"");post.x="";post.deleted=true;post.deletedBy="usuario";if(!isOriginal){const t=demo.t.find(x=>x.id===b);if(t)t.n=Math.max(0,t.n-1);}}saveDemo();},
-  async chatSend(x,media=null){demo.chat.push({id:String(Date.now()),uid:demo.m||"anon",u:demo.m||"Invitado-DEMO",x,media,ts:Date.now()});demo.chat=demo.chat.slice(-60);saveDemo();renderChat(demo.chat);},
+  async chatSend(x,media=null){demo.chat.push({id:String(Date.now()),uid:demo.m||"anon",u:demo.m||"Invitado-DEMO",staffBadge:false,x,media,ts:Date.now()});demo.chat=demo.chat.slice(-60);saveDemo();renderChat(demo.chat);},
   async chatEdit(id,x){const message=demo.chat.find(m=>m.id===id);if(!message||message.uid!==demo.m)throw new Error("Solo puedes editar tus propios mensajes.");message.x=String(x||"").trim();saveDemo();renderChat(demo.chat);},
   async chatDelete(id){const message=demo.chat.find(x=>x.id===id);if(message&&!message.deleted){message.x="";message.media=null;message.deleted=true;message.deletedBy="usuario";}saveDemo();renderChat(demo.chat);},
   async chatClear(){demo.chat.forEach(m=>{if(!m.deleted){m.x="";m.media=null;m.deleted=true;m.deletedBy="administrador";}});saveDemo();renderChat(demo.chat);},
@@ -1009,16 +1016,16 @@ let Store = configured ? D : Demo;
 async function idx(m){
   const [T,n]=await Promise.all([Store.topics(),Store.members()]);
   let h=`<table><tr><th colspan="2">Foro</th><th width="60" class="c">Temas</th><th width="70" class="c">Mensajes</th><th width="200">Último mensaje</th></tr>`;
-  BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"📌":"📁"}</td><td><a href="#/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="#/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}`:"&mdash;"}</small></td></tr>`;});});
+  BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"📌":"📁"}</td><td><a href="#/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="#/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
   const recent=T.slice(0,15);
-  m.innerHTML=h+`</table><table><tr><th colspan="3">🕘 TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td>💬 <a href="#/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}</small></td><td><a href="#/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. Hay <b>${n}</b> miembros registrados.</small></td></tr></table>`;
+  m.innerHTML=h+`</table><table><tr><th colspan="3">🕘 TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td>💬 <a href="#/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="#/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. Hay <b>${n}</b> miembros registrados.</small></td></tr></table>`;
   if(configured)watchRouteData(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)),routeRenderId);
 }
 async function brd(m,id){
   const B=BL.find(x=>x[0]===id);if(!B)return m.innerHTML="Foro inexistente";
   const T=await Store.topicsByBoard(id),isRules=id==="reglas";
   const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican al foro y al chat. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
-  m.innerHTML=rulesIntro+`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${isRules&&!isStaff()?"":`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`}</p><table><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${T.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>${isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:""}`;
+  m.innerHTML=rulesIntro+`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${isRules&&!isStaff()?"":`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`}</p><table><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${T.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>${isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:""}`;
   if(configured)watchRouteData(query(collection(db,"topics"),where("b","==",id),limit(300)),routeRenderId);
 }
 async function thr(m,id){
@@ -1057,7 +1064,7 @@ async function thr(m,id){
        const ownPost=configured?!!auth?.currentUser&&p.uid===auth.currentUser.uid:!!Store.me()&&p.u===Store.me();
         const canEditPost=!p.deleted&&(isStaff()||ownPost),canDeletePost=!p.deleted&&(isStaff()||ownPost);
         const body=p.deleted?renderTopicPostBody(p,P):renderTopicPostBody(p,P)+externalMediaPreview(p.x||"");
-        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b><a href="#/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a></b><br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+'<br>Mensajes: '+(counts[p.u]||0)+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>';
+        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b><a href="#/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a></b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+'<br>Mensajes: '+(counts[p.u]||0)+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>';
      }).join("")+
     '</table>'+
     (canReply
@@ -1620,7 +1627,7 @@ function renderChat(items){
     const canEdit=!m.deleted&&ownMessage,canDelete=!m.deleted&&(isAdmin()||ownMessage);
     const messageText=m.deleted?deletedMessageText(m):(m.x||"");
     const profileName=String(m.u||"Invitado"),profileLink=!profileName.startsWith("Invitado-")?`<a class="cmprofile" href="#/u/${encodeURIComponent(profileName)}">${E(profileName)}</a>`:`<b>${E(profileName)}</b>`;
-    return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead">${profileLink} · ${dt(m.ts)}</div><div class="cmtxt">${m.deleted?'<span class="deletedMessage">'+E(messageText)+'</span>':fmt(messageText)}</div>${media}${canEdit||canDelete?`<div class="cmtools">${canEdit?`<button type="button" data-chat-edit="${E(m.id)}">[editar]</button>`:""}${canDelete?`<button type="button" data-chat-del="${E(m.id)}">[borrar]</button>`:""}</div>`:""}</div></article>`;
+    return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead">${profileLink}${staffTagHtml(m.staffBadge)} · ${dt(m.ts)}</div><div class="cmtxt">${m.deleted?'<span class="deletedMessage">'+E(messageText)+'</span>':fmt(messageText)}</div>${media}${canEdit||canDelete?`<div class="cmtools">${canEdit?`<button type="button" data-chat-edit="${E(m.id)}">[editar]</button>`:""}${canDelete?`<button type="button" data-chat-del="${E(m.id)}">[borrar]</button>`:""}</div>`:""}</div></article>`;
   }).join("");
   box.querySelectorAll("[data-chat-edit]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatEdit);if(!item)return;const edited=prompt("Edita tu mensaje del chat:",item.x||"");if(edited===null)return;if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}btn.disabled=true;try{if(await autoModerationGate(edited,"chat")){btn.disabled=false;return;}await Store.chatEdit(item.id,edited);}catch(z){alert(errText(z));btn.disabled=false;}}));
   box.querySelectorAll("[data-chat-del]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatDel);if(!item||!confirm("¿Borrar este mensaje del chat?"))return;try{await Store.chatDelete(item.id,item.media?.path||null);}catch(z){alert(errText(z));}}));
