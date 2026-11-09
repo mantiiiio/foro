@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#06476b">
-<meta name="description" content="FORO.EXE — comunidad retro estilo BBS/Usenet.">
-<title>FORO.EXE</title>
+<meta name="description" content="MantiPobres — comunidad retro estilo BBS/Usenet.">
+<title>MantiPobres</title>
 <style>
 :root{color-scheme:light;--blue:#006699;--blue2:#004d75;--orange:#ffa34f;--line:#98aab1;--paper:#efefef;--soft:#dee3e7;--green:#078d12;--red:#b30f06}
 *{box-sizing:border-box}body{background:#d5dbde repeating-linear-gradient(45deg,transparent 0 6px,rgba(255,255,255,.4) 6px 7px);color:#000;font:12px Verdana,Arial,sans-serif;margin:8px}
@@ -26,7 +26,7 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
 #chatBox{background:#f4f6f7;border:2px solid var(--blue);box-shadow:3px 3px 0 #aab6bb;margin-bottom:10px;font-size:11px}#chatHead{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:5px 6px;color:var(--orange);background:linear-gradient(#2d86b8,#006699 55%,#004d75);font-weight:bold}#chatHead button{padding:2px 5px;font-size:10px}.chatHeadActions{display:flex;align-items:center;gap:4px}#chatShortcuts{width:23px;height:22px;padding:0;font:bold 13px Georgia,serif;border:2px outset #fff;border-radius:2px;color:#003b59;background:linear-gradient(#fff,#d8e0e4)}#chatShortcuts:focus-visible,#chatExpand:focus-visible{outline:2px solid #ffb44f;outline-offset:2px}#chatState{padding:3px 6px;background:#e5edf0;border-bottom:1px solid #b7c9d1;color:#345;font:10px "Courier New",monospace}#chatMessages{height:290px;overflow-y:auto;padding:5px;background:#fff;border-bottom:1px solid #9bb2bd;overscroll-behavior:contain}.cm{display:grid;grid-template-columns:27px 1fr;gap:5px;padding:5px 1px;border-bottom:1px dotted #b9c8ce}.cm:last-child{border-bottom:0}.cm .ava{width:25px;height:25px}.cmhead{font:10px "Courier New",monospace;color:#345;margin-bottom:3px;overflow-wrap:anywhere}.cmhead b{color:#005b86}.cmtxt{font:11px/1.35 "Courier New",monospace;white-space:pre-wrap;overflow-wrap:anywhere}.cmmedia{display:block;max-width:100%;max-height:180px;margin-top:5px;border:1px solid #9bb2bd;background:#eee}.cmvideo{width:100%;max-height:180px;margin-top:5px}.cmtools{font-size:9px;margin-top:3px}.cmtools button{font-size:9px;padding:1px 4px}.chatEmpty{color:#678;text-align:center;font:11px "Courier New",monospace;padding:18px 4px}.chatForm{padding:5px;background:#e8eef1}.chatForm textarea{width:100%;height:54px;resize:vertical;font:11px "Courier New",monospace}.chatActions{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:4px}.chatActions button{padding:3px 6px;font-size:10px}.chatHint{font-size:9px;color:#567;margin-top:4px;line-height:1.3}.chatAdmin{padding:5px;background:#fff5d8;border-top:1px dashed #c9b64a;font-size:10px}.chatAdmin summary{cursor:pointer;font-weight:bold;color:#704500}.chat-expanded{position:fixed!important;z-index:99999!important;inset:4vh 4vw!important;width:auto!important;max-width:none!important;margin:0!important;box-shadow:0 0 0 100vmax rgba(0,0,0,.72)!important;display:flex;flex-direction:column}.chat-expanded #chatMessages{height:auto;flex:1;min-height:120px}.chat-expanded .cmmedia,.chat-expanded .cmvideo{max-height:36vh} .chat-expanded .chatForm textarea{height:70px}
 .profileAvatarBox{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.profileAvatarBox .profileAvatar{width:88px;height:88px;object-fit:cover;border:2px solid var(--blue);background:#fff}.profilePhotoPanel{border:1px solid #9bb2bd;background:#f4f7f8;padding:9px;margin-top:8px}.profilePhotoPanel p{margin:5px 0;line-height:1.45}.profilePhotoActions{display:flex;gap:5px;flex-wrap:wrap}.profilePhotoStatus{font:10px 'Courier New',monospace;margin-top:5px;color:#345}
 #chatShortcutDialog[hidden]{display:none!important}#chatShortcutDialog{position:fixed;z-index:100001;inset:0;background:rgba(0,20,32,.72);display:flex;align-items:center;justify-content:center;padding:14px}#chatShortcutPanel{width:min(440px,100%);max-height:86vh;overflow:auto;background:#f4f6f7;border:3px ridge #98aab1;box-shadow:5px 5px 0 rgba(0,0,0,.4);color:#111;padding:0}#chatShortcutTitle{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;color:#ffa34f;background:linear-gradient(#2d86b8,#006699 55%,#004d75);font-weight:bold}#chatShortcutTitle button{padding:1px 7px;font-size:16px}#chatShortcutPanel .shortcutBody{padding:9px}#chatShortcutPanel table{margin:0 0 8px}#chatShortcutPanel td:first-child{white-space:nowrap;width:42%}#chatShortcutPanel kbd{display:inline-block;padding:2px 5px;background:#fff;border:1px solid #8299a3;border-bottom-width:2px;border-radius:2px;font:bold 11px 'Courier New',monospace}#chatShortcutPanel p{line-height:1.45;margin:7px 0}
-#chatFile{display:none}.notice{border:1px solid #c9b64a;background:#fff8c6;padding:7px;margin:7px 0;color:#573d00}.setupgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.setupgrid>div{border:1px solid #9bb2bd;background:#f4f7f8;padding:8px}
+#chatFile{display:none}.notice{border:1px solid #c9b64a;background:#fff8c6;padding:7px;margin:7px 0;color:#573d00}.accountNotice{border:1px solid #c99b35;background:#fff4cf;color:#593b00;padding:7px;margin:6px 0;font-size:11px;line-height:1.5}.accountNotice button{margin:3px 3px 0 0;padding:3px 7px}.accountNotice[hidden]{display:none!important}.setupgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.setupgrid>div{border:1px solid #9bb2bd;background:#f4f7f8;padding:8px}
 @media(max-width:1330px){.sd{position:static;width:auto;max-width:934px;margin:8px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px}.sd#sl,.sd#sr{left:auto;width:auto}.sd .ad{width:172px}#chatBox{width:min(100%,420px)}}
 @media(max-width:600px){body{margin:4px}#w{padding:4px}#nm{font-size:32px}#hd{padding:8px}#ban{font-size:9px}.setupgrid{grid-template-columns:1fr}table{font-size:11px}td,th{padding:4px}#nav a{margin-right:6px}.chat-expanded{inset:2vh 2vw!important}}
 </style>
@@ -34,13 +34,14 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
 <body>
 <div id="w">
   <header id="hd">
-    <div id="lg"><h1 id="nm"><a href="#/" id="nl" title="Volver al índice">FORO.EXE</a></h1><i>Comunidad retro &middot; est. 1999 &middot; BBS / Usenet Revival</i></div>
+    <div id="lg"><h1 id="nm"><a href="#/" id="nl" title="Volver al índice">MantiPobres</a></h1><i>Comunidad retro &middot; est. 1999 &middot; BBS / Usenet Revival</i></div>
     <pre id="ban"></pre>
   </header>
   <div id="st">NODO 1 :: 56000 bps :: <span id="clk"></span> :: <b id="netState">CONECTANDO...</b></div>
   <nav id="nav"></nav>
+  <div id="accountNotice" class="accountNotice" role="status" aria-live="polite" hidden></div>
   <!-- CARTEL: edita este texto directamente en el HTML -->
-  <marquee id="tk" scrollamount="4">&#9733; Bienvenido a FORO.EXE &#9733; Regístrate para publicar &#9733; Respeta las reglas &#9733; Chat en vivo en la columna derecha &#9733;</marquee>
+  <marquee id="tk" scrollamount="4">&#9733; Bienvenido a MantiPobres &#9733; Regístrate para publicar &#9733; Respeta las reglas &#9733; Chat en vivo en la columna derecha &#9733;</marquee>
 
   <!-- ANUNCIOS EDITABLES A MANO: duplica los bloques .an para añadir avisos -->
   <div id="ann"><h3>📢 ANUNCIOS DEL STAFF</h3>
@@ -99,18 +100,20 @@ input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;pad
 </div>
 
 <template id="faqt">
-  <p><b>¿Cómo me registro?</b><br>Pulsa Registrarse, elige usuario y clave y acepta las reglas.</p>
+  <p><b>¿Cómo me registro?</b><br>Elige un nombre de usuario, introduce un correo real, crea una contraseña y acepta las reglas. Te enviaremos un enlace para verificar el correo.</p>
+  <p><b>¿Cómo inicio sesión?</b><br>Usa el correo electrónico y la contraseña con los que te registraste. Las cuentas antiguas pueden intentar entrar con su nombre de usuario.</p>
+  <p><b>¿Cómo verifico mi correo?</b><br>Abre el enlace que te enviamos. Si no llegó, usa el botón «Reenviar correo» que aparece arriba. Después pulsa «Ya verifiqué».</p>
+  <p><b>¿Puedo recuperar mi clave?</b><br>Sí. En la pantalla Entrar, escribe tu correo y pulsa «Recuperar contraseña por correo».</p>
   <p><b>¿Cómo cito un mensaje?</b><br>Abre un tema y pulsa [citar] bajo el mensaje.</p>
   <p><b>¿Cómo se suben los rangos?</b><br>Por mensajes: Novato, Miembro (5), Habitual (25) y Veterano (100).</p>
-  <p><b>¿Puedo recuperar mi clave?</b><br>Las cuentas usan un alias interno y no tienen recuperación por correo. El staff puede ayudarte manualmente, pero nunca debe pedirte tu contraseña.</p>
-  <p><b>¿Quién modera?</b><br>El staff verificado puede borrar mensajes, temas y mensajes del chat.</p>
-  <p><b>¿Puedo entrar sin registrarme?</b><br>Sí. El chat permite invitados anónimos; para crear temas y responder en los foros debes registrarte.</p>
-  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. En tu perfil puedes subir una imagen o GIF animado cuando el administrador active Firebase Storage.</p>
+  <p><b>¿Quién modera?</b><br>El administrador configurado por UID puede borrar temas, respuestas y mensajes del chat. Las reglas del foro solo las publica el staff.</p>
+  <p><b>¿Puedo entrar sin registrarme?</b><br>Sí. El chat permite invitados anónimos; para crear temas y responder en los foros necesitas una cuenta y verificar tu correo.</p>
+  <p><b>¿Puedo cambiar mi foto de perfil?</b><br>El soporte para imágenes y GIF de perfil, además de adjuntos en el chat, requiere activar Firebase Storage y el plan Blaze.</p>
 </template>
 
 <script type="module">
 // ============================================================================
-// FORO.EXE — CONFIGURACIÓN
+// MantiPobres — CONFIGURACIÓN
 // 1) Reemplaza los valores de FB por el firebaseConfig de tu app web.
 // 2) Después de crear tu cuenta administradora, pega tu UID en ADMINS_UID.
 // El UID no es una contraseña; los permisos reales se verifican en Firebase Rules.
@@ -120,19 +123,20 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebas
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, signOut, signInAnonymously, updateProfile,
-  setPersistence, browserLocalPersistence
+  setPersistence, browserLocalPersistence, sendEmailVerification,
+  sendPasswordResetEmail, reload, deleteUser
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc,
   updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot,
-  writeBatch, increment
+  writeBatch, increment, runTransaction
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {
   getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL,
   deleteObject
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-storage.js";
 
-const NAME = "FORO.EXE";
+const NAME = "MantiPobres";
 const FB = {
   apiKey: "AIzaSyBR1KlqF7t7xJjGUkx9tDCD6hm4sCYueKI",
   authDomain: "foro-66dd5.firebaseapp.com",
@@ -165,10 +169,13 @@ const fmt = s => E(s).split("\n").map(line => {
   return safe.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" rel="nofollow noopener noreferrer" target="_blank">$1</a>');
 }).join("<br>");
 const errText = z => ({
-  "auth/email-already-in-use":"Ese usuario ya existe.",
-  "auth/invalid-credential":"Usuario o clave incorrectos.",
-  "auth/wrong-password":"Usuario o clave incorrectos.",
-  "auth/user-not-found":"Usuario o clave incorrectos.",
+  "auth/email-already-in-use":"Ese correo ya está registrado.",
+  "auth/invalid-email":"El correo electrónico no tiene un formato válido.",
+  "auth/operation-not-allowed":"El acceso por correo/contraseña no está habilitado en Firebase.",
+  "auth/unauthorized-domain":"Este dominio todavía no está autorizado en Firebase Authentication.",
+  "auth/invalid-credential":"Correo o contraseña incorrectos.",
+  "auth/wrong-password":"Correo o contraseña incorrectos.",
+  "auth/user-not-found":"Correo o contraseña incorrectos.",
   "auth/weak-password":"La clave debe tener al menos 6 caracteres.",
   "auth/too-many-requests":"Demasiados intentos. Prueba más tarde.",
   "permission-denied":"Firebase rechazó la operación. Revisa las reglas de Firestore/Storage.",
@@ -177,6 +184,7 @@ const errText = z => ({
   "storage/project-not-found":"No se encontró el proyecto de Storage. Revisa la configuración."
 }[z?.code] || z?.message || String(z));
 const isAdmin = () => !!(auth?.currentUser && ADMINS_UID.includes(auth.currentUser.uid));
+const emailVerified = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.emailVerified);
 const me = () => auth?.currentUser && !auth.currentUser.isAnonymous ? (auth.currentUser.displayName || "Usuario") : "";
 const chatName = () => me() || `Invitado-${(auth?.currentUser?.uid || "0000").slice(0,5).toUpperCase()}`;
 const rank = (n,u,uid) => (uid && ADMINS_UID.includes(uid)) ? "Administrador" : n > 99 ? "Veterano" : n > 24 ? "Habitual" : n > 4 ? "Miembro" : "Novato";
@@ -188,19 +196,50 @@ let chatUnsub=null, chatCache=[], uploadBusy=false;
 const configured = FB.apiKey && !FB.apiKey.startsWith("PEGA_") && FB.projectId && FB.projectId !== "TU-PROYECTO" && FB.appId && !FB.appId.startsWith("PEGA_");
 
 function setNetStatus(text, ok=false){const n=$("#netState");n.textContent=text;n.style.color=ok?"#0f0":"#ff8a8a";}
-function safeLocal(){try{return JSON.parse(localStorage.getItem("foroexe_demo") || '{"u":{},"t":[],"p":[],"m":"","chat":[]}')}catch{return {u:{},t:[],p:[],m:"",chat:[]};}}
+function safeLocal(){try{return JSON.parse(localStorage.getItem("mantipobres_demo") || '{"u":{},"t":[],"p":[],"m":"","chat":[]}')}catch{return {u:{},t:[],p:[],m:"",chat:[]};}}
 let demo = safeLocal();
-const saveDemo = () => localStorage.setItem("foroexe_demo",JSON.stringify(demo));
+const saveDemo = () => localStorage.setItem("mantipobres_demo",JSON.stringify(demo));
 
 // API de datos: Firebase real. Si todavía no configuraste FB, se muestra una demo local.
 const D = {
   me,
-  async reg(n,p){
-    const cred=await createUserWithEmailAndPassword(auth,`${n}@foro.local`,p);
-    await updateProfile(cred.user,{displayName:n});
-    await setDoc(doc(db,"users",cred.user.uid),{u:n,ts:Date.now()});
+  async reg(n,email,p){
+    const cred=await createUserWithEmailAndPassword(auth,email,p);
+    try{
+      await updateProfile(cred.user,{displayName:n});
+      await sendEmailVerification(cred.user);
+      const now=Date.now(),userRef=doc(db,"users",cred.user.uid),handleRef=doc(db,"usernames",n);
+      await runTransaction(db,async tx=>{
+        const existing=await tx.get(handleRef);
+        if(existing.exists())throw new Error("Ese nombre de usuario ya está ocupado. Prueba otro.");
+        tx.set(userRef,{u:n,ts:now});
+        tx.set(handleRef,{u:n,uid:cred.user.uid,ts:now});
+      });
+    }catch(e){
+      try{await deleteUser(cred.user);}catch(cleanupError){console.warn("No se pudo retirar la cuenta incompleta",cleanupError);}
+      throw e;
+    }
   },
-  async login(n,p){await signInWithEmailAndPassword(auth,`${n}@foro.local`,p);},
+  async login(identifier,p){
+    const value=identifier.trim().toLowerCase();
+    const email=value.includes("@")?value:`${value}@foro.local`;
+    await signInWithEmailAndPassword(auth,email,p);
+  },
+  async resetPassword(email){
+    if(!email||!email.includes("@"))throw new Error("Escribe el correo real asociado a tu cuenta.");
+    await sendPasswordResetEmail(auth,email.trim());
+  },
+  async resendVerification(){
+    const user=auth.currentUser;
+    if(!user||user.isAnonymous)throw new Error("Inicia sesión con tu cuenta para verificar el correo.");
+    await sendEmailVerification(user);
+  },
+  async refreshVerification(){
+    const user=auth.currentUser;
+    if(!user||user.isAnonymous)throw new Error("No hay una cuenta registrada abierta.");
+    await reload(user);
+    return auth.currentUser.emailVerified;
+  },
   async out(){await signOut(auth);await signInAnonymously(auth);},
   async topics(){const s=await getDocs(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()}));},
   async posts(t){const s=await getDocs(query(collection(db,"posts"),where("tp","==",t)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.ts||0)-(b.ts||0));},
@@ -284,22 +323,47 @@ async function brd(m,id){
 }
 async function thr(m,id){
   const t=await Store.topic(id);if(!t)return m.innerHTML="Tema inexistente";
-  const P=await Store.posts(id),B=BL.find(x=>x[0]===t.b)||["","","?"],name=Store.me(),locked=t.b==="reglas"&&!isAdmin();
+  const P=await Store.posts(id),B=BL.find(x=>x[0]===t.b)||["","","?"],name=Store.me(),locked=t.b==="reglas"&&!isAdmin(),canReply=!!name&&(!configured||emailVerified()||isAdmin())&&!locked;
   const counts={},profiles={};await Promise.all([...new Set(P.map(p=>p.u))].map(async u=>{const [count,profile]=await Promise.all([Store.cnt(u),Store.prof(u)]);counts[u]=count;profiles[u]=profile;}));
-  m.innerHTML=`<p><a href="#/">Índice</a> &raquo; <a href="#/b/${t.b}">${E(B[2])}</a> &raquo; <b>${E(t.t)}</b> ${locked?"":` &nbsp; <a class="bt" href="#/n/${t.b}">📝 Nuevo tema</a>`}</p><table><tr><th width="120">Autor</th><th>Mensaje</th></tr>${P.map((p,i)=>`<tr><td class="b" valign="top">${avatar(p.u,40,profiles[p.u]?.avatarUrl||"")}<br><b><a href="#/u/${encodeURIComponent(p.u)}">${E(p.u)}</a></b><br><small>${E(rank(counts[p.u]||0,p.u,p.uid))}<br>Mensajes: ${counts[p.u]||0}</small></td><td><div class="h">From: ${E(p.u)}<br>Newsgroups: ${E(B[1])}<br>Subject: ${i?"Re: ":""}${E(t.t)}<br>Date: ${dt(p.ts)} &nbsp; #${i+1}</div><div class="p">${fmt(p.x)}</div><small>${name&&!locked?`<a href="#" data-q="${i}">[citar]</a> `:""}${isAdmin()?`<a href="#" data-d="${i}">[borrar]</a>`:""}</small></td></tr>`).join("")}</table>`+(name&&!locked?`<form id="rf"><b>Responder</b><br><textarea id="rx" rows="8" style="width:100%" maxlength="6000"></textarea><br><button class="bt">Enviar</button> <span id="er" class="err"></span></form>`:`<p>${locked?"Foro de solo lectura: publica solo el staff.":`Debes <a href="#/login">entrar</a> para responder.`}</p>`);
+  m.innerHTML=`<p><a href="#/">Índice</a> &raquo; <a href="#/b/${t.b}">${E(B[2])}</a> &raquo; <b>${E(t.t)}</b> ${locked?"":` &nbsp; <a class="bt" href="#/n/${t.b}">📝 Nuevo tema</a>`}</p><table><tr><th width="120">Autor</th><th>Mensaje</th></tr>${P.map((p,i)=>`<tr><td class="b" valign="top">${avatar(p.u,40,profiles[p.u]?.avatarUrl||"")}<br><b><a href="#/u/${encodeURIComponent(p.u)}">${E(p.u)}</a></b><br><small>${E(rank(counts[p.u]||0,p.u,p.uid))}<br>Mensajes: ${counts[p.u]||0}</small></td><td><div class="h">From: ${E(p.u)}<br>Newsgroups: ${E(B[1])}<br>Subject: ${i?"Re: ":""}${E(t.t)}<br>Date: ${dt(p.ts)} &nbsp; #${i+1}</div><div class="p">${fmt(p.x)}</div><small>${canReply?`<a href="#" data-q="${i}">[citar]</a> `:""}${isAdmin()?`<a href="#" data-d="${i}">[borrar]</a>`:""}</small></td></tr>`).join("")}</table>`+(canReply?`<form id="rf"><b>Responder</b><br><textarea id="rx" rows="8" style="width:100%" maxlength="6000"></textarea><br><button class="bt">Enviar</button> <span id="er" class="err"></span></form>`:`<p>${locked?"Foro de solo lectura: publica solo el staff.":!name?`Debes <a href="#/login">entrar</a> para responder.`:!canReply?`Debes verificar tu correo desde el aviso superior para responder.`:""}</p>`);
   m.querySelectorAll("[data-q]").forEach(a=>a.onclick=e=>{e.preventDefault();const p=P[Number(a.dataset.q)],x=$("#rx");x.value+=p.u+" escribió:\n"+p.x.split("\n").map(l=>"> "+l).join("\n")+"\n\n";x.focus();});
   m.querySelectorAll("[data-d]").forEach(a=>a.onclick=async e=>{e.preventDefault();const i=Number(a.dataset.d);if(!confirm(i?"¿Borrar este mensaje?":"¿Borrar el tema entero?"))return;try{if(i>0){await Store.del("p",P[i].id,id);go();}else{await Store.del("t",id);location.hash="#/b/"+t.b;}}catch(z){alert(errText(z));}});
   if(name&&!locked){$("#rf").onsubmit=async e=>{e.preventDefault();const x=$("#rx").value.trim();if(!x)return;try{await Store.reply(id,x);go();}catch(z){$("#er").textContent=errText(z);}};}
 }
 function neu(m,id){
   if(!Store.me()||id==="reglas"&&!isAdmin())return location.hash=Store.me()?"#/b/"+id:"#/login";
+  if(configured&&!emailVerified()&&!isAdmin()){m.innerHTML=`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>`;return;}
   m.innerHTML=`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea></td></tr><tr><td colspan="2" class="c"><button class="bt">Publicar</button> <span id="er" class="err"></span></td></tr></table></form>`;
   $("#nf").onsubmit=async e=>{e.preventDefault();const t=$("#ti").value.trim(),x=$("#tx").value.trim();if(!t||!x)return $("#er").textContent="Faltan asunto o mensaje";try{location.hash="#/t/"+await Store.newT(id,t,x);}catch(z){$("#er").textContent=errText(z);}};
 }
 function frm(m,a,r){
   const rg=r==="reg";
-  m.innerHTML=`<form id="lf"><table style="max-width:440px;margin:auto"><tr><th colspan="2">${rg?"Registro":"Entrar"}</th></tr><tr><td class="b">Usuario</td><td><input id="un" maxlength="16" autocomplete="username" required></td></tr><tr><td class="b">Clave</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:""}<tr><td colspan="2" class="c"><button>${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · clave mínimo 6":'¿Sin cuenta? <a href="#/reg">Regístrate</a>'}</small></td></tr></table></form>`;
-  $("#lf").onsubmit=async e=>{e.preventDefault();const n=$("#un").value.trim().toLowerCase(),p=$("#pw").value,er=$("#er");if(!/^[a-z0-9_]{3,16}$/.test(n))return er.textContent="Usuario inválido: usa 3-16 letras, números o _";if(rg&&p.length<6)return er.textContent="Clave muy corta (mínimo 6)";if(rg&&!$("#ok").checked)return er.textContent="Debes aceptar las reglas";try{await Store[rg?"reg":"login"](n,p);location.hash="#/";}catch(z){er.textContent=errText(z);}};
+  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · verifica tu correo":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
+  $("#lf").onsubmit=async e=>{
+    e.preventDefault();const p=$("#pw").value,er=$("#er");er.className="err";
+    try{
+      if(rg){
+        const n=$("#un").value.trim().toLowerCase(),email=$("#em").value.trim().toLowerCase();
+        if(!/^[a-z0-9_]{3,16}$/.test(n))return er.textContent="Usuario inválido: usa 3-16 letras, números o _";
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return er.textContent="Introduce un correo electrónico válido.";
+        if(p.length<6)return er.textContent="La contraseña debe tener al menos 6 caracteres.";
+        if(!$("#ok").checked)return er.textContent="Debes aceptar las reglas.";
+        await Store.reg(n,email,p);
+        location.hash="#/";
+      }else{
+        const identity=$("#identity").value.trim();
+        if(!identity.includes("@")&&!/^[a-z0-9_]{3,16}$/i.test(identity))return er.textContent="Introduce tu correo o el usuario de una cuenta antigua.";
+        await Store.login(identity,p);
+        location.hash="#/";
+      }
+    }catch(z){er.textContent=errText(z);}
+  };
+  if(!rg)$("#resetPassword").addEventListener("click",async()=>{
+    const identity=$("#identity").value.trim(),er=$("#er");er.className="err";
+    if(!identity.includes("@")){er.textContent="Escribe tu correo electrónico en el campo superior para recuperar la contraseña.";return;}
+    try{await Store.resetPassword(identity);er.className="ok";er.textContent="Te enviamos un enlace para restablecer la contraseña. Revisa también Spam.";}
+    catch(z){er.textContent=errText(z);}
+  });
 }
 async function prf(m,u){
   const [f,c]=await Promise.all([Store.prof(u),Store.cnt(u)]);if(!f)return m.innerHTML="Usuario inexistente";
@@ -312,12 +376,34 @@ async function prf(m,u){
   }
 }
 function faq(m){m.innerHTML=`<table><tr><th>FAQ / Ayuda</th></tr><tr><td>${$("#faqt").innerHTML}</td></tr></table>`;}
-function setup(m){m.innerHTML=`<table><tr><th>Activar FORO.EXE con Firebase</th></tr><tr><td><div class="notice"><b>El foro está en modo demostración local.</b><br>Ahora mismo FB no tiene tu configuración. Los datos de esta demo solo viven en este navegador y no se comparten. Completa los pasos del README y reemplaza FB en el HTML.</div><ol><li>Crea un proyecto Firebase y registra una aplicación Web.</li><li>Activa Authentication → Correo/contraseña y Anonymous.</li><li>Crea Firestore Database.</li><li>Pega las reglas incluidas en <code>firestore.rules</code>.</li><li>Copia el objeto firebaseConfig y reemplaza los valores de FB al inicio de este script.</li><li>Publica el sitio con GitHub Pages.</li><li>Registra tu cuenta staff, copia su UID desde Firebase Authentication y añádelo a ADMINS_UID y a las listas de administrador de las reglas.</li></ol><p>Para adjuntar imágenes/GIF/vídeos en el chat y cambiar tu foto de perfil por una imagen o GIF: activa Cloud Storage, publica <code>storage.rules</code>, cambia STORAGE_ENABLED a true y recuerda que Storage requiere el plan Blaze. Las fotos aceptan JPG/PNG/GIF/WEBP hasta 5 MB; los adjuntos del chat aceptan imágenes hasta 8 MB y vídeos MP4/WEBM hasta 25 MB.</p></td></tr></table>`;}
+function setup(m){
+  m.innerHTML=`<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>${firebaseReady?"Firebase conectado":"Firebase pendiente de configurar"}</b><br>${firebaseReady?"La aplicación ya inició sesión con Firebase. El acceso al foro depende de las reglas publicadas.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio."}</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los invitados pueden participar en el chat, pero necesitan una cuenta verificada para publicar en los foros.</li><li>El administrador se asigna de forma segura por UID en <code>ADMINS_UID</code> y en las reglas de Firestore.</li></ol><p><b>Archivos y avatares:</b> actualmente están desactivados. Para habilitarlos debes crear el bucket de Firebase Storage, publicar <code>storage.rules</code> y activar <code>STORAGE_ENABLED</code>. Firebase requiere el plan Blaze para utilizar Storage; puede generar cargos según el uso.</p></td></tr></table>`;
+}
+function renderAccountNotice(){
+  const box=$("#accountNotice"),user=auth?.currentUser;
+  if(!box)return;
+  if(!user||user.isAnonymous||user.emailVerified){box.hidden=true;box.innerHTML="";return;}
+  box.hidden=false;
+  box.innerHTML=`<b>Verifica tu correo para publicar.</b> Enviamos un enlace a <b>${E(user.email||"tu correo")}</b>. Revisa también Spam. <button type="button" id="resendVerification">Reenviar correo</button> <button type="button" id="refreshVerification">Ya verifiqué</button>`;
+  $("#resendVerification").addEventListener("click",async()=>{
+    const b=$("#resendVerification");b.disabled=true;
+    try{await Store.resendVerification();alert("Te enviamos otro enlace de verificación. Revisa tu bandeja y Spam.");}
+    catch(e){alert(errText(e));}
+    finally{if($("#resendVerification"))$("#resendVerification").disabled=false;}
+  });
+  $("#refreshVerification").addEventListener("click",async()=>{
+    const b=$("#refreshVerification");b.disabled=true;
+    try{const verified=await Store.refreshVerification();if(verified){alert("¡Correo verificado! Ya puedes publicar.");renderAccountNotice();go();}else{alert("Todavía no figura como verificado. Abre el enlace del correo y vuelve a intentarlo.");}}
+    catch(e){alert(errText(e));}
+    finally{if($("#refreshVerification"))$("#refreshVerification").disabled=false;}
+  });
+}
 async function out(){await Store.out();location.hash="#/";}
 const ROUTES={"":idx,b:brd,t:thr,n:neu,login:frm,reg:frm,out,setup,faq,u:prf};
 async function go(){
   const parts=location.hash.replace(/^#\/?/,"").split("/"),r=parts[0]||"",a=parts.slice(1).join("/");
   const m=$("#m");
+  renderAccountNotice();
   $("#nav").innerHTML=`🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> `+(Store.me()?`👤 <b><a href="#/u/${encodeURIComponent(Store.me())}">${E(Store.me())}</a></b> 🚪 <a href="#/out">Salir</a>`:`🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>`)+` <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>`;
   m.innerHTML="Cargando...";$("#ann").hidden=!!r;
   try{await (ROUTES[r]||idx)(m,a,r);}catch(z){m.innerHTML=`<span class="err">Error: ${E(errText(z))}</span><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>`;}
@@ -412,13 +498,13 @@ async function startFirebase(){
           return;
         }
         if(!resolved){resolved=true;resolve();}
-        if(firebaseReady){updateAdminUI();renderChat(chatCache);$("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;}
+        if(firebaseReady){updateAdminUI();renderAccountNotice();renderChat(chatCache);$("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;}
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
     $("#chatAttach").disabled=!STORAGE_ENABLED;
     $("#chatHint").textContent=STORAGE_ENABLED?"Invitados y miembros pueden chatear. Adjuntos: imágenes, GIF y vídeos (límites 8/25 MB). Enter envía · Shift+Enter nueva línea · ? atajos.":"Invitados y miembros pueden chatear. Adjuntos y fotos de perfil desactivados hasta configurar Firebase Storage. Enter envía · Shift+Enter nueva línea · ? atajos.";
-    subscribeChat();updateAdminUI();
+    subscribeChat();updateAdminUI();renderAccountNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
 }
 function updateAdminUI(){
@@ -429,7 +515,7 @@ function updateAdminUI(){
 // Cabecera, reloj y routing
 $("#ban").textContent=`+${"-".repeat(46)}+\n| ${NAME.padEnd(44)} |\n| ${"BBS/USENET REVIVAL  *  CARRIER 56000  *  8N1".padEnd(44)} |\n+${"-".repeat(46)}+`;
 $("#nl").textContent=NAME;const ck=()=>$("#clk").textContent=new Date().toLocaleString("es-UY");ck();setInterval(ck,1000);
-$("#ft").innerHTML=(configured?"Modo: ONLINE (Firebase)":"Modo: LOCAL (demo, solo este navegador)")+` · <a href="#/setup">Activar foro real</a><br>Mejor visto con Netscape 4.7 / IE 6 a 800x600<br>FORO.EXE · BBS/USENET Revival`;
+$("#ft").innerHTML=(configured?"Modo: ONLINE (Firebase)":"Modo: LOCAL (demo, solo este navegador)")+` · <a href="#/setup">Configuración</a><br>Mejor visto con Netscape 4.7 / IE 6 a 800x600<br>MantiPobres · BBS/USENET Revival`;
 addEventListener("hashchange",go);
 if(configured){await startFirebase();}else{setNetStatus("DEMO LOCAL",false);$("#chatAttach").disabled=true;subscribeChat();}
 go();
