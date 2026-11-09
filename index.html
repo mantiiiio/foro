@@ -1030,7 +1030,7 @@ const D = {
     if(!isOriginal){const topicRef=doc(db,"topics",b),topicSnap=await getDoc(topicRef);if(topicSnap.exists())await updateDoc(topicRef,{n:Math.max(0,(topicSnap.data().n||0)-1)});}
   },
   async chatSend(x,media=null){
-    if(!auth.currentUser)throw new Error("Inicia sesión para participar en el chat.");await assertCurrentUserNotBanned();
+    requireRegisteredMember("usar el chat");await assertCurrentUserNotBanned();
     if(media||containsExternalLink(x))requireRegisteredMember("compartir enlaces o archivos en el chat");
     const uid=auth.currentUser.uid,rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(rateRef),last=rateSnap.exists()?rateSnap.data().lastChatAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<2000)throw new Error("CHAT_RATE_LIMIT");
