@@ -79,6 +79,7 @@ service cloud.firestore {
         isModerator()
         && resource.data.b != 'reglas'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['n'])
+        && resource.data.n > 0
         && request.resource.data.n == resource.data.n - 1
       ) || (
         verifiedMember()
