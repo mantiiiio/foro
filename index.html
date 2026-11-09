@@ -215,6 +215,23 @@ input,textarea,select{max-width:100%}
 .banAccessPanel .banActions a{display:inline-block;padding:6px 10px;border:2px outset #fff;background:linear-gradient(#fff,#d8e0e4);font-weight:bold;text-decoration:none}
 .moderationLoading{margin:12px 0;padding:14px;border:1px solid #9bb2bd;background:#f4f7f8;color:#345}
 
+
+.banAccessPanel{
+  border:3px solid #a40000!important;background:#fff0f0!important;color:#4b0000!important;
+  box-shadow:5px 5px 0 #c58d8d!important;padding:clamp(14px,4vw,28px)!important;
+  margin:clamp(8px,3vh,28px) auto!important;max-width:760px;
+  font-size:clamp(13px,2vw,16px);line-height:1.6;
+}
+.banAccessPanel h2{
+  background:#a40000;color:#fff!important;
+  margin:calc(clamp(14px,4vw,28px) * -1) calc(clamp(14px,4vw,28px) * -1) 16px!important;
+  padding:13px!important;font-size:clamp(18px,4vw,25px)!important;
+}
+.banAccessPanel .banMeta{background:#fff!important;border:1px solid #c77!important;padding:10px!important;margin:10px 0!important}
+.banAccessPanel .moderationHistory{margin-top:8px!important}
+.banAccessPanel .moderationHistory li{margin:5px 0}
+.banAccessPanel .banActions a{background:#a40000!important;color:#fff!important;border:2px solid #780000!important;padding:8px 13px!important}
+
 </style>
 </head>
 <body>
@@ -323,7 +340,7 @@ import {
   sendPasswordResetEmail, reload, deleteUser, getIdToken
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, serverTimestamp,
+  getFirestore, collection, doc, getDoc, getDocFromServer, getDocs, addDoc, setDoc, serverTimestamp,
   updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot,
   writeBatch, increment, runTransaction
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
@@ -470,15 +487,25 @@ async function autoModerationGate(text,channel="chat"){
   alert(count>=3?"AutoModeración: "+description+". Llegaste a 3/3 avisos; tu cuenta recibió un ban permanente.":"AutoModeración: "+description+". Se registró tu aviso "+count+"/3. Al tercer aviso se aplicará un ban permanente.");
   return true;
 }
+function setSuspendedShell(hidden){
+  ["#hd","#st","#nav","#accountNotice","#moderationNotice","#tk","#ann","#ft","#sl","#sr","#chatShortcutDialog"].forEach(selector=>{
+    const element=$(selector);if(element)element.hidden=hidden;
+  });
+  if(!hidden){$("#sr").hidden=false;$("#chatBox").hidden=false;}
+}
 function getActiveBanDetails(data=currentModerationData){
   if(!auth?.currentUser||isOwner()||!data)return null;
   const warnings=Array.isArray(data.warnings)?data.warnings:[];
+  const warningCount=Math.max(warnings.length,Number.isInteger(data.warningCount)?data.warningCount:0);
   if(data.status==="permanent"){
-    return {kind:"permanent",reason:data.banReason||"Incumplimiento de las normas.",warnings:warnings.length,until:null};
+    return {kind:"permanent",reason:data.banReason||"Incumplimiento de las normas.",warnings,warningCount,until:null};
   }
-  const until=data.banUntil?.toDate?data.banUntil.toDate():data.banUntil?new Date(data.banUntil):null;
-  if(data.status==="temporary"&&until&&Number.isFinite(until.getTime())&&until.getTime()>Date.now()){
-    return {kind:"temporary",reason:data.banReason||"Incumplimiento de las normas.",warnings:warnings.length,until};
+  if(data.status==="temporary"){
+    const rawUntil=data.banUntil;
+    const until=rawUntil?.toDate?rawUntil.toDate():rawUntil instanceof Date?rawUntil:rawUntil?new Date(rawUntil):null;
+    if(!until||!Number.isFinite(until.getTime())||until.getTime()>Date.now()){
+      return {kind:"temporary",reason:data.banReason||"Incumplimiento de las normas.",warnings,warningCount,until};
+    }
   }
   return null;
 }
@@ -489,22 +516,22 @@ function moderationAccessState(){
   return moderationLoadedUid===uid?"ready":"loading";
 }
 function renderBannedAccess(m,ban){
-  $("#sr").hidden=true;
-  $("#chatBox").hidden=true;
-  $("#tk").hidden=true;
-  $("#ann").hidden=true;
-  $("#moderationNotice").hidden=true;
-  $("#nav").innerHTML='<b>⛔ CUENTA RESTRINGIDA</b> · <a href="#/out">Cerrar sesión</a>';
+  setSuspendedShell(true);
+  stopChatSubscription();
+  const history=(ban.warnings||[]).map((item,index)=>
+    '<li><b>Aviso '+(index+1)+'/3:</b> '+E(item.reason||"Incumplimiento de las normas.")+
+    ' <small>('+E(item.source==="automod"?"AutoModeración":"Staff")+' · '+E(dt(item.at))+')</small></li>'
+  ).join("");
   const untilLine=ban.kind==="temporary"
-    ?'<div class="banMeta"><b>Suspensión hasta:</b> '+E(dt(ban.until))+'</div>'
-    :'<div class="banMeta"><b>Duración:</b> permanente</div>';
-  m.innerHTML='<section class="banAccessPanel" role="alert">'
-    +'<h2>⛔ Acceso al foro suspendido</h2>'
-    +'<p>Esta cuenta está baneada. Mientras la suspensión esté activa no puedes ver los foros, los temas, las respuestas ni el chat, ni participar en la comunidad.</p>'
+    ?'<div class="banMeta"><b>Tu suspensión termina:</b> '+E(ban.until?dt(ban.until):"Fecha no disponible; consulta al staff")+'</div>'
+    :'<div class="banMeta"><b>Tu suspensión termina:</b> Permanente</div>';
+  m.innerHTML='<section class="banAccessPanel" role="alert" aria-live="assertive">'
+    +'<h2>⛔ TU CUENTA ESTÁ SUSPENDIDA</h2>'
+    +'<div class="banMeta banWarnings"><b>Tus avisos:</b> '+ban.warningCount+'/3'
+    +(history?'<ol class="moderationHistory">'+history+'</ol>':'<p>No hay avisos previos registrados.</p>')+'</div>'
+    +'<div class="banMeta"><b>Por qué se te baneó:</b><br>'+E(ban.reason)+'</div>'
     +untilLine
-    +'<div class="banMeta"><b>Motivo:</b> '+E(ban.reason)+'</div>'
-    +'<div class="banMeta"><b>Avisos acumulados:</b> '+ban.warnings+'/3</div>'
-    +'<p>Si crees que se trata de un error, contacta al equipo de MantiPobres por un medio externo.</p>'
+    +'<p>Mientras dure la suspensión, no puedes acceder a los foros, temas, respuestas ni chats.</p>'
     +'<div class="banActions"><a href="#/out">Cerrar sesión</a></div>'
     +'</section>';
 }
@@ -1367,7 +1394,7 @@ async function go(){
   const m=$("#m");
   const accessState=moderationAccessState();
   if(firebaseReady&&r!=="out"&&accessState!=="ready"){
-    $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=true;$("#ann").hidden=true;
+    setSuspendedShell(true);
     $("#moderationNotice").hidden=true;
     $("#nav").innerHTML='<b>VERIFICANDO ACCESO...</b> · <a href="#/out">Cerrar sesión</a>';
     m.innerHTML=accessState==="error"
@@ -1383,7 +1410,8 @@ async function go(){
     $("#moderationNotice").hidden=true;
     $("#nav").innerHTML='<b>⛔ CUENTA RESTRINGIDA</b>';
   }else{
-    $("#sr").hidden=false;$("#chatBox").hidden=false;$("#tk").hidden=false;
+    setSuspendedShell(false);
+    $("#tk").hidden=false;
     renderModerationNotice();
   }
   renderAccountNotice();
@@ -1712,6 +1740,14 @@ addEventListener("online",()=>{
 document.addEventListener("visibilitychange",()=>{
   if(firebaseReady&&document.visibilityState==="visible"){subscribeChat();go();}
 });
+function applyOwnModerationSnapshot(uid,snapshot){
+  if(uid!==(auth?.currentUser?.uid||""))return;
+  currentModerationData=snapshot.exists()?snapshot.data():null;
+  moderationLoadedUid=uid;moderationLoadErrorUid="";
+  renderModerationNotice();
+  if(firebaseReady)refreshModerationAccess();
+  if(location.hash.startsWith("#/u/")&&firebaseReady&&!getActiveBanDetails())refreshRouteContent();
+}
 function watchCurrentModeration(user){
   const uid=user?.uid||"";
   if(moderationUid===uid&&moderationUnsub)return;
@@ -1720,19 +1756,26 @@ function watchCurrentModeration(user){
   renderModerationNotice();
   if(firebaseReady){
     stopChatSubscription();
-    $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=true;$("#ann").hidden=true;
+    setSuspendedShell(true);
     if(location.hash!=="#/out")go();
   }
   if(!user||!db){moderationLoadedUid=uid;return;}
-  moderationUnsub=onSnapshot(doc(db,"moderation",uid),snapshot=>{
-    currentModerationData=snapshot.exists()?snapshot.data():null;
-    moderationLoadedUid=uid;moderationLoadErrorUid="";
-    renderModerationNotice();
-    if(firebaseReady)refreshModerationAccess();
-    if(location.hash.startsWith("#/u/")&&firebaseReady&&!getActiveBanDetails())refreshRouteContent();
+  const moderationRef=doc(db,"moderation",uid);
+  getDocFromServer(moderationRef).then(snapshot=>{
+    applyOwnModerationSnapshot(uid,snapshot);
+  }).catch(error=>{
+    console.warn("No se pudo comprobar el estado de moderación en el servidor:",error);
+    if(uid!==(auth?.currentUser?.uid||""))return;
+    moderationLoadErrorUid=uid;moderationLoadedUid="";
+    if(firebaseReady&&location.hash!=="#/out")go();
+  });
+  moderationUnsub=onSnapshot(moderationRef,{includeMetadataChanges:true},snapshot=>{
+    if(snapshot.metadata?.fromCache)return;
+    applyOwnModerationSnapshot(uid,snapshot);
   },error=>{
     console.warn("No se pudo cargar el estado de moderación:",error);
-    moderationLoadErrorUid=uid;
+    if(uid!==(auth?.currentUser?.uid||""))return;
+    moderationLoadErrorUid=uid;moderationLoadedUid="";
     if(firebaseReady&&location.hash!=="#/out")go();
   });
 }
