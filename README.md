@@ -16,7 +16,9 @@ MantiPobres es un foro retro en español alojado en Firebase Hosting, con cuenta
 - Chat en tiempo real con mensajes de texto y borrado de mensajes propios.
 - Herramientas de administración por UID.
 - Anuncios y panel lateral editables directamente en `index.html`.
-- Avatares mediante enlaces HTTPS públicos y vista previa de enlaces directos a imágenes/GIF/vídeos en el chat, sin activar facturación. La subida directa de archivos está preparada, pero desactivada.
+- Perfiles editables por su propio titular con correo verificado; fotos mediante enlace HTTPS o subida con ImageKit al configurarlo.
+- Chat abierto para texto, pero los enlaces y adjuntos quedan reservados a cuentas registradas con correo verificado (incluye al staff).
+- Adjuntos preparados para ImageKit: imágenes, GIF, vídeos, PDF, TXT, CSV y ZIP, con límites por archivo.
 
 ## Configuración y despliegue
 
@@ -67,13 +69,42 @@ firebase init hosting:github
 
 Selecciona `mantiiiio/foro` y la rama `main`. Si pregunta si debe sobrescribir los archivos YAML de workflows ya existentes, puedes aceptar; no reemplaces `index.html`. El CLI creará la cuenta de servicio, guardará su clave como secreto y escribirá los workflows correspondientes. Después, un push a `main` desplegará Hosting y los pull requests tendrán una URL de vista previa. El primer despliegue de Authentication y Firestore se hace desde tu CMD con `firebase deploy --only auth,firestore,hosting`; el workflow automático publica Hosting.
 
-## Firebase Storage: fotos y archivos
+## Multimedia y permisos
 
-Para mantener el proyecto gratuito, `STORAGE_ENABLED` permanece en `false`. Los avatares admiten enlaces HTTPS públicos a imágenes/GIF y el chat muestra vistas previas de enlaces directos a JPG/PNG/GIF/WEBP/MP4/WEBM. No se suben archivos a Firebase Storage.
+Los invitados anónimos pueden enviar mensajes de texto en el chat, pero **no pueden** compartir enlaces, imágenes, vídeos ni archivos. Esas acciones requieren una cuenta registrada y correo verificado. El staff también puede hacerlo porque sus invitaciones solo se activan después de verificar el correo.
 
-Si algún día decides habilitar subidas directas, Cloud Storage for Firebase requiere el plan Blaze para crear o utilizar buckets. No lo actives si quieres mantenerte 100% gratis. Solo con autorización y supervisión de un adulto responsable, revisa primero la facturación, límites y alertas; después configura `storage.rules` y `FB.storageBucket` antes de cambiar `STORAGE_ENABLED` a `true`.
+Cada usuario puede editar únicamente su propio avatar. Los cambios de perfil también requieren correo verificado. Las reglas de Firestore aplican estos controles en el backend; no dependen solamente de ocultar botones en la página.
 
-Los adjuntos se sirven públicamente para que los participantes puedan verlos; no subas material privado o sensible. Las reglas validan la identidad, el tipo MIME y el tamaño, pero no analizan archivos en busca de malware.
+### Almacenamiento
+
+Firebase Storage permanece desactivado (STORAGE_ENABLED=false) para evitar activar el plan Blaze. Las subidas se prepararon para ImageKit, pero no estarán activas hasta configurar las claves y el Worker de autenticación. Los límites de la interfaz son:
+
+- Avatar: JPG, PNG, GIF o WEBP, máximo 5 MB.
+- Chat: JPG, PNG, GIF o WEBP, máximo 8 MB.
+- Vídeo: MP4 o WEBM, máximo 25 MB.
+- Documentos: PDF, TXT, CSV o ZIP, máximo 10 MB.
+
+Los enlaces HTTPS pueden compartirse en mensajes del chat por cuentas verificadas. Los enlaces directos a imágenes, GIF y vídeos muestran vista previa; los enlaces a documentos conocidos muestran un enlace para abrir el archivo. El foro no aloja el contenido de enlaces externos.
+
+### Activar subidas directas con ImageKit
+
+1. Crea una cuenta en https://imagekit.io/ y abre Developer options / API keys. Copia tu public key y private key. La private key nunca debe ponerse en el HTML, en GitHub ni compartirse por chat.
+2. En https://dash.cloudflare.com/, abre Workers & Pages y crea un Worker. Pega el contenido completo de cloudflare/imagekit-auth-worker.js y publícalo.
+3. En la configuración del Worker, abre Settings → Variables and Secrets y crea estas tres variables:
+   - FIREBASE_WEB_API_KEY: la Web API Key que aparece en la configuración de tu app web de Firebase.
+   - IMAGEKIT_PUBLIC_KEY: la public key de ImageKit.
+   - IMAGEKIT_PRIVATE_KEY: la private key de ImageKit, guardada como Secret (no como texto público).
+4. Vuelve a publicar el Worker. Su dirección será parecida a https://nombre-del-worker.tu-cuenta.workers.dev. El endpoint que usará el foro es esa dirección seguida por /auth.
+5. En index.html, completa estas dos constantes con tus valores públicos:
+   ```js
+   const IMAGEKIT_AUTH_ENDPOINT = "https://nombre-del-worker.tu-cuenta.workers.dev/auth";
+   const IMAGEKIT_PUBLIC_KEY = "public_TU_CLAVE";
+   ```
+6. Guarda y publica el cambio en GitHub. Al cargar el foro, los botones de adjuntar se habilitarán automáticamente.
+
+El Worker consulta a Firebase para verificar que la cuenta tenga una sesión válida y correo confirmado. Solo entonces genera una firma de corta duración para ImageKit. La clave privada permanece en Cloudflare. ImageKit exige que las firmas se generen en el servidor y que no se exponga la private key en el navegador (documentación: https://imagekit.io/docs/integration/javascript).
+
+Cloudflare Workers Free tiene una cuota de 100.000 solicitudes por día y 10 ms de CPU por solicitud, según sus límites publicados en octubre de 2026 (https://developers.cloudflare.com/workers/platform/limits/). ImageKit también tiene cuotas gratuitas y límites propios: no es almacenamiento ilimitado. Revisa el consumo desde su panel y no subas material sensible. No actives Firebase Storage ni Blaze para seguir esta guía.
 
 ## Personalización
 
