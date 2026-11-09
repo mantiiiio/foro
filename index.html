@@ -541,6 +541,7 @@ const D = {
   },
   async newT(b,t,x){const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),batch=writeBatch(db);batch.set(topicRef,{b,t,u,uid,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,x,ts:n});await batch.commit();return topicRef.id;},
   async reply(t,x){const n=Date.now(),u=me(),uid=auth.currentUser.uid,topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),batch=writeBatch(db);batch.set(postRef,{tp:t,u,uid,x,ts:n});batch.update(topicRef,{lr:n,lu:u,n:increment(1)});await batch.commit();},
+  async editPost(id,x){requireVerifiedMember("editar tus publicaciones");const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
   async members(){const s=await getDocs(collection(db,"users"));return s.size;},
   async cnt(n){const s=await getDocs(query(collection(db,"posts"),where("u","==",n)));return s.size;},
   async prof(n){const s=await getDocs(query(collection(db,"users"),where("u","==",n),limit(1)));return s.empty?null:{uid:s.docs[0].id,...s.docs[0].data()};},
@@ -595,6 +596,7 @@ const D = {
     if(media||containsExternalLink(x))requireRegisteredMember("compartir enlaces o archivos en el chat");
     const uid=auth.currentUser.uid,p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid));const avatarUrl=p?.exists()?p.data().avatarUrl||"":"";return addDoc(collection(db,"chatMessages"),{uid,u:chatName(),avatarUrl,x,media,ts:Date.now()});
   },
+  async chatEdit(id,x){const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>1500)throw new Error("El mensaje supera el máximo de 1500 caracteres.");await updateDoc(doc(db,"chatMessages",id),{x:value});},
   async chatDelete(id,path){await deleteDoc(doc(db,"chatMessages",id));if(path&&storage){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("No se pudo borrar el archivo asociado",e);}}},
   async chatClear(){const s=await getDocs(query(collection(db,"chatMessages"),orderBy("ts","desc"),limit(500)));if(storage){await Promise.all(s.docs.map(async d=>{const path=d.data().media?.path;if(path){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("Adjunto no encontrado o no borrable",e);}}}));}for(let i=0;i<s.docs.length;i+=400){const batch=writeBatch(db);s.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));await batch.commit();}}
 };
@@ -613,6 +615,7 @@ const Demo = {
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
   async newT(b,t,x){const n=Date.now(),id=String(n);demo.t.push({id,b,t,u:demo.m,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,x,ts:n});saveDemo();return id;},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,x,ts:n});saveDemo();},
+  async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
   async members(){return Object.keys(demo.u).length;},
   async cnt(n){return demo.p.filter(p=>p.u===n).length;},
   async prof(n){return demo.u[n]?{u:n,ts:demo.u[n].ts}:null;},
@@ -621,6 +624,7 @@ const Demo = {
   async removeAvatar(){throw new Error("Para cambiar la foto necesitas conectar Firebase y activar Storage.");},
   async del(k,a,b){if(k==="t"){demo.t=demo.t.filter(x=>x.id!==a);demo.p=demo.p.filter(x=>x.tp!==a);}else{demo.p=demo.p.filter(x=>x.id!==a);const t=demo.t.find(x=>x.id===b);if(t)t.n=Math.max(0,t.n-1);}saveDemo();},
   async chatSend(x,media=null){demo.chat.push({id:String(Date.now()),uid:demo.m||"anon",u:demo.m||"Invitado-DEMO",x,media,ts:Date.now()});demo.chat=demo.chat.slice(-60);saveDemo();renderChat(demo.chat);},
+  async chatEdit(id,x){const message=demo.chat.find(m=>m.id===id);if(!message||message.uid!==demo.m)throw new Error("Solo puedes editar tus propios mensajes.");message.x=String(x||"").trim();saveDemo();renderChat(demo.chat);},
   async chatDelete(id){demo.chat=demo.chat.filter(x=>x.id!==id);saveDemo();renderChat(demo.chat);},
   async chatClear(){demo.chat=[];saveDemo();renderChat([]);}
 };
