@@ -78,7 +78,7 @@ service cloud.firestore {
       return signedIn()
         && request.auth.uid == uid
         && oldCount is int
-        && oldCount >= 1
+        && oldCount >= 0
         && oldCount < 3
         && resource.data.get('status', 'active') != 'permanent'
         && (resource.data.get('status', 'active') == 'active' || (resource.data.get('status', 'active') == 'temporary' && resource.data.get('banUntil', request.time) is timestamp && resource.data.banUntil <= request.time))
@@ -147,6 +147,23 @@ service cloud.firestore {
           || request.resource.data.banUntil == null
         );
     }
+    function validModerationUpdate() {
+      let oldCount = resource.data.get('warningCount', 0);
+      return validModerationRecord()
+        && (
+          isAdmin()
+          || (
+            oldCount is int
+            && request.resource.data.warningCount >= oldCount
+            && request.resource.data.warningCount <= oldCount + 1
+            && (oldCount < 1 || request.resource.data.warnings[0] == resource.data.warnings[0])
+            && (oldCount < 2 || request.resource.data.warnings[1] == resource.data.warnings[1])
+            && (oldCount < 3 || request.resource.data.warnings[2] == resource.data.warnings[2])
+            && (resource.data.get('status', 'active') != 'permanent' || request.resource.data.status == 'permanent')
+            && (resource.data.get('status', 'active') != 'temporary' || request.resource.data.status != 'active')
+          )
+        );
+    }
     function shortString(value, max) {
       return value is string && value.size() > 0 && value.size() <= max;
     }
@@ -181,7 +198,7 @@ service cloud.firestore {
       allow get: if signedIn() && (request.auth.uid == uid || isStaff());
       allow list: if isStaff();
       allow create: if (canModerateTarget(uid) && validModerationRecord()) || validAutoWarningCreate(uid);
-      allow update: if (canModerateTarget(uid) && validModerationRecord()) || validAutoWarningUpdate(uid);
+      allow update: if (canModerateTarget(uid) && validModerationUpdate()) || validAutoWarningUpdate(uid);
       allow delete: if false;
     }
 
