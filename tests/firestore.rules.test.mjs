@@ -1,4 +1,5 @@
 import { after, before, beforeEach, test } from "node:test";
+import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   initializeTestEnvironment,
@@ -95,8 +96,11 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
   await assertSucceeds(getDoc(doc(guest, "topics", "topic-public")));
   await assertSucceeds(getDocs(publicTopics));
   await assertFails(getDoc(doc(guest, "topics", "topic-hidden")));
-  await assertFails(getDocs(collection(guest, "topics")));
+  const unfilteredTopics = await getDocs(collection(guest, "topics"));
+  assert.deepEqual(unfilteredTopics.docs.map(item => item.id).sort(), ["topic-public"]);
   await assertSucceeds(getDocs(publicPosts));
+  const unfilteredPosts = await getDocs(collection(guest, "posts"));
+  assert.deepEqual(unfilteredPosts.docs.map(item => item.id).sort(), ["post-public"]);
   await assertFails(getDoc(doc(guest, "posts", "post-hidden")));
   await assertFails(getDoc(doc(guest, "users", "alice")));
   await assertFails(getDoc(doc(guest, "chatMessages", "message-1")));
@@ -109,6 +113,32 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
     moderationHidden: false, moderationHiddenUntil: null
   };
   await assertFails(setDoc(doc(guest, "topics", "guest-topic"), topicWrite));
+});
+
+test("una cuenta sin verificar puede leer el foro, pero no crear temas ni respuestas", async () => {
+  await seed({
+    "topics/topic-1": {
+      b: "gen", t: "Tema público", u: "owner", uid: "owner",
+      ts: 1, lr: 1, lu: "owner", n: 0,
+      staffBadge: false, lastStaffBadge: false,
+      moderationHidden: false, moderationHiddenUntil: null
+    },
+    "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 }
+  });
+
+  const unverified = account("alice", { verified: false });
+  await assertSucceeds(getDoc(doc(unverified, "topics", "topic-1")));
+  await assertFails(setDoc(doc(unverified, "topics", "unverified-topic"), {
+    b: "gen", t: "No debe publicarse", u: "alice", uid: "alice",
+    ts: 2, lr: 2, lu: "alice", n: 0,
+    staffBadge: false, lastStaffBadge: false,
+    moderationHidden: false, moderationHiddenUntil: null
+  }));
+  await assertFails(setDoc(doc(unverified, "posts", "unverified-post"), {
+    tp: "topic-1", u: "alice", uid: "alice",
+    x: "No debe publicarse", ts: 2, staffBadge: false,
+    moderationHidden: false, moderationHiddenUntil: null
+  }));
 });
 
 test("un moderador puede editar el texto, pero no apropiarse del UID de una respuesta", async () => {

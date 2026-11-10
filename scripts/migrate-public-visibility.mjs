@@ -4,6 +4,7 @@ import { getFirestore } from "firebase-admin/firestore";
 const projectId = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || "foro-66dd5";
 initializeApp({ credential: applicationDefault(), projectId });
 const db = getFirestore();
+const migrationMarker = db.collection("systemMigrations").doc("publicForumVisibilityV1");
 
 async function migrateCollection(name) {
   const snapshot = await db.collection(name).get();
@@ -52,5 +53,16 @@ async function migrateCollection(name) {
   process.stdout.write(`${name}: ${snapshot.size} documentos revisados; ${updated} actualizados.\\n`);
 }
 
-await migrateCollection("topics");
-await migrateCollection("posts");
+const markerSnapshot = await migrationMarker.get();
+if (markerSnapshot.exists && markerSnapshot.data()?.complete === true) {
+  process.stdout.write("La migración de visibilidad pública ya se completó; no hay documentos que revisar.\\n");
+} else {
+  await migrateCollection("topics");
+  await migrateCollection("posts");
+  await migrationMarker.set({
+    version: 1,
+    complete: true,
+    completedAt: new Date()
+  });
+  process.stdout.write("Migración de visibilidad pública completada.\\n");
+}

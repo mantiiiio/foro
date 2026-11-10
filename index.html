@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#06476b">
 <meta name="description" content="MantiPobres — comunidad retro estilo BBS/Usenet.">
 <meta name="robots" content="index,follow,max-image-preview:large">
-<link rel="canonical" href="https://mantipobres.web.app/">
 <meta name="application-name" content="MantiPobres">
 <meta property="og:type" content="website">
 <meta property="og:title" content="MantiPobres — comunidad BBS / Usenet">
@@ -1363,7 +1362,7 @@ async function thr(m,id){
     '<section class="topicRating"><div><b>⭐ VALORACIÓN DEL TEMA</b><br>'+
     (ratingCount
       ? '<span class="ratingAverage">'+ratingAverage.toFixed(1)+'/5</span> '+ "★".repeat(averageWholeStars)+"☆".repeat(5-averageWholeStars)+' <small>('+ratingCount+' voto'+(ratingCount===1?'':'s')+')</small>'
-      : '<small>Este tema todavía no tiene valoraciones.</small>')+
+      : !isRegisteredMember()?'<small>Inicia sesión para consultar las valoraciones.</small>':'<small>Este tema todavía no tiene valoraciones.</small>')+
     '</div><div class="ratingControls">'+
     (canRate
       ? '<span>Tu puntuación:</span> '+[1,2,3,4,5].map(star=>'<button type="button" class="ratingStar'+(Number(myRating)>=star?' selected':'')+'" data-rating="'+star+'" aria-label="Valorar con '+star+' estrellas" title="'+star+' estrellas">'+(Number(myRating)>=star?'★':'☆')+'</button>').join("")+' <small>'+(myRating?'Tu voto actual: '+myRating+'/5 · Puedes modificarlo.':'Todavía no votaste. Puedes votar una vez y después actualizar tu voto.')+'</small>'
