@@ -1193,12 +1193,18 @@ const Demo = {
 };
 let Store = configured ? D : Demo;
 
+// Los temas creados por miembros del staff se destacan en los listados.
+function compareTopicsStaffFirst(a,b){
+  const staffDifference=Number(b?.staffBadge===true)-Number(a?.staffBadge===true);
+  return staffDifference||((Number(b?.lr)||0)-(Number(a?.lr)||0));
+}
+
 // Render del índice y foros
 async function idx(m){
   const [T,n]=await Promise.all([Store.topics(),Store.members()]);
   let h=`<table><tr><th colspan="2">Foro</th><th width="60" class="c">Temas</th><th width="70" class="c">Mensajes</th><th width="200">Último mensaje</th></tr>`;
   BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"📌":"📁"}</td><td><a href="#/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="#/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
-  const recent=T.slice(0,15);
+  const recent=[...T].sort(compareTopicsStaffFirst).slice(0,15);
   m.innerHTML=h+`</table><table><tr><th colspan="3">🕘 TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td>💬 <a href="#/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="#/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. Hay <b>${n}</b> miembros registrados.</small></td></tr></table>`;
   if(configured)watchRouteData(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)),routeRenderId);
 }
@@ -1206,7 +1212,7 @@ const BOARD_TOPICS_PER_PAGE=12;
 const boardTopicPages=new Map();
 async function brd(m,id){
   const B=BL.find(x=>x[0]===id);if(!B)return m.innerHTML="Foro inexistente";
-  const T=await Store.topicsByBoard(id),isRules=id==="reglas";
+  const T=(await Store.topicsByBoard(id)).sort(compareTopicsStaffFirst),isRules=id==="reglas";
   const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican al foro y al chat. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
   let currentPage=boardTopicPages.get(id)||1;
   function renderPagination(pageCount){
