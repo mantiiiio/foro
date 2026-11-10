@@ -216,6 +216,20 @@ test("una cuenta baneada solo puede leer y ocultar su propio contenido; no puede
   }));
 });
 
+test("el staff suspendido solo puede consultar su propio expediente de moderación", async () => {
+  await seed({
+    "staff/suspended-admin": { role: "admin" },
+    "moderation/suspended-admin": { status: "permanent" },
+    "moderation/target": { status: "active" }
+  });
+
+  const suspendedAdmin = account("suspended-admin");
+
+  await assertSucceeds(getDoc(doc(suspendedAdmin, "moderation", "suspended-admin")));
+  await assertFails(getDoc(doc(suspendedAdmin, "moderation", "target")));
+  await assertFails(getDocs(collection(suspendedAdmin, "moderation")));
+});
+
 test("un administrador suspendido no puede borrar perfiles ni retirar roles", async () => {
   await seed({
     "staff/suspended-admin": { role: "admin" },
