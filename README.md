@@ -104,3 +104,17 @@ El Owner se identifica por el UID configurado en `index.html` y `firestore.rules
 ## Personalización
 
 El nombre de marca está en `const NAME = "MantiPobres";` y en el título HTML. Los anuncios del staff y del proyecto destacado se editan directamente en `index.html`.
+
+
+## Pruebas automáticas de seguridad
+
+El repositorio incluye pruebas de reglas para el emulador local de Firestore. No usan datos de producción ni modifican el foro real.
+
+Con Node.js 24 y Firebase CLI instalados:
+
+```cmd
+npm install
+firebase emulators:exec --only firestore --project demo-mantipobres-rules "npm run test:rules"
+```
+
+Las pruebas comprueban, entre otras cosas, el bloqueo de invitados, los límites de los moderadores, la integridad del contador de respuestas y las acciones permitidas a cuentas suspendidas. GitHub Actions las ejecuta antes de publicar la web.
