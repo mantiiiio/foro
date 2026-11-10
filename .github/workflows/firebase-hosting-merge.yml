@@ -50,3 +50,26 @@ jobs:
           channelId: live
           projectId: foro-66dd5
           target: main
+
+      - name: Verify public sitemap and robots after deployment
+        run: |
+          curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
+            -D /tmp/mantipobres-sitemap-headers.txt \
+            https://mantipobres.web.app/sitemap.xml \
+            -o /tmp/mantipobres-sitemap.xml
+          grep -Eiq '^content-type: application/xml([;[:space:]]|$)' /tmp/mantipobres-sitemap-headers.txt
+          curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
+            https://mantipobres.web.app/robots.txt \
+            -o /tmp/mantipobres-robots.txt
+          grep -Fq 'Sitemap: https://mantipobres.web.app/sitemap.xml' /tmp/mantipobres-robots.txt
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          root = ET.parse("/tmp/mantipobres-sitemap.xml").getroot()
+          namespace = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+          locations = [node.text for node in root.findall("sm:url/sm:loc", namespace)]
+          assert root.tag == "{http://www.sitemaps.org/schemas/sitemap/0.9}urlset", "Raíz XML no válida"
+          assert len(locations) >= 1, "El sitemap no contiene direcciones"
+          assert all(url and url.startswith("https://mantipobres.web.app/") for url in locations), "Hay una URL fuera del dominio público"
+          print(f"Sitemap público verificado: {len(locations)} URL; XML válido.")
+          PY
