@@ -106,6 +106,39 @@ test("solo se pueden crear temas en categorías publicadas", async () => {
   }));
 });
 
+test("la automoderación bloquea insultos dirigidos en el propio servidor", async () => {
+  await seed({
+    "users/alice": { u: "alice", avatarUrl: "", ts: 1, rulesAcceptedAt: 1 }
+  });
+
+  const alice = account("alice");
+
+  async function sendChat(text) {
+    const batch = writeBatch(alice);
+    const messageRef = doc(collection(alice, "chatMessages"));
+    batch.set(doc(alice, "userRateLimits", "alice"), {
+      lastChatAt: serverTimestamp(),
+      lastChatMessageId: messageRef.id
+    }, { merge: true });
+    batch.set(messageRef, {
+      uid: "alice",
+      u: "alice",
+      avatarUrl: "",
+      x: text,
+      media: null,
+      ts: Date.now(),
+      staffBadge: false
+    });
+    await batch.commit();
+  }
+
+  await assertFails(sendChat("Sos un pelotudo."));
+  await assertFails(sendChat("Eres un imbécil."));
+  await assertFails(sendChat("@bob, sos un idiota."));
+  await assertFails(sendChat("Vete a la mierda."));
+  await assertSucceeds(sendChat("Este juego es una mierda, pero me gusta."));
+});
+
 test("el contador solo aumenta cuando se crea una respuesta real en la misma operación", async () => {
   await seed({
     "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 },

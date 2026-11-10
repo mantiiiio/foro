@@ -487,11 +487,16 @@ const AUTO_MODERATION_REASONS = {
 };
 const autoModActivity = new Map();
 const autoModWarnCooldown = new Map();
+const DIRECTED_INSULT_PATTERN = /(?:\b(?:sos|eres|sois|estas|you are)\s+(?:(?:un|una|el|la)\s+)?(?:idiota|imbecil|retrasado|subnormal|tarado|pelotudo|boludo|forro|gil(?:ipollas)?|estupido|inutil|basura|mierda|scum|moron|dumbass|asshole|bitch|pendejo|cabron|malparido|puto|puta|hijo de puta|hija de puta)\b|\b(?:vete|andate)\s+(?:a la mierda|al carajo|a cagar)\b|\b(?:fuck you|fuck off|go to hell|shut up|la concha de tu madre|chupame un huevo)\b|@[a-z0-9_]{2,16}\s*(?:[,;:!-]\s*)?(?:(?:sos|eres|sois)\s+(?:(?:un|una)\s+)?)?(?:idiota|imbecil|retrasado|subnormal|tarado|pelotudo|boludo|forro|gilipollas|estupido|inutil|basura|mierda|moron|dumbass|asshole|bitch|pendejo|cabron|malparido|puto|puta)\b)/i;
+function containsDirectedInsult(value){
+  const normalized=String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  return DIRECTED_INSULT_PATTERN.test(normalized);
+}
 function autoModerationReason(text,channel="chat"){
   const content=String(text||"").split("\n").filter(line=>!line.trimStart().startsWith(">")).join("\n").replace(/\u2063MPQ:[A-Za-z0-9_-]+\u2063/g,"").trim();
   if(!content)return "";
   if(/\b(te voy a matar|voy a matarte|te voy a pegar|voy a golpearte|ojala te mueras|ojalá te mueras|i will kill you|i am going to kill you)\b/i.test(content))return "threat";
-  if(/\b(sos|eres|sois|you are)\s+(un[oa]?\s+)?(idiota|imb[eé]cil|retrasad[oa]|basura|in[uú]til|est[uú]pid[oa]|scum|moron)\b/i.test(content))return "harassment";
+  if(containsDirectedInsult(content))return "harassment";
   const links=(content.match(/(?:https?:\/\/|www\.)\S+/gi)||[]).length;
   if(links>3)return "link_spam";
   const letters=content.match(/\p{L}/gu)||[],upper=content.match(/\p{Lu}/gu)||[];

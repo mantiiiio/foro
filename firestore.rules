@@ -212,7 +212,8 @@ service cloud.firestore {
     // Filtro adicional en servidor para amenazas explícitas e insultos dirigidos.
     function automodSafe(value) {
       return value is string
-        && !value.matches('(?is).*(te voy a matar|voy a matarte|te voy a pegar|voy a golpearte|ojala te mueras|ojalá te mueras|i will kill you|i am going to kill you|sos un idiota|eres un idiota|sois un idiota|sos un imbecil|eres un imbecil|sos un imbécil|eres un imbécil|sos un retrasado|eres un retrasado).*')
+        && !value.matches('(?is).*(te voy a matar|voy a matarte|te voy a pegar|voy a golpearte|ojala te mueras|ojalá te mueras|i will kill you|i am going to kill you).*')
+        && !value.matches('(?is).*(\\b(sos|eres|sois|estas|estás|you are)\\s+(un\\s+|una\\s+|el\\s+|la\\s+)?(idiota|imb[eé]cil|retrasad[oa]|subnormal|tarad[oa]|pelotud[oa]|bolud[oa]|forr[oa]|gil(ipollas)?|est[uú]pid[oa]|in[uú]til|basura|mierda|scum|moron|dumbass|asshole|bitch|pendej[oa]|cabr[oó]n|malparid[oa]|put[oa]|hij[oa] de puta)\\b|\\b(vete|andate|ándate)\\s+(a la mierda|al carajo|a cagar)\\b|\\b(fuck you|fuck off|go to hell|shut up|la concha de tu madre|chupame un huevo)\\b|@[a-z0-9_]{2,16}\\s*[,;:!-]?\\s*(?:(sos|eres|sois)\\s+(un\\s+|una\\s+)?)?(idiota|imb[eé]cil|retrasad[oa]|subnormal|tarad[oa]|pelotud[oa]|bolud[oa]|forr[oa]|gilipollas|est[uú]pid[oa]|in[uú]til|basura|mierda|moron|dumbass|asshole|bitch|pendej[oa]|cabr[oó]n|malparid[oa]|put[oa])\\b).*')
         && !value.matches('(?is).*(https?://.*https?://.*https?://.*https?://|www\\..*www\\..*www\\..*www\\.).*')
         && !value.matches('(?s)^(?:[^a-záéíóúüñ]*[A-ZÁÉÍÓÚÜÑ]){28,}[^a-záéíóúüñ]*$');
     }

@@ -118,3 +118,8 @@ firebase emulators:exec --only firestore --project demo-mantipobres-rules "npm r
 ```
 
 Las pruebas comprueban, entre otras cosas, el bloqueo de invitados, los límites de los moderadores, la integridad del contador de respuestas y las acciones permitidas a cuentas suspendidas. GitHub Actions las ejecuta antes de publicar la web.
+
+
+### Automoderación de insultos
+
+La automoderación bloquea amenazas y ataques personales directos en temas, comentarios y chat. Reconoce variantes comunes en español e inglés (incluido vocabulario rioplatense) y valida también en las reglas de Firestore para impedir que se publique usando el SDK directamente. Las expresiones malsonantes que no atacan a una persona, como una crítica a un juego o producto, no deberían generar un aviso por sí solas. El sistema conserva el mecanismo actual de avisos: al tercer aviso automático se aplica una suspensión permanente. Ningún filtro automático entiende todo el contexto; revisa los avisos antes de mantener una sanción y permite apelarlos mediante el staff.
