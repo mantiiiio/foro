@@ -113,6 +113,11 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
     moderationHidden: false, moderationHiddenUntil: null
   };
   await assertFails(setDoc(doc(guest, "topics", "guest-topic"), topicWrite));
+  await assertFails(setDoc(doc(guest, "posts", "guest-post"), {
+    tp: "topic-public", u: "guest", uid: "guest",
+    x: "No debe publicarse", ts: 6, staffBadge: false,
+    moderationHidden: false, moderationHiddenUntil: null
+  }));
 });
 
 test("una cuenta sin verificar puede leer el foro, pero no crear temas ni respuestas", async () => {
