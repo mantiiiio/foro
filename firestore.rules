@@ -69,6 +69,12 @@ service cloud.firestore {
     function canReadCommunity() {
       return registered() && canParticipate();
     }
+    function publicReadOnlyVisitor() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    function isPubliclyVisibleContent() {
+      return resource.data.get('moderationHidden', false) == false;
+    }
     function canModerateTarget(uid) {
       return isStaff()
         && canParticipate()
@@ -451,10 +457,10 @@ service cloud.firestore {
     }
 
     match /topics/{topicId} {
-      allow read: if canReadCommunity() || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
+      allow read: if canReadCommunity() || (publicReadOnlyVisitor() && isPubliclyVisibleContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
       allow create: if verifiedMember()
         && canParticipate()
-        && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n','staffBadge','lastStaffBadge','gallery'])
+        && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n','staffBadge','lastStaffBadge','gallery','moderationHidden','moderationHiddenUntil'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.staffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
         && request.resource.data.lastStaffBadge == request.resource.data.staffBadge
@@ -467,6 +473,8 @@ service cloud.firestore {
         && automodSafe(request.resource.data.t)
         && shortString(request.resource.data.u, 16)
         && request.resource.data.n == 0
+        && request.resource.data.moderationHidden == false
+        && request.resource.data.moderationHiddenUntil == null
         && request.resource.data.ts is int
         && request.resource.data.lr is int
         && (request.resource.data.b != 'reglas' || isStaff());
@@ -548,11 +556,11 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if canReadCommunity() || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
+      allow read: if canReadCommunity() || (publicReadOnlyVisitor() && isPubliclyVisibleContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
       allow create: if verifiedMember()
         && canParticipate()
         && hasFreshPostRateLimit(request.auth.uid, postId)
-        && request.resource.data.keys().hasOnly(['tp','u','uid','x','ts','staffBadge'])
+        && request.resource.data.keys().hasOnly(['tp','u','uid','x','ts','staffBadge','moderationHidden','moderationHiddenUntil'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.staffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -564,6 +572,8 @@ service cloud.firestore {
         && request.resource.data.x.size() <= 6000
         && automodSafe(request.resource.data.x)
         && request.resource.data.ts is int
+        && request.resource.data.moderationHidden == false
+        && request.resource.data.moderationHiddenUntil == null
         && existsAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp))
         && (getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas' || isStaff());
       allow update: if (isAdmin() && canParticipate()) || (

@@ -5,10 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#06476b">
 <meta name="description" content="MantiPobres — comunidad retro estilo BBS/Usenet.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://mantipobres.web.app/">
 <meta name="application-name" content="MantiPobres">
 <meta property="og:type" content="website">
 <meta property="og:title" content="MantiPobres — comunidad BBS / Usenet">
 <meta property="og:description" content="Foro retro en español con cuentas, perfiles, temas y chat en directo.">
+<meta property="og:url" content="https://mantipobres.web.app/">
 <meta name="twitter:card" content="summary">
 <title>MantiPobres</title>
 <style>
@@ -293,7 +296,7 @@ input,textarea,select{max-width:100%}
 <body>
 <div id="w">
   <header id="hd">
-    <div id="lg"><h1 id="nm"><a href="#/" id="nl" title="Volver al índice">MantiPobres</a></h1><i>Comunidad retro &middot; est. 1999 &middot; BBS / Usenet Revival</i></div>
+    <div id="lg"><h1 id="nm"><a href="/" id="nl" title="Volver al índice">MantiPobres</a></h1><i>Comunidad retro &middot; est. 1999 &middot; BBS / Usenet Revival</i></div>
     <pre id="ban"></pre>
   </header>
   <div id="st">NODO 1 :: 56000 bps :: <span id="clk"></span> :: <b id="netState">CONECTANDO...</b></div>
@@ -441,6 +444,32 @@ const $ = s => document.querySelector(s);
 const BL = BOARDS.flatMap(c => c[1]);
 const E = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dt = t => { const d = typeof t === "number" ? new Date(t) : t?.toDate ? t.toDate() : new Date(t); return Number.isNaN(d.getTime()) ? "fecha desconocida" : d.toLocaleString("es-UY", {dateStyle:"medium",timeStyle:"short"}); };
+const SEO_SITE_ORIGIN="https://mantipobres.web.app";
+function routeKeyFromLocation(){
+  if(location.hash.startsWith("#/"))return location.hash;
+  let path=location.pathname;
+  while(path.length>1&&path.endsWith("/"))path=path.slice(0,-1);
+  if(!path||path==="/"||path==="/index.html")return "#/";
+  if(path.startsWith("/"))path=path.slice(1);
+  return "#/"+path;
+}
+function setSeoMetadata(path,title,description,indexable=true){
+  const canonical=new URL(path||"/",SEO_SITE_ORIGIN).href;
+  document.title=title||"MantiPobres";
+  const ensureMeta=(selector,attrs)=>{
+    let node=document.head.querySelector(selector);
+    if(!node){node=document.createElement("meta");document.head.appendChild(node);}
+    Object.entries(attrs).forEach(([key,value])=>node.setAttribute(key,value));
+  };
+  ensureMeta('meta[name="description"]',{name:"description",content:String(description||"Foro retro en español, comunidad MantiPobres.").slice(0,300)});
+  ensureMeta('meta[name="robots"]',{name:"robots",content:indexable?"index,follow,max-image-preview:large":"noindex,nofollow"});
+  ensureMeta('meta[property="og:title"]',{"property":"og:title",content:title||"MantiPobres"});
+  ensureMeta('meta[property="og:description"]',{"property":"og:description",content:String(description||"Foro retro en español, comunidad MantiPobres.").slice(0,300)});
+  ensureMeta('meta[property="og:url"]',{"property":"og:url",content:canonical});
+  let canonicalNode=document.head.querySelector('link[rel="canonical"]');
+  if(!canonicalNode){canonicalNode=document.createElement("link");canonicalNode.rel="canonical";document.head.appendChild(canonicalNode);}
+  canonicalNode.href=canonical;
+}
 function isModerationContentHidden(item){
   if(item?.moderationHidden!==true)return false;
   const raw=item.moderationHiddenUntil;
@@ -604,7 +633,7 @@ function renderBannedAccess(m,ban){
     +'<div class="banMeta"><b>Por qué se te baneó:</b><br>'+E(ban.reason)+'</div>'
     +untilLine
     +'<p>Mientras dure la suspensión, no puedes acceder a los foros, temas, respuestas ni chats.</p>'
-    +'<div class="banActions"><a href="#/out">Cerrar sesión</a></div>'
+    +'<div class="banActions"><a href="/out">Cerrar sesión</a></div>'
     +'</section>';
 }
 function stopChatSubscription(){
@@ -622,13 +651,13 @@ function refreshModerationAccess(){
     setSuspendedShell(true);
     stopChatSubscription();
     // Mantiene el aviso visible y cierra el chat incluso si algún evento intenta reabrirlo.
-    if(location.hash!=="#/out"&&!$("#m .banAccessPanel"))renderBannedAccess($("#m"),ban);
+    if(routeKeyFromLocation()!=="#/out"&&!$("#m .banAccessPanel"))renderBannedAccess($("#m"),ban);
     return;
   }
   if(lastModerationBanned===false)return;
   lastModerationBanned=false;
   renderModerationNotice();
-  if(location.hash!=="#/out")go();
+  if(routeKeyFromLocation()!=="#/out")go();
   subscribeChat();
 }
 
@@ -915,9 +944,9 @@ const D = {
     return {verified:auth.currentUser.emailVerified,grantedRole};
   },
   async out(){await signOut(auth);await signInAnonymously(auth);},
-  async topics(){try{const s=await getDocs(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item));}catch(error){throw new Error("No se pudieron leer los temas (topics): "+(error.code||error.message||"error desconocido"));}},
-  async topicsByBoard(boardId){try{const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas de la categoría "+boardId+": "+(error.code||error.message||"error desconocido"));}},
-  async posts(t){try{const s=await getDocs(query(collection(db,"posts"),where("tp","==",t)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(a.ts||0)-(b.ts||0));}catch(error){throw new Error("No se pudieron leer las publicaciones del tema: "+(error.code||error.message||"error desconocido"));}},
+  async topics(){try{const s=await getDocs(query(collection(db,"topics"),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas (topics): "+(error.code||error.message||"error desconocido"));}},
+  async topicsByBoard(boardId){try{const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas de la categoría "+boardId+": "+(error.code||error.message||"error desconocido"));}},
+  async posts(t){try{const s=await getDocs(query(collection(db,"posts"),where("tp","==",t),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(a.ts||0)-(b.ts||0));}catch(error){throw new Error("No se pudieron leer las publicaciones del tema: "+(error.code||error.message||"error desconocido"));}},
   async topic(t){try{const s=await getDoc(doc(db,"topics",t));if(!s.exists())return null;const item={id:s.id,...s.data()};return isModerationContentHidden(item)?null:item;}catch(error){throw new Error("No se pudo leer el tema: "+(error.code||error.message||"error desconocido"));}},
   async ratings(t){try{const s=await getDocs(collection(db,"topics",t,"ratings"));return uniqueTopicRatings(s.docs.map(d=>({id:d.id,...d.data(),uid:d.data().uid||d.id})));}catch(error){console.warn("No se pudieron cargar las valoraciones; se mostrarán sin votos.",error);return []; }},
   async rateTopic(t,stars){
@@ -947,12 +976,12 @@ const D = {
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
     const cleanGallery=Array.isArray(gallery)?gallery.slice(0,30).map(item=>({type:item.type,url:safeHttps(item.url),caption:String(item.caption||"").slice(0,80)})):[];
     if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");
-    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,staffBadge,lastStaffBadge:staffBadge,gallery:cleanGallery,ts:n,lr:n,lu:u,n:0});batch.set(postRef,{tp:topicRef.id,u,uid,staffBadge,x,ts:n});await batch.commit();return topicRef.id;
+    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,staffBadge,lastStaffBadge:staffBadge,gallery:cleanGallery,ts:n,lr:n,lu:u,n:0,moderationHidden:false,moderationHiddenUntil:null});batch.set(postRef,{tp:topicRef.id,u,uid,staffBadge,x,ts:n,moderationHidden:false,moderationHiddenUntil:null});await batch.commit();return topicRef.id;
   },
   async reply(t,x){
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     if(lastMs&&Date.now()-lastMs<3000)throw new Error("POST_RATE_LIMIT");
-    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,staffBadge,x,ts:n});batch.update(topicRef,{lr:n,lu:u,lastStaffBadge:staffBadge,n:increment(1),lastCreatedPostId:postRef.id});await batch.commit();
+    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,staffBadge,x,ts:n,moderationHidden:false,moderationHiddenUntil:null});batch.update(topicRef,{lr:n,lu:u,lastStaffBadge:staffBadge,n:increment(1),lastCreatedPostId:postRef.id});await batch.commit();
   },
   async editPost(id,x){requireVerifiedMember("editar tus publicaciones");await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
   async members(){try{const s=await getCountFromServer(collection(db,"users"));return s.data().count;}catch(error){console.warn("No se pudo cargar el contador de miembros; se muestra 0 temporalmente.",error);return 0;}},
@@ -1201,18 +1230,20 @@ function compareTopicsStaffFirst(a,b){
 
 // Render del índice y foros
 async function idx(m){
-  const [T,n]=await Promise.all([Store.topics(),Store.members()]);
+  const [T,n]=await Promise.all([Store.topics(),isRegisteredMember()?Store.members():Promise.resolve(null)]);
+  setSeoMetadata("/","MantiPobres — Foro retro en español","Foro retro en español estilo BBS/Usenet. Conversaciones, ayuda y comunidad.",true);
   let h=`<table><tr><th colspan="2">Foro</th><th width="60" class="c">Temas</th><th width="70" class="c">Mensajes</th><th width="200">Último mensaje</th></tr>`;
-  BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"📌":"📁"}</td><td><a href="#/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="#/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
+  BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"📌":"📁"}</td><td><a href="/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
   const recent=[...T].sort(compareTopicsStaffFirst).slice(0,15);
-  m.innerHTML=h+`</table><table><tr><th colspan="3">🕘 TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td>💬 <a href="#/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="#/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. Hay <b>${n}</b> miembros registrados.</small></td></tr></table>`;
-  if(configured)watchRouteData(query(collection(db,"topics"),orderBy("lr","desc"),limit(300)),routeRenderId);
+  m.innerHTML=h+`</table><table><tr><th colspan="3">🕘 TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td>💬 <a href="/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. ${n===null?"Inicia sesión para consultar los miembros registrados.":`Hay <b>${n}</b> miembros registrados.`}</small></td></tr></table>`;
+  if(configured)watchRouteData(query(collection(db,"topics"),where("moderationHidden","==",false)),routeRenderId);
 }
 const BOARD_TOPICS_PER_PAGE=12;
 const boardTopicPages=new Map();
 async function brd(m,id){
   const B=BL.find(x=>x[0]===id);if(!B)return m.innerHTML="Foro inexistente";
   const T=(await Store.topicsByBoard(id)).sort(compareTopicsStaffFirst),isRules=id==="reglas";
+  setSeoMetadata("/b/"+encodeURIComponent(id),B[2]+" — Foro MantiPobres","Debates y temas de "+B[2]+" en MantiPobres, comunidad retro en español.",true);
   const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican al foro y al chat. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
   let currentPage=boardTopicPages.get(id)||1;
   function renderPagination(pageCount){
@@ -1231,9 +1262,9 @@ async function brd(m,id){
     boardTopicPages.set(id,currentPage);
     const visibleTopics=T.slice((currentPage-1)*BOARD_TOPICS_PER_PAGE,currentPage*BOARD_TOPICS_PER_PAGE);
     const pagination=renderPagination(pageCount);
-    m.innerHTML=rulesIntro+`<p><a href="#/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="#/n/${id}">Nuevo tema</a>`:""}</p>`+
+    m.innerHTML=rulesIntro+`<p><a href="/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${(!configured||isRegisteredMember())&&canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="/n/${id}">Nuevo tema</a>`:""}</p>`+
       pagination+
-      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td>💬 <a href="#/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>`+
+      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td>💬 <a href="/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>`+
       pagination+
       (isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:"");
     m.querySelectorAll("[data-board-topic-page]").forEach(button=>button.addEventListener("click",()=>{
@@ -1245,7 +1276,7 @@ async function brd(m,id){
     }));
   }
   renderBoard();
-  if(configured)watchRouteData(query(collection(db,"topics"),where("b","==",id)),routeRenderId);
+  if(configured)watchRouteData(query(collection(db,"topics"),where("b","==",id),where("moderationHidden","==",false)),routeRenderId);
 }
 function cleanTopicGallery(items){
   if(!Array.isArray(items))return [];
@@ -1309,17 +1340,19 @@ function bindTopicGallery(root,items){
 async function thr(m,id){
   const t=await Store.topic(id);
   if(!t)return m.innerHTML="Tema inexistente";
-  const [P,R]=await Promise.all([Store.posts(id),Store.ratings(id)]);
+  const [P,R]=await Promise.all([Store.posts(id),isRegisteredMember()?Store.ratings(id):Promise.resolve([])]);
   const B=BL.find(x=>x[0]===t.b)||["","","?"];
   const name=Store.me(),locked=t.b==="reglas"&&!isStaff();
   const canDeleteTopic=isStaff()||(t.b!=="reglas"&&(configured?auth?.currentUser?.uid===t.uid:name===t.u));
   const canReply=!!name&&(!configured||emailVerified())&&!locked;
   const canRate=isRegisteredMember()&&!locked;
   const counts={},profiles={};
-  await Promise.all([...new Set(P.map(p=>p.u))].map(async u=>{
-    const [count,profile]=await Promise.all([Store.cnt(u),Store.prof(u)]);
-    counts[u]=count;profiles[u]=profile;
-  }));
+  if(isRegisteredMember()){
+    await Promise.all([...new Set(P.map(p=>p.u))].map(async u=>{
+      const [count,profile]=await Promise.all([Store.cnt(u),Store.prof(u)]);
+      counts[u]=count;profiles[u]=profile;
+    }));
+  }
   const normalizedRatings=uniqueTopicRatings(R);
   const ratingCount=normalizedRatings.length;
   const ratingAverage=ratingCount?normalizedRatings.reduce((sum,r)=>sum+r.stars,0)/ratingCount:0;
@@ -1336,10 +1369,11 @@ async function thr(m,id){
       ? '<span>Tu puntuación:</span> '+[1,2,3,4,5].map(star=>'<button type="button" class="ratingStar'+(Number(myRating)>=star?' selected':'')+'" data-rating="'+star+'" aria-label="Valorar con '+star+' estrellas" title="'+star+' estrellas">'+(Number(myRating)>=star?'★':'☆')+'</button>').join("")+' <small>'+(myRating?'Tu voto actual: '+myRating+'/5 · Puedes modificarlo.':'Todavía no votaste. Puedes votar una vez y después actualizar tu voto.')+'</small>'
       : !isRegisteredMember()?'<small>Inicia sesión para valorar este tema.</small>':locked?'<small>Este tema está cerrado a valoraciones.</small>':'<small>Verifica tu correo para poder comentar; puedes valorar al iniciar sesión.</small>')+
     '</div></section>';
+  setSeoMetadata("/t/"+encodeURIComponent(id),t.t+" — "+B[2]+" | MantiPobres",String(P[0]?.x||t.t).slice(0,155),true);
   const comments=P.length>1?P.length-1:0;
   const galleryHtml=renderTopicGallery(t.gallery);
   m.innerHTML=
-    '<p><a href="#/">🏠 Inicio</a> &raquo; <a href="#/b/'+E(t.b)+'">'+E(B[2])+'</a> &raquo; <b>'+E(t.t)+'</b> <a class="bt" href="#/b/'+E(t.b)+'">Volver al foro</a>'+(canDeleteTopic?' <a class="bt" href="#" id="deleteWholeTopic">🗑 Eliminar tema</a>':'')+'</p>'+
+    '<p><a href="/">🏠 Inicio</a> &raquo; <a href="/b/'+E(t.b)+'">'+E(B[2])+'</a> &raquo; <b>'+E(t.t)+'</b> <a class="bt" href="/b/'+E(t.b)+'">Volver al foro</a>'+(canDeleteTopic?' <a class="bt" href="#" id="deleteWholeTopic">🗑 Eliminar tema</a>':'')+'</p>'+
     ratingPanel+
     '<h3 id="topicComments">💬 Comentarios y conversación · '+comments+'</h3>'+
     '<table><tr><th width="120">Autor</th><th>Publicación / comentario</th></tr>'+
@@ -1347,12 +1381,14 @@ async function thr(m,id){
        const ownPost=configured?!!auth?.currentUser&&p.uid===auth.currentUser.uid:!!Store.me()&&p.u===Store.me();
         const canEditPost=!p.deleted&&(isStaff()||ownPost),canDeletePost=!p.deleted&&(isStaff()||ownPost);
         const body=p.deleted?renderTopicPostBody(p,P):renderTopicPostBody(p,P)+externalMediaPreview(p.x||"");
-        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b><a href="#/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a></b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+'<br>Mensajes: '+(counts[p.u]||0)+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost&&i>0?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>'+(i===0&&galleryHtml?'<tr><td colspan="2">'+galleryHtml+'</td></tr>':"");
+        const authorLink=isRegisteredMember()?'<a href="/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a>':E(p.u);
+        const authorStats=isRegisteredMember()?'<br>Mensajes: '+(counts[p.u]||0):'';
+        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b>'+authorLink+'</b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+authorStats+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost&&i>0?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>'+(i===0&&galleryHtml?'<tr><td colspan="2">'+galleryHtml+'</td></tr>':"");
      }).join("")+
     '</table>'+
     (canReply
       ? '<form id="rf" class="commentForm"><b>✍️ Añadir un comentario</b><br><textarea id="rx" rows="5" style="width:100%" maxlength="6000" placeholder="Escribe tu comentario o respuesta..."></textarea><br><button class="bt">Publicar comentario</button> <span id="er" class="err"></span></form>'
-      : '<p class="notice">'+(locked?"Este foro es de solo lectura: publica solo el staff.":!name?'Debes <a href="#/login">iniciar sesión</a> para comentar.':'Para comentar, verifica tu correo desde el aviso superior.')+'</p>');
+      : '<p class="notice">'+(locked?"Este foro es de solo lectura: publica solo el staff.":!name?'Debes <a href="/login">iniciar sesión</a> para comentar.':'Para comentar, verifica tu correo desde el aviso superior.')+'</p>');
   bindTopicGallery(m,t.gallery);
   bindExternalMediaFallback(m);
   $("#deleteWholeTopic")?.addEventListener("click",async event=>{
@@ -1413,8 +1449,8 @@ async function thr(m,id){
   }
   if(configured){
     watchRouteData(doc(db,"topics",id),routeRenderId);
-    watchRouteData(query(collection(db,"posts"),where("tp","==",id)),routeRenderId);
-    watchRouteData(collection(db,"topics",id,"ratings"),routeRenderId);
+    watchRouteData(query(collection(db,"posts"),where("tp","==",id),where("moderationHidden","==",false)),routeRenderId);
+    if(isRegisteredMember())watchRouteData(collection(db,"topics",id,"ratings"),routeRenderId);
   }
 }
 function topicDraftStorageKey(boardId){
@@ -1473,7 +1509,7 @@ function clearTopicDraft(boardId){
 function neu(m,id){
   if(!Store.me())return location.hash="#/login";
   if(!canCreateTopicInBoard(id)){
-    m.innerHTML=`<section class="notice"><b>Solo el staff puede crear temas aquí.</b><p>Ayuda y sugerencias está reservada para publicaciones del personal del foro.</p></section><p><a href="#/b/${E(id)}">Volver a Ayuda y sugerencias</a></p>`;
+    m.innerHTML=`<section class="notice"><b>Solo el staff puede crear temas aquí.</b><p>Ayuda y sugerencias está reservada para publicaciones del personal del foro.</p></section><p><a href="/b/${E(id)}">Volver a Ayuda y sugerencias</a></p>`;
     return;
   }
   if(configured&&!emailVerified()){m.innerHTML=`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>`;return;}
@@ -1589,7 +1625,7 @@ function neu(m,id){
 }
 function frm(m,a,r){
   const rg=r==="reg";
-  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${configured?`<tr><td class="b">Invitación del staff (opcional)</td><td><input id="accessToken" type="text" maxlength="48" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"><br><small>Solo sirve un código emitido desde Administración. Se usa una vez y queda bloqueado para siempre.</small></td></tr>`:""}${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="#/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · solo proveedores autorizados, sin correos temporales":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
+  m.innerHTML=`<form id="lf"><table style="max-width:460px;margin:auto"><tr><th colspan="2">${rg?"Crear cuenta en MantiPobres":"Entrar a MantiPobres"}</th></tr>${rg?`<tr><td class="b">Nombre de usuario</td><td><input id="un" maxlength="16" minlength="3" autocomplete="username" required></td></tr><tr><td class="b">Correo electrónico</td><td><input id="em" type="email" maxlength="254" autocomplete="email" required></td></tr>`:`<tr><td class="b">Correo electrónico</td><td><input id="identity" type="text" autocomplete="username" placeholder="tu@correo.com" required></td></tr>`}<tr><td class="b">Contraseña</td><td><input id="pw" type="password" minlength="6" autocomplete="${rg?"new-password":"current-password"}" required></td></tr>${configured?`<tr><td class="b">Invitación del staff (opcional)</td><td><input id="accessToken" type="text" maxlength="48" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"><br><small>Solo sirve un código emitido desde Administración. Se usa una vez y queda bloqueado para siempre.</small></td></tr>`:""}${rg?`<tr><td colspan="2"><label><input type="checkbox" id="ok" required> He leído y acepto las <a href="/b/reglas" target="_blank">reglas del foro</a></label></td></tr>`:`<tr><td colspan="2" class="c"><button type="button" id="resetPassword">Recuperar contraseña por correo</button></td></tr>`}<tr><td colspan="2" class="c"><button type="submit">${rg?"Crear cuenta":"Entrar"}</button> <span id="er" class="err"></span><br><small>${rg?"Usuario: 3-16 letras, números o _ · contraseña mínimo 6 caracteres · solo proveedores autorizados, sin correos temporales":"Usa tu correo real. Las cuentas anteriores también pueden probar con su usuario."}</small></td></tr></table></form>`;
   $("#lf").onsubmit=async e=>{
     e.preventDefault();const p=$("#pw").value,er=$("#er");er.className="err";
     try{
@@ -1718,7 +1754,7 @@ async function staffPanel(m){
         const status=item.status==="available"&&expires<=Date.now()?"Vencida":({available:"Disponible",used:"Usada · bloqueada",revoked:"Revocada"}[item.status]||item.status);
         return `<tr><td>${E(STAFF_ROLE_LABELS[item.role]||item.role)}</td><td>${E(item.description||"—")}</td><td><b>${E(status)}</b></td><td><small>${E(dt(item.createdAt))}</small></td><td><small>${E(dt(item.expiresAt))}</small></td><td><small>${E(item.claimedBy||"—")}</small></td><td>${item.status==="available"&&canManageInviteRole(item.role)?`<button type="button" data-invite-revoke="${E(item.id)}">Revocar</button>`:"—"}</td></tr>`;
       }).join("")||`<tr><td colspan="7">Todavía no hay invitaciones.</td></tr>`}</table>
-      <p><a href="#/">Volver al foro</a></p>`;
+      <p><a href="/">Volver al foro</a></p>`;
     if(generatedToken){
       $("#staffTokenResult").hidden=false;
       $("#staffTokenCopy").addEventListener("click",async()=>{
@@ -1757,7 +1793,7 @@ async function setup(m){
       '<table><tr><th>MI CUENTA · '+(isOwner()?"OWNER":"SESIÓN ACTIVA")+'</th></tr><tr><td>'+
       '<p><b>Sesión iniciada correctamente.</b><br>Cuenta: '+E(user.email||username)+'</p>'+
       '<p>Estado del correo: '+verification+'</p>'+
-      '<p><a class="bt" href="'+E(profileHref)+'">👤 Editar mi perfil y foto</a> <a class="bt" href="#/">Volver al foro y chat</a></p>'+
+      '<p><a class="bt" href="'+E(profileHref)+'">👤 Editar mi perfil y foto</a> <a class="bt" href="/">Volver al foro y chat</a></p>'+
       '</td></tr></table>'+
       '<table><tr><th>SUBIR ARCHIVOS</th></tr><tr><td>'+
       '<p>Elige un archivo de tu PC. Catbox subirá el archivo y abrirá otra pestaña con el enlace directo. También puedes abrir el mirror alternativo si Catbox está caído. Copia ese enlace para pegarlo en el chat o en el editor de tu foto de perfil. Máximo 200 MB por archivo.</p>'+
@@ -1825,11 +1861,11 @@ function watchRouteData(reference,renderId){
   else unsubscribe();
 }
 async function refreshRouteContent(expectedRenderId=routeRenderId){
-  const routeKey=location.hash||"#/";
+  const routeKey=routeKeyFromLocation();
   if(expectedRenderId!==routeRenderId||routeKey!==activeRouteKey)return;
   const parts=routeKey.replace(/^#\/?/,"").split("/");
   const routeName=parts[0]||"",arg=parts.slice(1).join("/");
-  const publicRoutes=new Set(["login","reg","faq","setup","out"]);
+  const publicRoutes=new Set(["","b","t","login","reg","faq","setup","out"]);
   if(firebaseReady&&!isRegisteredMember()&&!publicRoutes.has(routeName)){go();return;}
   const renderer=ROUTES[routeName]||idx,m=$("#m");
   if(!m)return;
@@ -1849,9 +1885,9 @@ async function refreshRouteContent(expectedRenderId=routeRenderId){
   }catch(error){console.error("No se pudo actualizar el contenido de la vista:",error);}
   finally{if(contentOnlyRenderId===expectedRenderId)contentOnlyRenderId=previous;}
 }
-let activeRouteKey=location.hash||"#/";
+let activeRouteKey=routeKeyFromLocation();
 let routeRenderId=0;
-function saveRouteScroll(route=location.hash||"#/"){
+function saveRouteScroll(route=routeKeyFromLocation()){
   try{sessionStorage.setItem(routeScrollKey(route),String(window.scrollY||0));}catch{}
 }
 let scrollSaveTimer=null;
@@ -1864,14 +1900,11 @@ addEventListener("pagehide",()=>{
   saveTopicDraftForRoute(activeRouteKey);
 });
 function restoreLastRoute(){
+  // Las URLs /b/... y /t/... ya conservan la ruta; / siempre debe abrir el índice.
   if(location.hash)return;
-  try{
-    const saved=localStorage.getItem(ROUTE_MEMORY_KEY);
-    if(saved&&saved.startsWith("#/"))location.hash=saved;
-  }catch{}
 }
 async function go(){
-  const routeKey=location.hash||"#/";
+  const routeKey=routeKeyFromLocation();
   const sameRoute=activeRouteKey===routeKey;
   if(sameRoute)saveRouteScroll(routeKey);
   else saveRouteScroll(activeRouteKey);
@@ -1886,12 +1919,15 @@ async function go(){
   const renderId=++routeRenderId;
   const parts=routeKey.replace(/^#\/?/,"").split("/");
   const r=parts[0]||"",a=parts.slice(1).join("/");
+  const indexableRoute=["","b","t","faq"].includes(r);
+  const routePath=routeKey==="#/"?"/":routeKey.slice(1);
+  setSeoMetadata(routePath,r==="b"?"Foros de MantiPobres":r==="t"?"Tema en MantiPobres":r==="faq"?"Ayuda — MantiPobres":"MantiPobres — Foro retro en español","Comunidad retro en español estilo BBS/Usenet.",indexableRoute);
   const m=$("#m");
   const accessState=moderationAccessState();
   if(firebaseReady&&r!=="out"&&accessState!=="ready"){
     setSuspendedShell(true);
     $("#moderationNotice").hidden=true;
-    $("#nav").innerHTML='<b>VERIFICANDO ACCESO...</b> · <a href="#/out">Cerrar sesión</a>';
+    $("#nav").innerHTML='<b>VERIFICANDO ACCESO...</b> · <a href="/out">Cerrar sesión</a>';
     m.innerHTML=accessState==="error"
       ?'<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, el contenido de la comunidad permanece oculto. Recarga la página o vuelve a iniciar sesión.</p><button type="button" onclick="location.reload()">Recargar</button></div>'
       :'<div class="moderationLoading">Comprobando el estado de tu cuenta antes de mostrar el foro...</div>';
@@ -1909,26 +1945,26 @@ async function go(){
     $("#tk").hidden=false;
     renderModerationNotice();
   }
-  const publicRoutes=new Set(["login","reg","faq","setup","out"]);
+  const publicRoutes=new Set(["","b","t","login","reg","faq","setup","out"]);
   if(firebaseReady&&!isRegisteredMember()&&!publicRoutes.has(r)){
     stopChatSubscription();
     $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=false;
     $("#chatShortcutDialog").hidden=true;
     $("#accountNotice").hidden=true;$("#moderationNotice").hidden=true;$("#ann").hidden=true;
-    $("#nav").innerHTML='🏠 <a href="#/">Inicio</a> ❓ <a href="#/faq">Ayuda</a> 🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>';
-    m.innerHTML='<section class="notice"><h2>🔒 Inicia sesión para acceder al foro</h2><p>Los temas, comentarios, imágenes, enlaces, archivos y el chat están disponibles únicamente para cuentas registradas.</p><p>La sesión de invitado no permite leer contenido de la comunidad.</p><p><a class="bt" href="#/login">Entrar a mi cuenta</a> <a class="bt" href="#/reg">Crear una cuenta gratis</a></p></section>';
+    $("#nav").innerHTML='🏠 <a href="/">Inicio</a> ❓ <a href="/faq">Ayuda</a> 🔑 <a href="/login">Entrar</a> 📝 <a href="/reg">Registrarse</a>';
+    m.innerHTML='<section class="notice"><h2>🔒 Inicia sesión para acceder al foro</h2><p>Los temas, comentarios, imágenes, enlaces, archivos y el chat están disponibles únicamente para cuentas registradas.</p><p>La sesión de invitado no permite leer contenido de la comunidad.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Crear una cuenta gratis</a></p></section>';
     return;
   }
   renderAccountNotice();
   $("#nav").innerHTML=
-    '🏠 <a href="#/">Índice</a> 📜 <a href="#/b/reglas">Reglas</a> ❓ <a href="#/faq">FAQ</a> '+
+    '🏠 <a href="/">Índice</a> 📜 <a href="/b/reglas">Reglas</a> ❓ <a href="/faq">FAQ</a> '+
     (Store.me()
-      ? '👤 <b><a href="#/u/'+encodeURIComponent(Store.me())+'">'+E(Store.me())+'</a></b> 🚪 <a href="#/out">Salir</a>'
-      : '🔑 <a href="#/login">Entrar</a> 📝 <a href="#/reg">Registrarse</a>')+
+      ? '👤 <b><a href="/u/'+encodeURIComponent(Store.me())+'">'+E(Store.me())+'</a></b> 🚪 <a href="/out">Salir</a>'
+      : '🔑 <a href="/login">Entrar</a> 📝 <a href="/reg">Registrarse</a>')+
     (isOwner()
-      ? ' 🛡 <b>OWNER</b> <a href="#/staff">Administración</a>'
-      : canManageStaff()?' 🛡 <a href="#/staff">Administración</a>':'')+
-    ' <span style="float:right"><a href="#/setup">⚙ Configuración</a></span>';
+      ? ' 🛡 <b>OWNER</b> <a href="/staff">Administración</a>'
+      : canManageStaff()?' 🛡 <a href="/staff">Administración</a>':'')+
+    ' <span style="float:right"><a href="/setup">⚙ Configuración</a></span>';
   m.innerHTML="Cargando...";
   $("#ann").hidden=!!r;
   try{
@@ -1954,11 +1990,11 @@ async function go(){
     }
     // Un visitante sin sesión no debe ver un error de reglas: necesita iniciar sesión.
     if(firebaseReady&&!isRegisteredMember()&&(z?.code==="permission-denied"||z?.code==="firestore/permission-denied")){
-      m.innerHTML='<section class="notice"><h2>🔒 ¡Ve todo iniciando sesión!</h2><p>Inicia sesión o crea una cuenta gratis para acceder a los temas, comentarios, imágenes, enlaces, archivos y al chat.</p><p><a class="bt" href="#/login">Entrar a mi cuenta</a> <a class="bt" href="#/reg">Registrarme gratis</a></p></section>';
+      m.innerHTML='<section class="notice"><h2>🔒 ¡Ve todo iniciando sesión!</h2><p>Inicia sesión o crea una cuenta gratis para acceder a los temas, comentarios, imágenes, enlaces, archivos y al chat.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Registrarme gratis</a></p></section>';
       return;
     }
     const detail=z?.message?String(z.message):z?.code?String(z.code):"Error desconocido";
-    m.innerHTML='<span class="err">Error: '+E(errText(z))+'</span><br><small>Detalle técnico: '+E(detail)+'</small><br><small>Revisa Firebase y las reglas: <a href="#/setup">ver instrucciones</a>.</small>';
+    m.innerHTML='<span class="err">Error: '+E(errText(z))+'</span><br><small>Detalle técnico: '+E(detail)+'</small><br><small>Revisa Firebase y las reglas: <a href="/setup">ver instrucciones</a>.</small>';
   }
 }
 
@@ -2133,7 +2169,7 @@ function renderChat(items){
     const ownMessage=configured?!!auth?.currentUser&&m.uid===auth.currentUser.uid:!!Store.me()&&m.uid===Store.me();
     const canEdit=!m.deleted&&ownMessage,canDelete=!m.deleted&&(isAdmin()||ownMessage);
     const messageText=m.deleted?deletedMessageText(m):(m.x||"");
-    const profileName=String(m.u||"Invitado"),profileLink=!profileName.startsWith("Invitado-")?`<a class="cmprofile" href="#/u/${encodeURIComponent(profileName)}">${E(profileName)}</a>`:`<b>${E(profileName)}</b>`;
+    const profileName=String(m.u||"Invitado"),profileLink=!profileName.startsWith("Invitado-")?`<a class="cmprofile" href="/u/${encodeURIComponent(profileName)}">${E(profileName)}</a>`:`<b>${E(profileName)}</b>`;
     return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead">${profileLink}${staffTagHtml(m.staffBadge)} · ${dt(m.ts)}</div><div class="cmtxt">${m.deleted?'<span class="deletedMessage">'+E(messageText)+'</span>':fmt(messageText)}</div>${media}${canEdit||canDelete?`<div class="cmtools">${canEdit?`<button type="button" data-chat-edit="${E(m.id)}">[editar]</button>`:""}${canDelete?`<button type="button" data-chat-del="${E(m.id)}">[borrar]</button>`:""}</div>`:""}</div></article>`;
   }).join("");
   bindExternalMediaFallback(box);
@@ -2304,7 +2340,7 @@ function applyOwnModerationSnapshot(uid,snapshot){
   moderationLoadedUid=uid;moderationLoadErrorUid="";
   renderModerationNotice();
   if(firebaseReady)refreshModerationAccess();
-  if(location.hash.startsWith("#/u/")&&firebaseReady&&!getActiveBanDetails())refreshRouteContent();
+  if(routeKeyFromLocation().startsWith("#/u/")&&firebaseReady&&!getActiveBanDetails())refreshRouteContent();
 }
 function failClosedModerationAccess(uid,error){
   if(uid!==(auth?.currentUser?.uid||""))return;
@@ -2312,7 +2348,7 @@ function failClosedModerationAccess(uid,error){
   moderationLoadErrorUid=uid;moderationLoadedUid="";
   stopChatSubscription();
   setSuspendedShell(true);
-  if(location.hash!=="#/out"&&$("#m")){
+  if(routeKeyFromLocation()!=="#/out"&&$("#m")){
     $("#m").innerHTML='<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, los foros, enlaces, archivos y el chat permanecen ocultos. Comprueba tu conexión y recarga la página.</p><button type="button" onclick="location.reload()">Recargar</button></div>';
   }
 }
@@ -2335,7 +2371,7 @@ function watchCurrentModeration(user){
   if(firebaseReady){
     stopChatSubscription();
     setSuspendedShell(true);
-    if(location.hash!=="#/out")go();
+    if(routeKeyFromLocation()!=="#/out")go();
   }
   if(!user||!db){moderationLoadedUid=uid;return;}
   const moderationRef=doc(db,"moderation",uid);
@@ -2360,7 +2396,7 @@ function updateAdminUI(){
 // Cabecera, reloj y routing
 $("#ban").textContent=`+${"-".repeat(46)}+\n| ${NAME.padEnd(44)} |\n| ${"BBS/USENET REVIVAL  *  CARRIER 56000  *  8N1".padEnd(44)} |\n+${"-".repeat(46)}+`;
 $("#nl").textContent=NAME;const ck=()=>{$("#clk").textContent=new Date().toLocaleString("es-UY");refreshModerationAccess();};ck();setInterval(ck,1000);
-$("#ft").innerHTML=(configured?"Modo: ONLINE (Firebase)":"Modo: LOCAL (demo, solo este navegador)")+` · <a href="#/setup">Configuración</a><br>Mejor visto con Netscape 4.7 / IE 6 a 800x600<br>MantiPobres · BBS/USENET Revival`;
+$("#ft").innerHTML=(configured?"Modo: ONLINE (Firebase)":"Modo: LOCAL (demo, solo este navegador)")+` · <a href="/setup">Configuración</a><br>Mejor visto con Netscape 4.7 / IE 6 a 800x600<br>MantiPobres · BBS/USENET Revival`;
 restoreLastRoute();
 addEventListener("hashchange",go);
 if(configured){await startFirebase();}else{setNetStatus("DEMO LOCAL",false);$("#chatCatbox").disabled=true;subscribeChat();}

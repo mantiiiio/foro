@@ -56,18 +56,59 @@ after(async () => {
   await testEnv?.cleanup();
 });
 
-test("las sesiones anónimas no pueden leer temas", async () => {
+test("visitas anónimas pueden leer temas y comentarios visibles, pero no contenido oculto ni datos privados", async () => {
   await seed({
-    "topics/topic-1": {
-      b: "gen", t: "Tema privado", u: "alice", uid: "alice",
+    "topics/topic-public": {
+      b: "gen", t: "Tema público", u: "alice", uid: "alice",
       ts: 1, lr: 1, lu: "alice", n: 0,
-      staffBadge: false, lastStaffBadge: false
-    }
+      staffBadge: false, lastStaffBadge: false,
+      moderationHidden: false, moderationHiddenUntil: null
+    },
+    "topics/topic-hidden": {
+      b: "gen", t: "Tema oculto", u: "alice", uid: "alice",
+      ts: 2, lr: 2, lu: "alice", n: 0,
+      staffBadge: false, lastStaffBadge: false,
+      moderationHidden: true, moderationHiddenUntil: null
+    },
+    "posts/post-public": {
+      tp: "topic-public", uid: "alice", u: "alice",
+      x: "Respuesta pública", ts: 3, staffBadge: false,
+      moderationHidden: false, moderationHiddenUntil: null
+    },
+    "posts/post-hidden": {
+      tp: "topic-public", uid: "alice", u: "alice",
+      x: "Respuesta oculta", ts: 4, staffBadge: false,
+      moderationHidden: true, moderationHiddenUntil: null
+    },
+    "users/alice": { u: "alice", ts: 1 },
+    "chatMessages/message-1": {
+      uid: "alice", u: "alice", x: "No público", ts: 1,
+      avatarUrl: "", staffBadge: false, media: null
+    },
+    "topics/topic-public/ratings/vote-1": { uid: "alice", stars: 5, ts: 1 }
   });
 
   const guest = account("guest", { provider: "anonymous" });
-  await assertFails(getDoc(doc(guest, "topics", "topic-1")));
+  const publicTopics = query(collection(guest, "topics"), where("moderationHidden", "==", false));
+  const publicPosts = query(collection(guest, "posts"), where("moderationHidden", "==", false));
+
+  await assertSucceeds(getDoc(doc(guest, "topics", "topic-public")));
+  await assertSucceeds(getDocs(publicTopics));
+  await assertFails(getDoc(doc(guest, "topics", "topic-hidden")));
   await assertFails(getDocs(collection(guest, "topics")));
+  await assertSucceeds(getDocs(publicPosts));
+  await assertFails(getDoc(doc(guest, "posts", "post-hidden")));
+  await assertFails(getDoc(doc(guest, "users", "alice")));
+  await assertFails(getDoc(doc(guest, "chatMessages", "message-1")));
+  await assertFails(getDoc(doc(guest, "topics", "topic-public", "ratings", "vote-1")));
+
+  const topicWrite = {
+    b: "gen", t: "No debe publicarse", u: "guest", uid: "guest",
+    ts: 5, lr: 5, lu: "guest", n: 0,
+    staffBadge: false, lastStaffBadge: false,
+    moderationHidden: false, moderationHiddenUntil: null
+  };
+  await assertFails(setDoc(doc(guest, "topics", "guest-topic"), topicWrite));
 });
 
 test("un moderador puede editar el texto, pero no apropiarse del UID de una respuesta", async () => {
@@ -96,7 +137,8 @@ test("solo se pueden crear temas en categorías publicadas", async () => {
   const valid = {
     b: "gen", t: "Tema válido", u: "alice", uid: "alice",
     ts: 2, lr: 2, lu: "alice", n: 0,
-    staffBadge: false, lastStaffBadge: false
+    staffBadge: false, lastStaffBadge: false,
+    moderationHidden: false, moderationHiddenUntil: null
   };
 
   await assertSucceeds(setDoc(doc(alice, "topics", "valid-topic"), valid));
@@ -164,7 +206,8 @@ test("el contador solo aumenta cuando se crea una respuesta real en la misma ope
   });
   batch.set(doc(alice, "posts", "reply-1"), {
     tp: "topic-1", u: "alice", uid: "alice",
-    x: "Respuesta real", ts: 2, staffBadge: false
+    x: "Respuesta real", ts: 2, staffBadge: false,
+    moderationHidden: false, moderationHiddenUntil: null
   });
   batch.update(topicRef, {
     lr: 2, lu: "alice", n: 1, lastStaffBadge: false,

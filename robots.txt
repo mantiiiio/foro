@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /reg
+Disallow: /out
+Disallow: /setup
+Disallow: /staff
+Disallow: /u/
+Disallow: /n/
+
+Sitemap: https://mantipobres.web.app/sitemap.xml

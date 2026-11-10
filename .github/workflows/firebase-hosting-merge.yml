@@ -42,6 +42,9 @@ jobs:
       - name: Deploy Firestore rules before the live UI
         run: firebase deploy --only firestore:rules --project foro-66dd5 --non-interactive
 
+      - name: Backfill public visibility flags without un-hiding active moderation hides
+        run: npm run migrate:public-visibility
+
       - name: Deploy live site
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
