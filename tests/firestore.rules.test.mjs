@@ -96,8 +96,7 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
   await assertSucceeds(getDoc(doc(guest, "topics", "topic-public")));
   await assertSucceeds(getDocs(publicTopics));
   await assertFails(getDoc(doc(guest, "topics", "topic-hidden")));
-  const unfilteredTopics = await getDocs(collection(guest, "topics"));
-  assert.deepEqual(unfilteredTopics.docs.map(item => item.id).sort(), ["topic-public"]);
+  await assertFails(getDocs(collection(guest, "topics")));
   await assertSucceeds(getDocs(publicPosts));
   const unfilteredPosts = await getDocs(collection(guest, "posts"));
   assert.deepEqual(unfilteredPosts.docs.map(item => item.id).sort(), ["post-public"]);
