@@ -40,7 +40,7 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORO_66DD5 }}
 
       - name: Deploy Firestore rules before the live UI
-        run: firebase deploy --only firestore:rules --project foro-66dd5 --non-interactive
+        run: firebase deploy --only firestore:rules,firestore:indexes --project foro-66dd5 --non-interactive
 
       - name: Deploy live site
         uses: FirebaseExtended/action-hosting-deploy@v0

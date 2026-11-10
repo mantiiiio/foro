@@ -461,6 +461,7 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
         && shortString(request.resource.data.b, 24)
+        && request.resource.data.b in ['gen','ot','pc','jue','sug','reglas']
         && shortString(request.resource.data.t, 100)
         && automodSafe(request.resource.data.t)
         && shortString(request.resource.data.u, 16)

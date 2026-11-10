@@ -14,6 +14,7 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
   writeBatch
@@ -84,6 +85,25 @@ test("un moderador puede editar el texto, pero no apropiarse del UID de una resp
   await assertFails(updateDoc(postRef, { uid: "mod-1" }));
   await assertFails(updateDoc(postRef, { staffBadge: true, uid: "mod-1" }));
   await assertSucceeds(updateDoc(postRef, { x: "Texto revisado por moderación" }));
+});
+
+test("solo se pueden crear temas en categorías publicadas", async () => {
+  await seed({
+    "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 }
+  });
+
+  const alice = account("alice");
+  const valid = {
+    b: "gen", t: "Tema válido", u: "alice", uid: "alice",
+    ts: 2, lr: 2, lu: "alice", n: 0,
+    staffBadge: false, lastStaffBadge: false
+  };
+
+  await assertSucceeds(setDoc(doc(alice, "topics", "valid-topic"), valid));
+  await assertFails(setDoc(doc(alice, "topics", "hidden-board-topic"), {
+    ...valid,
+    b: "categoria-inventada"
+  }));
 });
 
 test("el contador solo aumenta cuando se crea una respuesta real en la misma operación", async () => {
