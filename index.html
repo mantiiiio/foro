@@ -926,7 +926,7 @@ const D = {
   async reply(t,x){
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     if(lastMs&&Date.now()-lastMs<3000)throw new Error("POST_RATE_LIMIT");
-    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,staffBadge,x,ts:n});batch.update(topicRef,{lr:n,lu:u,lastStaffBadge:staffBadge,n:increment(1)});await batch.commit();
+    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,staffBadge,x,ts:n});batch.update(topicRef,{lr:n,lu:u,lastStaffBadge:staffBadge,n:increment(1),lastCreatedPostId:postRef.id});await batch.commit();
   },
   async editPost(id,x){requireVerifiedMember("editar tus publicaciones");await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
   async members(){try{const s=await getCountFromServer(collection(db,"users"));return s.data().count;}catch(error){console.warn("No se pudo cargar el contador de miembros; se muestra 0 temporalmente.",error);return 0;}},

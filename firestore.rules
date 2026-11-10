@@ -326,8 +326,8 @@ service cloud.firestore {
     }
 
     match /moderation/{uid} {
-      allow get: if signedIn() && (request.auth.uid == uid || isStaff());
-      allow list: if isStaff();
+      allow get: if signedIn() && (request.auth.uid == uid || (isStaff() && canParticipate()));
+      allow list: if isStaff() && canParticipate();
       allow create: if (canModerateTarget(uid) && validModerationRecord()) || validAutoWarningCreate(uid);
       allow update: if (canModerateTarget(uid) && validModerationUpdate()) || validAutoWarningUpdate(uid);
       allow delete: if false;
@@ -336,6 +336,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if canReadCommunity();
       allow create: if registered()
+        && canParticipate()
         && allowedRegistrationEmail()
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['u', 'ts', 'rulesAcceptedAt'])
@@ -346,6 +347,7 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.u)).data.uid == request.auth.uid;
       allow update: if (
         registered()
+        && canParticipate()
         && request.auth.uid == uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avatarUrl', 'avatarPath'])
         && request.resource.data.avatarUrl is string
@@ -364,13 +366,14 @@ service cloud.firestore {
           )
         )
       );
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() && canParticipate();
     }
 
     // Reserva pública del nombre de usuario; nunca almacena el correo privado.
     match /usernames/{username} {
       allow read: if canReadCommunity();
       allow create: if registered()
+        && canParticipate()
         && allowedRegistrationEmail()
         && request.resource.data.keys().hasOnly(['u', 'uid', 'ts'])
         && request.resource.data.u == username
@@ -378,7 +381,7 @@ service cloud.firestore {
         && request.resource.data.ts is int
         && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid))
         && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == username;
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAdmin() && canParticipate();
     }
 
 
@@ -389,9 +392,9 @@ service cloud.firestore {
 
     // Roles persistentes: nadie puede otorgarse un rol sin una invitación válida.
     match /staff/{uid} {
-      allow get: if signedIn() && (request.auth.uid == uid || isStaff());
+      allow get: if signedIn() && (request.auth.uid == uid || (isStaff() && canParticipate()));
       allow list: if canManageStaff();
-      allow create: if verifiedMember()
+      allow create: if verifiedMember() && canParticipate()
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['role','grantedAt','grantedBy','inviteHash'])
         && request.resource.data.role in ['co_owner','admin','moderator','helper']
@@ -404,12 +407,12 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/staffInvites/$(request.resource.data.inviteHash)).data.role == request.resource.data.role
         && getAfter(/databases/$(database)/documents/staffInvites/$(request.resource.data.inviteHash)).data.createdBy == request.resource.data.grantedBy;
       allow update: if false;
-      allow delete: if isOwner() || (isAdmin() && resource.data.role in ['moderator','helper']);
+      allow delete: if (isOwner() && canParticipate()) || (isAdmin() && canParticipate() && resource.data.role in ['moderator','helper']);
     }
 
     // Solo el personal administrador emite invitaciones. El ID del documento es SHA-256 del código.
     match /staffInvites/{tokenHash} {
-      allow get: if registered();
+      allow get: if registered() && canParticipate();
       allow list: if canManageStaff();
       allow create: if canIssueStaffRole(request.resource.data.role)
         && request.resource.data.keys().hasOnly(['role','description','status','createdBy','createdAt','expiresAt'])
@@ -425,6 +428,7 @@ service cloud.firestore {
         && request.resource.data.expiresAt <= request.time + duration.value(7, 'd');
       allow update: if (
         verifiedMember()
+        && canParticipate()
         && resource.data.status == 'available'
         && resource.data.expiresAt > request.time
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','claimedBy','claimedAt'])
@@ -472,14 +476,20 @@ service cloud.firestore {
       ) || (
         verifiedMember()
         && canParticipate()
-        && resource.data.b != 'reglas'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lr','lu','n','lastStaffBadge'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lr','lu','n','lastStaffBadge','lastCreatedPostId'])
         && request.resource.data.n == resource.data.n + 1
         && request.resource.data.lr is int
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && request.resource.data.lu == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u
         && request.resource.data.lastStaffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
         && shortString(request.resource.data.lu, 16)
+        && request.resource.data.lastCreatedPostId is string
+        && !exists(/databases/$(database)/documents/posts/$(request.resource.data.lastCreatedPostId))
+        && existsAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastCreatedPostId))
+        && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastCreatedPostId)).data.tp == topicId
+        && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastCreatedPostId)).data.uid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastCreatedPostId)).data.ts == request.resource.data.lr
+        && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastCreatedPostId)).data.staffBadge == request.resource.data.lastStaffBadge
       ) || (
         registered()
         && canParticipate()
