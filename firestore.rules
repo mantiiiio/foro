@@ -73,7 +73,8 @@ service cloud.firestore {
       return signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
     function isPubliclyVisibleContent() {
-      return resource.data.get('moderationHidden', false) == false;
+      return resource.data.moderationHidden == false
+        && resource.data.moderationHiddenUntil == null;
     }
     function canModerateTarget(uid) {
       return isStaff()
