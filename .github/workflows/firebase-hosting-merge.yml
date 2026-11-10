@@ -15,6 +15,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js for validation and Firebase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate application JavaScript syntax
+        run: |
+          sed -n '/<script type="module">/,/<\\/script>/p' index.html | sed '1d;$d' > /tmp/mantipobres-app.mjs
+          node --check /tmp/mantipobres-app.mjs
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Authenticate for Firestore rules deployment
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORO_66DD5 }}
+
+      - name: Deploy Firestore rules before the live UI
+        run: firebase deploy --only firestore:rules --project foro-66dd5 --non-interactive
+
       - name: Deploy live site
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -23,19 +44,3 @@ jobs:
           channelId: live
           projectId: foro-66dd5
           target: main
-
-      - name: Authenticate for Firestore rules deployment
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORO_66DD5 }}
-
-      - name: Set up Node.js for Firebase CLI
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install Firebase CLI
-        run: npm install --global firebase-tools
-
-      - name: Deploy Firestore rules automatically
-        run: firebase deploy --only firestore:rules --project foro-66dd5 --non-interactive

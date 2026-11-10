@@ -949,6 +949,10 @@ const D = {
       tx.set(ref,data);
       result=data;
     });
+    if(result.status==="permanent"){
+      try{await D.setModeratedContentVisibility(uid,true,null);}
+      catch(error){console.error("No se pudo ocultar el contenido tras el tercer aviso automático:",error);}
+    }
     currentModerationData=result;renderModerationNotice();return result;
   },
   async warnUser(uid,reason){
@@ -966,6 +970,10 @@ const D = {
       result={warnings,warningCount:warnings.length,status:permanent?"permanent":(before.status||"active"),banUntil:permanent?null:(before.banUntil||null),banReason:permanent?"Tercer aviso: ban permanente":(before.banReason||""),updatedAt:Date.now(),lastActionBy:auth.currentUser.uid};
       tx.set(ref,result);
     });
+    if(result.status==="permanent"){
+      try{await D.setModeratedContentVisibility(uid,true,null);}
+      catch(error){console.error("No se pudo ocultar el contenido tras el tercer aviso del staff:",error);}
+    }
     return result;
   },
   async setModeratedContentVisibility(uid,hidden,until=null){
@@ -1071,11 +1079,22 @@ const D = {
   },
   async del(k,a,b,isOriginal=false){
     if(k==="t")return D.deleteTopic(a);
-    const ref=doc(db,"posts",a),snapshot=await getDoc(ref);if(!snapshot.exists())return;
-    const post=snapshot.data();if(post.deleted)return;
-    const actor=isAdmin()?"administrador":isStaff()?"moderador":"usuario";
-    await updateDoc(ref,{x:"",deleted:true,deletedBy:actor,deletedByUid:auth.currentUser.uid,deletedAt:Date.now(),deletedQuoteHash:quoteFingerprint(post.u||"",post.x||"")});
-    if(!isOriginal){const topicRef=doc(db,"topics",b),topicSnap=await getDoc(topicRef);if(topicSnap.exists())await updateDoc(topicRef,{n:Math.max(0,(topicSnap.data().n||0)-1)});}
+    requireRegisteredMember("eliminar una publicación");await assertCurrentUserNotBanned();
+    const ref=doc(db,"posts",a),topicRef=doc(db,"topics",b);
+    await runTransaction(db,async tx=>{
+      const snapshot=await tx.get(ref);
+      if(!snapshot.exists()||snapshot.data().deleted)return;
+      const post=snapshot.data();
+      if(!isStaff()&&post.uid!==auth.currentUser.uid)throw new Error("Solo puedes eliminar tus propias publicaciones.");
+      const topicSnap=isOriginal?null:await tx.get(topicRef);
+      if(!isOriginal&&topicSnap?.exists()&&post.tp!==b)throw new Error("La publicación no pertenece a este tema.");
+      const actor=isAdmin()?"administrador":isStaff()?"moderador":"usuario";
+      tx.update(ref,{x:"",deleted:true,deletedBy:actor,deletedByUid:auth.currentUser.uid,deletedAt:Date.now(),deletedQuoteHash:quoteFingerprint(post.u||"",post.x||"")});
+      if(!isOriginal&&topicSnap?.exists()){
+        const topic=topicSnap.data();
+        tx.update(topicRef,{n:Math.max(0,(topic.n||0)-1),lastDeletedPostId:a});
+      }
+    });
   },
   async deleteTopic(id){
     requireRegisteredMember("eliminar un tema");await assertCurrentUserNotBanned();
