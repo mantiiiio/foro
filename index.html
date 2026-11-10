@@ -1290,6 +1290,7 @@ async function thr(m,id){
       ? '<form id="rf" class="commentForm"><b>✍️ Añadir un comentario</b><br><textarea id="rx" rows="5" style="width:100%" maxlength="6000" placeholder="Escribe tu comentario o respuesta..."></textarea><br><button class="bt">Publicar comentario</button> <span id="er" class="err"></span></form>'
       : '<p class="notice">'+(locked?"Este foro es de solo lectura: publica solo el staff.":!name?'Debes <a href="#/login">iniciar sesión</a> para comentar.':'Para comentar, verifica tu correo desde el aviso superior.')+'</p>');
   bindTopicGallery(m,t.gallery);
+  bindExternalMediaFallback(m);
   $("#deleteWholeTopic")?.addEventListener("click",async event=>{
     event.preventDefault();
     if(!confirm("¿Eliminar definitivamente este tema, su publicación inicial, todos sus comentarios y sus valoraciones? Esta acción no se puede deshacer."))return;
@@ -2009,6 +2010,20 @@ function getProviderEmbed(url){
 
   return null;
 }
+function bindExternalMediaFallback(root){
+  if(!root?.querySelectorAll)return;
+  root.querySelectorAll("img[data-catbox-mirror]").forEach(image=>{
+    image.addEventListener("error",()=>{
+      if(!image.dataset.mirrorTried){
+        image.dataset.mirrorTried="1";
+        const mirror=safeWebUrl(image.dataset.catboxMirror||"");
+        if(mirror){image.src=mirror;return;}
+      }
+      image.closest(".cmImageLink")?.classList.add("cmImageFailed");
+      image.remove();
+    });
+  });
+}
 function renderExternalUrlPreview(rawUrl){
   const safe=safeWebUrl(rawUrl);
   if(!safe)return "";
@@ -2019,9 +2034,7 @@ function renderExternalUrlPreview(rawUrl){
   const legacyCatboxMirror=url.hostname.toLowerCase()==="files.catbox.moe"
     ?"https://files.pixstash.moe"+url.pathname+url.search
     :"";
-  const imageErrorHandler=legacyCatboxMirror
-    ? "onerror=\"if(!this.dataset.mirrorTried){this.dataset.mirrorTried='1';this.src='"+E(legacyCatboxMirror)+"';}else{this.closest(&#39;.cmImageLink&#39;).classList.add(&#39;cmImageFailed&#39;);this.remove();}\""
-    : "onerror=\"this.closest(&#39;.cmImageLink&#39;).classList.add(&#39;cmImageFailed&#39;);this.remove()\"";
+  const legacyMirrorAttr=legacyCatboxMirror?' data-catbox-mirror="'+E(legacyCatboxMirror)+'"':"";
   const embed=getProviderEmbed(url);
   if(embed){
     return '<figure class="cmEmbed"><iframe src="'+E(embed.src)+'" title="Reproductor de '+E(embed.name)+'" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="height:'+embed.height+'px"></iframe><figcaption><a href="'+href+'" target="_blank" rel="nofollow noopener noreferrer">Abrir en '+E(embed.name)+'</a></figcaption></figure>';
@@ -2029,7 +2042,7 @@ function renderExternalUrlPreview(rawUrl){
 
   const kind=inferExternalMediaKind(url);
   if(kind==="image"&&url.protocol==="https:"){
-    return '<a class="cmImageLink" href="'+href+'" target="_blank" rel="nofollow noopener noreferrer"><img class="cmmedia" src="'+href+'" alt="Imagen o GIF externo · '+host+'" loading="lazy" referrerpolicy="no-referrer" '+imageErrorHandler+'></a>';
+    return '<a class="cmImageLink" href="'+href+'" target="_blank" rel="nofollow noopener noreferrer"><img class="cmmedia" src="'+href+'" alt="Imagen o GIF externo · '+host+'" loading="lazy" referrerpolicy="no-referrer" '+legacyMirrorAttr+'></a>';
   }
   if(kind==="video"&&url.protocol==="https:"){
     return '<video class="cmvideo" controls playsinline preload="metadata"><source src="'+href+'"></video><div class="cmExternalLink"><a href="'+href+'" target="_blank" rel="nofollow noopener noreferrer">Abrir vídeo en '+host+'</a></div>';
@@ -2059,6 +2072,7 @@ function renderChat(items){
     const profileName=String(m.u||"Invitado"),profileLink=!profileName.startsWith("Invitado-")?`<a class="cmprofile" href="#/u/${encodeURIComponent(profileName)}">${E(profileName)}</a>`:`<b>${E(profileName)}</b>`;
     return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead">${profileLink}${staffTagHtml(m.staffBadge)} · ${dt(m.ts)}</div><div class="cmtxt">${m.deleted?'<span class="deletedMessage">'+E(messageText)+'</span>':fmt(messageText)}</div>${media}${canEdit||canDelete?`<div class="cmtools">${canEdit?`<button type="button" data-chat-edit="${E(m.id)}">[editar]</button>`:""}${canDelete?`<button type="button" data-chat-del="${E(m.id)}">[borrar]</button>`:""}</div>`:""}</div></article>`;
   }).join("");
+  bindExternalMediaFallback(box);
   box.querySelectorAll("[data-chat-edit]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatEdit);if(!item)return;const edited=prompt("Edita tu mensaje del chat:",item.x||"");if(edited===null)return;if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}btn.disabled=true;try{if(await autoModerationGate(edited,"chat")){btn.disabled=false;return;}await Store.chatEdit(item.id,edited);}catch(z){alert(errText(z));btn.disabled=false;}}));
   box.querySelectorAll("[data-chat-del]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatDel);if(!item||!confirm("¿Borrar este mensaje del chat?"))return;try{await Store.chatDelete(item.id,item.media?.path||null);}catch(z){alert(errText(z));}}));
   if(nearBottom)box.scrollTop=box.scrollHeight;
