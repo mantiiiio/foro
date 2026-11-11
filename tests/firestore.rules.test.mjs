@@ -22,6 +22,7 @@ import {
 } from "firebase/firestore";
 
 const PROJECT_ID = "demo-mantipobres-rules";
+const OWNER_UID = "YgTAVFNclBgScVybW82xE0jKJg32";
 let testEnv;
 
 function account(uid, { verified = true, provider = "password" } = {}) {
@@ -179,6 +180,43 @@ test("solo se pueden crear temas en categorías publicadas", async () => {
     ...valid,
     b: "categoria-inventada"
   }));
+});
+
+test("solo el OWNER puede crear temas en Avisos del Staff y Nuevo proyecto", async () => {
+  await seed({
+    [`users/${OWNER_UID}`]: { u: "propietario", ts: 1, rulesAcceptedAt: 1 },
+    "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 },
+    "users/admin-1": { u: "admin", ts: 1, rulesAcceptedAt: 1 },
+    "staff/admin-1": { role: "admin" }
+  });
+
+  const owner = account(OWNER_UID);
+  const alice = account("alice");
+  const admin = account("admin-1");
+
+  function topicPayload(board, uid, username, staffBadge) {
+    return {
+      b: board, t: "Publicación oficial", u: username, uid,
+      ts: 2, lr: 2, lu: username, n: 0,
+      staffBadge, lastStaffBadge: staffBadge,
+      moderationHidden: false, moderationHiddenUntil: null
+    };
+  }
+
+  for (const board of ["avisos", "proyecto"]) {
+    await assertSucceeds(setDoc(
+      doc(owner, "topics", "owner-" + board),
+      topicPayload(board, OWNER_UID, "propietario", true)
+    ));
+    await assertFails(setDoc(
+      doc(alice, "topics", "member-" + board),
+      topicPayload(board, "alice", "alice", false)
+    ));
+    await assertFails(setDoc(
+      doc(admin, "topics", "admin-" + board),
+      topicPayload(board, "admin-1", "admin", true)
+    ));
+  }
 });
 
 test("la automoderación bloquea insultos dirigidos en el propio servidor", async () => {
