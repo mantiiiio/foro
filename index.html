@@ -354,7 +354,7 @@ input,textarea,select{max-width:100%}
   <marquee id="tk" scrollamount="4">&#9733; Bienvenido a MantiPobres &#9733; Regístrate para publicar &#9733; Respeta las reglas &#9733; Chat en vivo en la columna derecha &#9733;</marquee>
 
   <!-- ANUNCIOS EDITABLES A MANO: duplica los bloques .an para añadir avisos -->
-  <div id="ann"><h3>📢 ANUNCIOS DEL STAFF</h3>
+  <div id="ann"><h3> ANUNCIOS DEL STAFF</h3>
     <div class="an"><span class="nw">¡NUEVO!</span> <span class="tg">PROYECTO</span> <b>Nombre de tu proyecto</b> <small>(09/11/2026)</small><br>Cuenta aquí de qué trata, qué necesitas y dónde encontrarlo. <a href="#">Más información</a></div>
     <div class="an"><span class="tg">AVISO</span> <b>Normas básicas</b><br>Respeto, nada de spam y un tema por hilo.</div>
   </div>
@@ -370,14 +370,14 @@ input,textarea,select{max-width:100%}
 <!-- COLUMNA DERECHA: CHAT EN VIVO -->
 <aside class="sd" id="sr">
   <section id="chatBox" aria-label="Chat en vivo">
-    <div id="chatHead"><span>💬 CHAT EN VIVO</span><div class="chatHeadActions"><button type="button" id="chatShortcuts" title="Ver atajos del chat" aria-label="Ver atajos del chat" aria-haspopup="dialog" aria-controls="chatShortcutDialog">?</button><button type="button" id="chatExpand" title="Ampliar chat" aria-expanded="false">⛶ Ampliar</button></div></div>
+    <div id="chatHead"><span> CHAT EN VIVO</span><div class="chatHeadActions"><button type="button" id="chatShortcuts" title="Ver atajos del chat" aria-label="Ver atajos del chat" aria-haspopup="dialog" aria-controls="chatShortcutDialog">?</button><button type="button" id="chatExpand" title="Ampliar chat" aria-expanded="false">⛶ Ampliar</button></div></div>
     <div id="chatState">Conectando al servidor...</div>
     <div id="chatMessages" aria-live="polite"><div class="chatEmpty">Conectando...</div></div>
     <form class="chatForm" id="chatForm">
       <textarea id="chatText" maxlength="1500" placeholder="Escribe un mensaje... (Enter para enviar · Shift+Enter para nueva línea)" aria-label="Mensaje de chat"></textarea>
       <div class="chatActions">
         <button type="submit" id="chatSend">Enviar</button>
-        <button type="button" id="chatCatbox" title="Seleccionar y subir un archivo desde tu dispositivo">📎 Adjuntar archivo</button>
+        <button type="button" id="chatCatbox" title="Seleccionar y subir un archivo desde tu dispositivo"> Adjuntar archivo</button>
       </div>
       <div class="chatHint" id="chatHint">Enter: enviar · Shift+Enter: nueva línea · pulsa ? para ver todos los atajos.</div>
     </form>
@@ -390,7 +390,7 @@ input,textarea,select{max-width:100%}
       <p class="profilePhotoStatus" id="chatCatboxStatus">Se sube a Catbox. Si está caído, pulsa «Abrir mirror alternativo», sube el archivo allí y pega aquí el enlace que te devuelva.</p>
     </form>
     <details class="chatAdmin" id="chatAdmin" hidden>
-      <summary>⚙ Panel de administración</summary>
+      <summary> Panel de administración</summary>
       <p id="chatAdminInfo">Sesión de administrador verificada.</p>
       <button type="button" id="chatClear">Marcar mensajes del chat como eliminados</button>
     </details>
@@ -399,7 +399,7 @@ input,textarea,select{max-width:100%}
 
 <div id="chatShortcutDialog" hidden>
   <section id="chatShortcutPanel" role="dialog" aria-modal="true" aria-labelledby="chatShortcutHeading">
-    <div id="chatShortcutTitle"><b id="chatShortcutHeading">⌨ ATAJOS DEL CHAT</b><button type="button" id="chatShortcutClose" aria-label="Cerrar ayuda">×</button></div>
+    <div id="chatShortcutTitle"><b id="chatShortcutHeading"> ATAJOS DEL CHAT</b><button type="button" id="chatShortcutClose" aria-label="Cerrar ayuda">×</button></div>
     <div class="shortcutBody">
       <table class="shortcutTable"><tr><th>Tecla</th><th>Acción</th></tr>
         <tr><td><kbd>Enter</kbd></td><td>Enviar el mensaje.</td></tr>
@@ -409,7 +409,7 @@ input,textarea,select{max-width:100%}
         <tr><td><kbd>?</kbd></td><td>Abrir esta ventana de ayuda (cuando no estás escribiendo).</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Cerrar esta ayuda o salir del chat ampliado.</td></tr>
       </table>
-      <p><b>Acceso:</b> debes iniciar sesión con una cuenta registrada para ver y usar el chat. Los mensajes, enlaces y archivos no se muestran a visitantes anónimos. 📎 Adjuntar archivo permite subir a Catbox y compartir el enlace dentro del chat. ⛶ Ampliar abre el chat en pantalla grande.</p>
+      <p><b>Acceso:</b> debes iniciar sesión con una cuenta registrada para ver y usar el chat. Los mensajes, enlaces y archivos no se muestran a visitantes anónimos.  Adjuntar archivo permite subir a Catbox y compartir el enlace dentro del chat. ⛶ Ampliar abre el chat en pantalla grande.</p>
       <p><small>En móviles, puedes usar los botones de la pantalla. Durante la composición de texto, Enter respeta Shift+Enter y las teclas especiales del teclado.</small></p>
       <div style="text-align:right"><button type="button" id="chatShortcutDone">Entendido</button></div>
     </div>
@@ -674,7 +674,7 @@ function renderBannedAccess(m,ban){
     ?'<div class="banMeta"><b>Tu suspensión termina:</b> '+E(ban.until?dt(ban.until):"Fecha no disponible; consulta al staff")+'</div>'
     :'<div class="banMeta"><b>Tu suspensión termina:</b> Permanente</div>';
   m.innerHTML='<section class="banAccessPanel" role="alert" aria-live="assertive">'
-    +'<h2>⛔ TU CUENTA ESTÁ SUSPENDIDA</h2>'
+    +'<h2> TU CUENTA ESTÁ SUSPENDIDA</h2>'
     +'<div class="banMeta banWarnings"><b>Tus avisos:</b> '+ban.warningCount+'/3'
     +(history?'<ol class="moderationHistory">'+history+'</ol>':'<p>No hay avisos previos registrados.</p>')+'</div>'
     +'<div class="banMeta"><b>Por qué se te baneó:</b><br>'+E(ban.reason)+'</div>'
@@ -719,11 +719,11 @@ function renderModerationNotice(){
   const expiredTemp=data.status==="temporary"&&until&&until.getTime()<=Date.now();
   const warnings=Array.isArray(data.warnings)?data.warnings:[];
   if(data.status==="permanent"){
-    box.hidden=false;box.innerHTML="<strong>⛔ BAN PERMANENTE</strong><br>Motivo: "+E(data.banReason||"Incumplimiento de las normas.")+"<br>Avisos acumulados: "+warnings.length+"/3. Contacta con el staff si crees que fue un error.";
+    box.hidden=false;box.innerHTML="<strong> BAN PERMANENTE</strong><br>Motivo: "+E(data.banReason||"Incumplimiento de las normas.")+"<br>Avisos acumulados: "+warnings.length+"/3. Contacta con el staff si crees que fue un error.";
   }else if(activeTemp){
-    box.hidden=false;box.innerHTML="<strong>⏳ CUENTA SUSPENDIDA TEMPORALMENTE</strong><br>Hasta: "+E(dt(until))+"<br>Motivo: "+E(data.banReason||"Incumplimiento de las normas.")+"<br>Avisos: "+warnings.length+"/3.";
+    box.hidden=false;box.innerHTML="<strong> CUENTA SUSPENDIDA TEMPORALMENTE</strong><br>Hasta: "+E(dt(until))+"<br>Motivo: "+E(data.banReason||"Incumplimiento de las normas.")+"<br>Avisos: "+warnings.length+"/3.";
   }else if(warnings.length){
-    box.hidden=false;box.innerHTML="<strong>⚠ AVISOS DE MODERACIÓN: "+warnings.length+"/3</strong><br>"+(expiredTemp?"Tu suspensión temporal terminó. ":"")+"El tercer aviso genera un ban permanente. Último motivo: "+E(warnings[warnings.length-1].reason||"Normas del foro")+".";
+    box.hidden=false;box.innerHTML="<strong> AVISOS DE MODERACIÓN: "+warnings.length+"/3</strong><br>"+(expiredTemp?"Tu suspensión temporal terminó. ":"")+"El tercer aviso genera un ban permanente. Último motivo: "+E(warnings[warnings.length-1].reason||"Normas del foro")+".";
   }else{
     box.hidden=true;box.innerHTML="";
   }
@@ -768,7 +768,7 @@ async function loadCurrentStaffRole(user){
 }
 const isRegisteredMember = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous);
 const isAnonymousForumVisitor = () => !!(configured && auth?.currentUser?.isAnonymous);
-const topicLoginGateHtml = '<div class="topicLoginGate"><a href="/login">🔒 INICIA SESIÓN</a></div>';
+const topicLoginGateHtml = '<div class="topicLoginGate"><a href="/login"> INICIA SESIÓN</a></div>';
 const fmtTopic = value => {
   if(!isAnonymousForumVisitor())return fmt(value);
   return String(value ?? "").split("\n").map(line => {
@@ -1294,9 +1294,9 @@ async function idx(m){
   const [T,n]=await Promise.all([Store.topics(),isRegisteredMember()?Store.members():Promise.resolve(null)]);
   setSeoMetadata("/","MantiPobres — Foro retro en español","Foro retro en español estilo BBS/Usenet. Conversaciones, ayuda y comunidad.",true);
   let h=`<table><tr><th colspan="2">Foro</th><th width="60" class="c">Temas</th><th width="70" class="c">Mensajes</th><th width="200">Último mensaje</th></tr>`;
-  BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"📌":"📁"}</td><td><a href="/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
+  BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"":""}</td><td><a href="/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
   const recent=[...T].sort(compareTopicsStaffFirst).slice(0,15);
-  m.innerHTML=h+`</table><table><tr><th colspan="3">🕘 TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td>💬 <a href="/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. ${n===null?"Inicia sesión para consultar los miembros registrados.":`Hay <b>${n}</b> miembros registrados.`}</small></td></tr></table>`;
+  m.innerHTML=h+`</table><table><tr><th colspan="3"> TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td> <a href="/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. ${n===null?"Inicia sesión para consultar los miembros registrados.":`Hay <b>${n}</b> miembros registrados.`}</small></td></tr></table>`;
   if(configured)watchRouteData(query(collection(db,"topics"),where("moderationHidden","==",false)),routeRenderId);
 }
 const BOARD_TOPICS_PER_PAGE=12;
@@ -1325,7 +1325,7 @@ async function brd(m,id){
     const pagination=renderPagination(pageCount);
     m.innerHTML=rulesIntro+`<p><a href="/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${(!configured||isRegisteredMember())&&canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="/n/${id}">Nuevo tema</a>`:""}</p>`+
       pagination+
-      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td>💬 <a href="/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>`+
+      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td> <a href="/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>`+
       pagination+
       (isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:"");
     m.querySelectorAll("[data-board-topic-page]").forEach(button=>button.addEventListener("click",()=>{
@@ -1351,7 +1351,7 @@ function renderTopicGallery(items){
   const gallery=cleanTopicGallery(items);
   if(!gallery.length)return "";
   return `<section class="topicGalleryViewer" data-topic-gallery>
-    <h3>📎 MATERIAL ADJUNTO DEL TEMA</h3>
+    <h3> MATERIAL ADJUNTO DEL TEMA</h3>
     <div class="topicGalleryStage">
       <button type="button" class="topicGalleryNav" data-gallery-prev aria-label="Elemento anterior" title="Anterior">‹</button>
       <div class="topicGallerySlide" data-gallery-slide aria-live="polite"></div>
@@ -1383,7 +1383,7 @@ function bindTopicGallery(root,items){
     previous.hidden=false;next.hidden=false;dots.hidden=false;
     slide.innerHTML=item.type==="image"
       ? '<a class="topicGalleryImageLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><img class="topicGalleryImage" src="'+E(item.url)+'" alt="'+E(item.caption||"Imagen del tema")+'" loading="lazy"></a>'
-      : '<a class="topicGalleryExternalLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><b>🔗 Abrir enlace</b><small>'+E(item.url)+'</small></a>';
+      : '<a class="topicGalleryExternalLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><b> Abrir enlace</b><small>'+E(item.url)+'</small></a>';
     if(item.caption){
       const caption=document.createElement("p");
       caption.className="topicGalleryCaption";caption.textContent=item.caption;slide.appendChild(caption);
@@ -1430,7 +1430,7 @@ async function thr(m,id){
   const myRating=Number(normalizedRatings.find(r=>r.uid===currentVoterId)?.stars||0);
   const averageWholeStars=Math.floor(ratingAverage+1e-9);
   const ratingPanel=
-    '<section class="topicRating"><div><b>⭐ VALORACIÓN DEL TEMA</b><br>'+
+    '<section class="topicRating"><div><b> VALORACIÓN DEL TEMA</b><br>'+
     (ratingCount
       ? '<span class="ratingAverage">'+ratingAverage.toFixed(1)+'/5</span> '+ "★".repeat(averageWholeStars)+"☆".repeat(5-averageWholeStars)+' <small>('+ratingCount+' voto'+(ratingCount===1?'':'s')+')</small>'
       : !isRegisteredMember()?'<small>Inicia sesión para consultar las valoraciones.</small>':'<small>Este tema todavía no tiene valoraciones.</small>')+
@@ -1443,9 +1443,9 @@ async function thr(m,id){
   const comments=P.length>1?P.length-1:0;
   const galleryHtml=renderTopicGallery(t.gallery);
   m.innerHTML=
-    '<p><a href="/">🏠 Inicio</a> &raquo; <a href="/b/'+E(t.b)+'">'+E(B[2])+'</a> &raquo; <b>'+E(t.t)+'</b> <a class="bt" href="/b/'+E(t.b)+'">Volver al foro</a>'+(canDeleteTopic?' <a class="bt" href="#" id="deleteWholeTopic">🗑 Eliminar tema</a>':'')+'</p>'+
+    '<p><a href="/"> Inicio</a> &raquo; <a href="/b/'+E(t.b)+'">'+E(B[2])+'</a> &raquo; <b>'+E(t.t)+'</b> <a class="bt" href="/b/'+E(t.b)+'">Volver al foro</a>'+(canDeleteTopic?' <a class="bt" href="#" id="deleteWholeTopic"> Eliminar tema</a>':'')+'</p>'+
     ratingPanel+
-    '<h3 id="topicComments">💬 Comentarios y conversación · '+comments+'</h3>'+
+    '<h3 id="topicComments"> Comentarios y conversación · '+comments+'</h3>'+
     '<table><tr><th width="120">Autor</th><th>Publicación / comentario</th></tr>'+
      P.map((p,i)=>{
        const ownPost=configured?!!auth?.currentUser&&p.uid===auth.currentUser.uid:!!Store.me()&&p.u===Store.me();
@@ -1457,7 +1457,7 @@ async function thr(m,id){
      }).join("")+
     '</table>'+
     (canReply
-      ? '<form id="rf" class="commentForm"><b>✍️ Añadir un comentario</b><br><textarea id="rx" rows="5" style="width:100%" maxlength="6000" placeholder="Escribe tu comentario o respuesta..."></textarea><br><button class="bt">Publicar comentario</button> <span id="er" class="err"></span></form>'
+      ? '<form id="rf" class="commentForm"><b> Añadir un comentario</b><br><textarea id="rx" rows="5" style="width:100%" maxlength="6000" placeholder="Escribe tu comentario o respuesta..."></textarea><br><button class="bt">Publicar comentario</button> <span id="er" class="err"></span></form>'
       : '<p class="notice">'+(locked?"Este foro es de solo lectura: publica solo el staff.":!name?'Debes <a href="/login">iniciar sesión</a> para comentar.':'Para comentar, verifica tu correo desde el aviso superior.')+'</p>');
   bindTopicGallery(m,t.gallery);
   bindExternalMediaFallback(m);
@@ -1466,7 +1466,7 @@ async function thr(m,id){
     if(!confirm("¿Eliminar definitivamente este tema, su publicación inicial, todos sus comentarios y sus valoraciones? Esta acción no se puede deshacer."))return;
     const button=$("#deleteWholeTopic");button.textContent="Eliminando…";button.style.pointerEvents="none";
     try{await Store.deleteTopic(id);location.hash="#/b/"+encodeURIComponent(t.b);}
-    catch(error){alert(errText(error));button.textContent="🗑 Eliminar tema";button.style.pointerEvents="";}
+    catch(error){alert(errText(error));button.textContent=" Eliminar tema";button.style.pointerEvents="";}
   });
 
   m.querySelectorAll("[data-rating]").forEach(button=>button.addEventListener("click",async()=>{
@@ -1780,7 +1780,7 @@ async function prf(m,u){
       if(!targetRole||isAdmin())moderationHtml=moderationPanelHtml(f.uid,mod,u);
     }catch(error){console.warn("No se pudo cargar el panel de moderación",error);}
   }
-  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+moderationHtml+(canEditProfile?`<section class="profilePhotoPanel"><b>📷 FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen con el alojamiento alternativo o Catbox original y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><form class="catboxUploadPanel" id="avatarCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank"><input type="hidden" name="reqtype" value="fileupload"><label for="avatarCatboxFile">O sube una imagen desde tu PC (mirror alternativo o Catbox):</label><input id="avatarCatboxFile" type="file" name="fileToUpload" accept="image/jpeg,image/png,image/gif,image/webp" required><button type="submit">Subir imagen</button></form><div class="profilePhotoStatus" id="profilePhotoStatus">Si Catbox falla, usa «Abrir mirror alternativo». Copia el enlace resultante, pégalo arriba y pulsa «Guardar URL».</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
+  m.innerHTML=`<table><tr><th colspan="2">Perfil de ${E(u)}</th></tr><tr><td class="b" width="120" align="center">${avatar(u,88,f.avatarUrl||"")}</td><td>Rango: <b>${E(rank(c,u,f.uid))}</b><br>Mensajes: <b>${c}</b><br>Miembro desde: ${dt(f.ts)}${owner?`<br><small>Tu UID de Firebase: <code>${E(f.uid)}</code></small>`:""}</td></tr></table>`+moderationHtml+(canEditProfile?`<section class="profilePhotoPanel"><b> FOTO DE PERFIL</b><div class="profileAvatarBox"><div>${avatar(u,88,f.avatarUrl||"")}</div><div><p>Sube tu imagen con el alojamiento alternativo o Catbox original y pega el enlace directo abajo.</p>${f.avatarUrl?`<button type="button" id="avatarRemove">Quitar foto</button>`:""}</div></div><label for="avatarUrlInput">URL HTTPS pública de imagen o GIF:</label><input id="avatarUrlInput" type="url" maxlength="2048" value="${E(f.avatarUrl||"")}" placeholder="https://sitio.com/avatar.gif" style="width:min(100%,520px)"><button type="button" id="avatarUrlSave">Guardar URL</button><form class="catboxUploadPanel" id="avatarCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank"><input type="hidden" name="reqtype" value="fileupload"><label for="avatarCatboxFile">O sube una imagen desde tu PC (mirror alternativo o Catbox):</label><input id="avatarCatboxFile" type="file" name="fileToUpload" accept="image/jpeg,image/png,image/gif,image/webp" required><button type="submit">Subir imagen</button></form><div class="profilePhotoStatus" id="profilePhotoStatus">Si Catbox falla, usa «Abrir mirror alternativo». Copia el enlace resultante, pégalo arriba y pulsa «Guardar URL».</div></section>`:"")+(owner&&!canEditProfile?`<div class="notice">Verifica el correo de tu cuenta para poder cambiar tu foto de perfil.</div>`:"");
   if(moderationHtml){
     $("#modWarn")?.addEventListener("click",async()=>{const reason=prompt("Motivo del aviso:");if(reason===null)return;try{await Store.warnUser(f.uid,reason);await prf(m,u);}catch(error){alert(errText(error));}});
     $("#modTempBan")?.addEventListener("click",async()=>{const reason=prompt("Motivo del ban temporal:");if(reason===null)return;const duration=Number($("#modDuration")?.value||86400000);if(!confirm("¿Aplicar una suspensión temporal a "+u+"?"))return;try{await Store.banUser(f.uid,"temporary",reason,duration);await prf(m,u);}catch(error){alert(errText(error));}});
@@ -1800,7 +1800,7 @@ function moderationPanelHtml(uid,data,username){
   const permanent=data.status==="permanent";
   const status=data.status==="permanent"?"BAN PERMANENTE":activeTemp?"SUSPENDIDO HASTA "+dt(until):"ACTIVO";
   const history=warnings.map((item,index)=>`<li><b>Aviso ${index+1}/3:</b> ${E(item.reason||"Incumplimiento")} <small>(${E(item.source==="automod"?"AutoMod":"Staff")} · ${dt(item.at)})</small></li>`).join("");
-  return `<section class="moderationPanel"><h3>🛡 Moderación de ${E(username)}</h3><p>Estado: <b>${E(status)}</b> · Avisos: <b>${warnings.length}/3</b></p>${data.banReason?`<p>Motivo de sanción: ${E(data.banReason)}</p>`:""}${history?`<ol class="moderationHistory">${history}</ol>`:"<p><small>Sin avisos registrados.</small></p>"}${warnings.length>=3?`<p><b>Se alcanzó el máximo de 3 avisos.</b></p>`:""}<label for="modDuration">Duración de suspensión:</label> <select id="modDuration"><option value="3600000">1 hora</option><option value="86400000" selected>24 horas</option><option value="604800000">7 días</option><option value="2592000000">30 días</option></select><div class="modActions"><button type="button" id="modWarn" ${warnings.length>=3?"disabled":""}>Dar aviso (${warnings.length}/3)</button><button type="button" id="modTempBan" ${permanent?"disabled":""}>Ban temporal</button>${isAdmin()?`<button type="button" id="modPermanentBan">Ban permanente</button><button type="button" id="modUnban">Levantar ban y reiniciar avisos</button>`:""}</div><small>El tercer aviso provoca un ban permanente. Moderadores pueden dar avisos y suspensiones temporales; solo administradores pueden aplicar o levantar bans permanentes.</small></section>`;
+  return `<section class="moderationPanel"><h3> Moderación de ${E(username)}</h3><p>Estado: <b>${E(status)}</b> · Avisos: <b>${warnings.length}/3</b></p>${data.banReason?`<p>Motivo de sanción: ${E(data.banReason)}</p>`:""}${history?`<ol class="moderationHistory">${history}</ol>`:"<p><small>Sin avisos registrados.</small></p>"}${warnings.length>=3?`<p><b>Se alcanzó el máximo de 3 avisos.</b></p>`:""}<label for="modDuration">Duración de suspensión:</label> <select id="modDuration"><option value="3600000">1 hora</option><option value="86400000" selected>24 horas</option><option value="604800000">7 días</option><option value="2592000000">30 días</option></select><div class="modActions"><button type="button" id="modWarn" ${warnings.length>=3?"disabled":""}>Dar aviso (${warnings.length}/3)</button><button type="button" id="modTempBan" ${permanent?"disabled":""}>Ban temporal</button>${isAdmin()?`<button type="button" id="modPermanentBan">Ban permanente</button><button type="button" id="modUnban">Levantar ban y reiniciar avisos</button>`:""}</div><small>El tercer aviso provoca un ban permanente. Moderadores pueden dar avisos y suspensiones temporales; solo administradores pueden aplicar o levantar bans permanentes.</small></section>`;
 }
 function faq(m){m.innerHTML=`<table><tr><th>FAQ / Ayuda</th></tr><tr><td>${$("#faqt").innerHTML}</td></tr></table>`;}
 async function staffPanel(m){
@@ -1812,7 +1812,7 @@ async function staffPanel(m){
   const render=async()=>{
     const [invites,members]=await Promise.all([Store.listStaffInvites(),Store.listStaffMembers()]);
     const roles=Object.entries(STAFF_ROLE_LABELS).filter(([role])=>canIssueStaffRole(role));
-    m.innerHTML=`<h3>🛡 Administración del personal</h3>
+    m.innerHTML=`<h3> Administración del personal</h3>
       <section class="notice"><b>Invitaciones de un solo uso</b><br>Los códigos se generan al azar, se guarda solo su hash, vencen en 7 días y, al usarse, quedan bloqueados para siempre. Solo el propietario puede emitir co-owner y administradores; el resto del equipo administrativo puede emitir moderadores y ayudantes.</section>
       <form id="staffInviteForm"><label for="staffInviteRole"><b>Rol para la invitación</b></label><br><select id="staffInviteRole">${roles.map(([key,label])=>`<option value="${E(key)}">${E(label)}</option>`).join("")}</select><br><label for="staffInviteDescription"><b>¿Para qué es este token?</b></label><br><input id="staffInviteDescription" type="text" maxlength="140" minlength="3" placeholder="Ej.: Moderación de la sección Tecnología" required style="width:min(100%,520px)"><br><button type="submit" id="staffInviteCreate">Generar token</button> <span id="staffInviteError" class="err"></span></form>
       <section id="staffTokenResult" class="notice" ${generatedToken?"":"hidden"}><b>Guarda este token ahora. No se puede volver a mostrar.</b><br><code id="staffTokenValue">${E(generatedToken)}</code><br><button type="button" id="staffTokenCopy">Copiar token</button></section>
@@ -1863,7 +1863,7 @@ async function setup(m){
       '<table><tr><th>MI CUENTA · '+(isOwner()?"OWNER":"SESIÓN ACTIVA")+'</th></tr><tr><td>'+
       '<p><b>Sesión iniciada correctamente.</b><br>Cuenta: '+E(user.email||username)+'</p>'+
       '<p>Estado del correo: '+verification+'</p>'+
-      '<p><a class="bt" href="'+E(profileHref)+'">👤 Editar mi perfil y foto</a> <a class="bt" href="/">Volver al foro y chat</a></p>'+
+      '<p><a class="bt" href="'+E(profileHref)+'"> Editar mi perfil y foto</a> <a class="bt" href="/">Volver al foro y chat</a></p>'+
       '</td></tr></table>'+
       '<table><tr><th>SUBIR ARCHIVOS</th></tr><tr><td>'+
       '<p>Elige un archivo de tu PC. Catbox subirá el archivo y abrirá otra pestaña con el enlace directo. También puedes abrir el mirror alternativo si Catbox está caído. Copia ese enlace para pegarlo en el chat o en el editor de tu foto de perfil. Máximo 200 MB por archivo.</p>'+
@@ -1871,7 +1871,7 @@ async function setup(m){
       '<input type="hidden" name="reqtype" value="fileupload">'+
       '<label for="setupCatboxFile">Seleccionar archivo:</label>'+
       '<input id="setupCatboxFile" type="file" name="fileToUpload" required>'+
-      '<button type="submit">📦 Subir archivo</button>'+
+      '<button type="submit"> Subir archivo</button>'+
       '</form><p class="profilePhotoStatus" id="setupCatboxStatus">No necesitas verificar el correo para editar tu perfil ni para compartir enlaces. La verificación sí es necesaria para publicar en los foros.</p>'+
       '</td></tr></table>';
     bindCatboxUpload("#setupCatboxForm","#setupCatboxFile","#setupCatboxStatus",false);
@@ -2009,7 +2009,7 @@ async function go(){
     if(r!=="out"){renderBannedAccess(m,activeBan);return;}
     $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=true;$("#ann").hidden=true;
     $("#moderationNotice").hidden=true;
-    $("#nav").innerHTML='<b>⛔ CUENTA RESTRINGIDA</b>';
+    $("#nav").innerHTML='<b> CUENTA RESTRINGIDA</b>';
   }else{
     setSuspendedShell(false);
     $("#tk").hidden=false;
@@ -2021,20 +2021,20 @@ async function go(){
     $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=false;
     $("#chatShortcutDialog").hidden=true;
     $("#accountNotice").hidden=true;$("#moderationNotice").hidden=true;$("#ann").hidden=true;
-    $("#nav").innerHTML='🏠 <a href="/">Inicio</a> ❓ <a href="/faq">Ayuda</a> 🔑 <a href="/login">Entrar</a> 📝 <a href="/reg">Registrarse</a>';
-    m.innerHTML='<section class="notice"><h2>🔒 Inicia sesión para acceder al foro</h2><p>Los foros, temas, comentarios y adjuntos públicos se pueden leer sin iniciar sesión. Para publicar, comentar y valorar necesitas una cuenta verificada. El chat online sigue reservado para miembros.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Crear una cuenta gratis</a></p></section>';
+    $("#nav").innerHTML=' <a href="/">Inicio</a>  <a href="/faq">Ayuda</a>  <a href="/login">Entrar</a>  <a href="/reg">Registrarse</a>';
+    m.innerHTML='<section class="notice"><h2> Inicia sesión para acceder al foro</h2><p>Los foros, temas, comentarios y adjuntos públicos se pueden leer sin iniciar sesión. Para publicar, comentar y valorar necesitas una cuenta verificada. El chat online sigue reservado para miembros.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Crear una cuenta gratis</a></p></section>';
     return;
   }
   renderAccountNotice();
   $("#nav").innerHTML=
-    '🏠 <a href="/">Índice</a> 📜 <a href="/b/reglas">Reglas</a> ❓ <a href="/faq">FAQ</a> '+
+    ' <a href="/">Índice</a>  <a href="/b/reglas">Reglas</a>  <a href="/faq">FAQ</a> '+
     (Store.me()
-      ? '👤 <b><a href="/u/'+encodeURIComponent(Store.me())+'">'+E(Store.me())+'</a></b> 🚪 <a href="/out">Salir</a>'
-      : '🔑 <a href="/login">Entrar</a> 📝 <a href="/reg">Registrarse</a>')+
+      ? ' <b><a href="/u/'+encodeURIComponent(Store.me())+'">'+E(Store.me())+'</a></b>  <a href="/out">Salir</a>'
+      : ' <a href="/login">Entrar</a>  <a href="/reg">Registrarse</a>')+
     (isOwner()
-      ? ' 🛡 <b>OWNER</b> <a href="/staff">Administración</a>'
-      : canManageStaff()?' 🛡 <a href="/staff">Administración</a>':'')+
-    ' <span style="float:right"><a href="/setup">⚙ Configuración</a></span>';
+      ? '  <b>OWNER</b> <a href="/staff">Administración</a>'
+      : canManageStaff()?'  <a href="/staff">Administración</a>':'')+
+    ' <span style="float:right"><a href="/setup"> Configuración</a></span>';
   m.innerHTML="Cargando...";
   $("#ann").hidden=!!r;
   try{
@@ -2060,7 +2060,7 @@ async function go(){
     }
     // Un visitante sin sesión no debe ver un error de reglas: necesita iniciar sesión.
     if(firebaseReady&&!isRegisteredMember()&&(z?.code==="permission-denied"||z?.code==="firestore/permission-denied")){
-      m.innerHTML='<section class="notice"><h2>🔒 ¡Ve todo iniciando sesión!</h2><p>No se pudo cargar el contenido público. Comprueba tu conexión y vuelve a intentarlo.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Registrarme gratis</a></p></section>';
+      m.innerHTML='<section class="notice"><h2> ¡Ve todo iniciando sesión!</h2><p>No se pudo cargar el contenido público. Comprueba tu conexión y vuelve a intentarlo.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Registrarme gratis</a></p></section>';
       return;
     }
     const detail=z?.message?String(z.message):z?.code?String(z.code):"Error desconocido";
@@ -2222,9 +2222,9 @@ function renderExternalUrlPreview(rawUrl){
   }
   if(kind==="file"){
     const extension=getUrlExtension(url).toUpperCase();
-    return '<div class="cmLinkCard"><b>📎 ARCHIVO '+E(extension)+'</b><a href="'+href+'" target="_blank" rel="nofollow noopener noreferrer">Abrir archivo externo</a><small>'+host+'</small></div>';
+    return '<div class="cmLinkCard"><b> ARCHIVO '+E(extension)+'</b><a href="'+href+'" target="_blank" rel="nofollow noopener noreferrer">Abrir archivo externo</a><small>'+host+'</small></div>';
   }
-  return '<div class="cmLinkCard"><b>🔗 ENLACE EXTERNO</b><a href="'+href+'" target="_blank" rel="nofollow noopener noreferrer">'+host+E(url.pathname.length>44?url.pathname.slice(0,44)+"…":url.pathname)+'</a><small>Ver contenido en el alojamiento original</small></div>';
+  return '<div class="cmLinkCard"><b> ENLACE EXTERNO</b><a href="'+href+'" target="_blank" rel="nofollow noopener noreferrer">'+host+E(url.pathname.length>44?url.pathname.slice(0,44)+"…":url.pathname)+'</a><small>Ver contenido en el alojamiento original</small></div>';
 }
 function externalMediaPreview(text){
   return extractMessageUrls(text).map(renderExternalUrlPreview).join("");
