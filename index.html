@@ -308,6 +308,36 @@ input,textarea,select{max-width:100%}
 }
 .topicLoginGate a{color:#fff!important;text-decoration:none!important}
 .topicLoginGate a:hover{color:#fff4d8!important;text-decoration:underline!important}
+
+/* El aviso de inicio de sesión ocupa toda la galería, sin columnas reservadas para flechas ocultas. */
+.topicGalleryStage.topicGalleryStageLocked{
+  grid-template-columns:minmax(0,1fr)!important;
+}
+.topicGalleryStage.topicGalleryStageLocked .topicGallerySlide{
+  grid-column:1;
+  width:100%;
+  min-width:0;
+  min-height:clamp(110px,18vw,170px);
+  padding:clamp(10px,3vw,20px);
+}
+.topicGalleryStage.topicGalleryStageLocked .topicLoginGate{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:min(100%,480px);
+  min-width:0;
+  min-height:clamp(54px,9vw,76px);
+  margin:0 auto;
+  padding:clamp(10px,2.5vw,18px);
+  font-size:clamp(12px,2.2vw,16px);
+  line-height:1.35;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.topicGalleryStage.topicGalleryStageLocked .topicLoginGate a{
+  display:block;
+  max-width:100%;
+}
 </style>
 </head>
 <body>
@@ -1342,11 +1372,14 @@ function bindTopicGallery(root,items){
   let index=0;
   function draw(){
     const item=gallery[index];
+    const stage=viewer.querySelector(".topicGalleryStage");
     if(isAnonymousForumVisitor()){
+      stage?.classList.add("topicGalleryStageLocked");
       slide.innerHTML=topicLoginGateHtml;
       previous.hidden=true;next.hidden=true;count.textContent="";dots.hidden=true;
       return;
     }
+    stage?.classList.remove("topicGalleryStageLocked");
     previous.hidden=false;next.hidden=false;dots.hidden=false;
     slide.innerHTML=item.type==="image"
       ? '<a class="topicGalleryImageLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><img class="topicGalleryImage" src="'+E(item.url)+'" alt="'+E(item.caption||"Imagen del tema")+'" loading="lazy"></a>'
