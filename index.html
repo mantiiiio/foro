@@ -291,6 +291,23 @@ input,textarea,select{max-width:100%}
   .boardTopicPagination button:first-child{order:1}
   .boardTopicPagination button:last-child{order:3}
 }
+
+/* Los enlaces y adjuntos de los temas solo se muestran a cuentas registradas. */
+.topicLoginGate{
+  display:block;
+  width:max-content;
+  max-width:100%;
+  margin:7px 0;
+  padding:10px 16px;
+  border:2px solid #780500;
+  background:linear-gradient(#d92318,#a40000);
+  box-shadow:3px 3px 0 #c99;
+  color:#fff;
+  font:bold 11px Verdana,Arial,sans-serif;
+  text-align:center;
+}
+.topicLoginGate a{color:#fff!important;text-decoration:none!important}
+.topicLoginGate a:hover{color:#fff4d8!important;text-decoration:underline!important}
 </style>
 </head>
 <body>
@@ -500,8 +517,8 @@ function renderTopicPostBody(post,allPosts){
   const byId=new Map(allPosts.map(p=>[p.id,p]));
   const deletedQuotes=new Map(allPosts.filter(p=>p.deleted&&p.deletedQuoteHash).map(p=>[p.deletedQuoteHash,p]));
   const lines=String(post.x||"").split("\n");let output="",plain=[];
-  const flush=()=>{if(plain.length){output+=fmt(plain.join("\n"));plain=[];}};
-  const quoteHtml=(author,body)=>'<blockquote class="topicQuote"><b>'+E(author)+' escribió:</b><div>'+fmt(body)+'</div></blockquote>';
+  const flush=()=>{if(plain.length){output+=fmtTopic(plain.join("\n"));plain=[];}};
+  const quoteHtml=(author,body)=>'<blockquote class="topicQuote"><b>'+E(author)+' escribió:</b><div>'+fmtTopic(body)+'</div></blockquote>';
   for(let i=0;i<lines.length;i++){
     const head=lines[i].match(/^(.{1,32}) escribió:$/);
     if(head){
@@ -720,6 +737,20 @@ async function loadCurrentStaffRole(user){
   catch(e){console.warn("No se pudo leer el rol del usuario",e);}
 }
 const isRegisteredMember = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous);
+const isAnonymousForumVisitor = () => !!(configured && auth?.currentUser?.isAnonymous);
+const topicLoginGateHtml = '<div class="topicLoginGate"><a href="/login">🔒 INICIA SESIÓN</a></div>';
+const fmtTopic = value => {
+  if(!isAnonymousForumVisitor())return fmt(value);
+  return String(value ?? "").split("\n").map(line => {
+    const escaped=E(line);
+    const safeLine=escaped.startsWith("&gt;")?'<span class="q">'+escaped+"</span>":escaped;
+    return safeLine.replace(/(?:https?:\/\/|www\.)[^\s<>"']+/gi,raw=>{
+      const clean=raw.replace(/[),.!?;:]+$/g,"");
+      const trailing=raw.slice(clean.length);
+      return topicLoginGateHtml+trailing;
+    });
+  }).join("<br>");
+};
 const emailVerified = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.emailVerified);
 // Solo se aceptan dominios de proveedores de correo reconocidos. Firestore aplica la misma lista.
 const ALLOWED_EMAIL_DOMAINS = new Set(["gmail.com","googlemail.com","outlook.com","outlook.es","outlook.fr","outlook.de","outlook.it","outlook.co.uk","outlook.com.ar","hotmail.com","hotmail.es","hotmail.fr","hotmail.de","hotmail.it","hotmail.co.uk","hotmail.com.ar","live.com","live.com.ar","live.co.uk","live.fr","live.de","msn.com","yahoo.com","yahoo.com.ar","yahoo.com.uy","yahoo.es","yahoo.co.uk","yahoo.fr","yahoo.de","yahoo.it","yahoo.ca","yahoo.com.br","yahoo.com.mx","yahoo.com.au","yahoo.co.in","ymail.com","rocketmail.com","proton.me","protonmail.com","protonmail.ch","pm.me","duck.com","icloud.com","me.com","mac.com","aol.com","aim.com","gmx.com","gmx.net","gmx.de","gmx.at","gmx.ch","gmx.us","mail.com","email.com","web.de","t-online.de","freenet.de","fastmail.com","fastmail.fm","fastmail.us","hey.com","hushmail.com","mailfence.com","posteo.de","mailbox.org","runbox.com","disroot.org","riseup.net","tuta.com","tuta.io","tutamail.com","tutanota.com","tutanota.de","keemail.me","zoho.com","zohomail.com","zoho.eu","zoho.in","yandex.com","yandex.ru","yandex.kz","yandex.by","yandex.com.tr","ya.ru","mail.ru","inbox.ru","list.ru","bk.ru","internet.ru","qq.com","foxmail.com","163.com","126.com","sina.com","sina.cn","sohu.com","yeah.net","naver.com","daum.net","hanmail.net","nate.com","rediffmail.com","rediff.com","wp.pl","onet.pl","interia.pl","o2.pl","seznam.cz","centrum.cz","volny.cz","libero.it","virgilio.it","tin.it","alice.it","free.fr","laposte.net","wanadoo.fr","orange.fr","sfr.fr","voila.fr","neuf.fr","uol.com.br","bol.com.br","ig.com.br","terra.com.br","globo.com","r7.com","comcast.net","xfinity.com","verizon.net","att.net","sbcglobal.net","bellsouth.net","charter.net","spectrum.net","cox.net","earthlink.net","frontier.com","optonline.net","roadrunner.com","twc.com","juno.com","netzero.net","windstream.net","shaw.ca","rogers.com","bell.net","telstra.com","optusnet.com.au","bigpond.com","adinet.com.uy"]);
@@ -1311,6 +1342,12 @@ function bindTopicGallery(root,items){
   let index=0;
   function draw(){
     const item=gallery[index];
+    if(isAnonymousForumVisitor()){
+      slide.innerHTML=topicLoginGateHtml;
+      previous.hidden=true;next.hidden=true;count.textContent="";dots.hidden=true;
+      return;
+    }
+    previous.hidden=false;next.hidden=false;dots.hidden=false;
     slide.innerHTML=item.type==="image"
       ? '<a class="topicGalleryImageLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><img class="topicGalleryImage" src="'+E(item.url)+'" alt="'+E(item.caption||"Imagen del tema")+'" loading="lazy"></a>'
       : '<a class="topicGalleryExternalLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><b>🔗 Abrir enlace</b><small>'+E(item.url)+'</small></a>';
@@ -1380,7 +1417,7 @@ async function thr(m,id){
      P.map((p,i)=>{
        const ownPost=configured?!!auth?.currentUser&&p.uid===auth.currentUser.uid:!!Store.me()&&p.u===Store.me();
         const canEditPost=!p.deleted&&(isStaff()||ownPost),canDeletePost=!p.deleted&&(isStaff()||ownPost);
-        const body=p.deleted?renderTopicPostBody(p,P):renderTopicPostBody(p,P)+externalMediaPreview(p.x||"");
+        const body=p.deleted?renderTopicPostBody(p,P):renderTopicPostBody(p,P)+renderTopicExternalMediaPreview(p.x||"");
         const authorLink=isRegisteredMember()?'<a href="/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a>':E(p.u);
         const authorStats=isRegisteredMember()?'<br>Mensajes: '+(counts[p.u]||0):'';
         return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b>'+authorLink+'</b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+authorStats+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost&&i>0?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>'+(i===0&&galleryHtml?'<tr><td colspan="2">'+galleryHtml+'</td></tr>':"");
@@ -2158,6 +2195,9 @@ function renderExternalUrlPreview(rawUrl){
 }
 function externalMediaPreview(text){
   return extractMessageUrls(text).map(renderExternalUrlPreview).join("");
+}
+function renderTopicExternalMediaPreview(text){
+  return isAnonymousForumVisitor()?"":externalMediaPreview(text);
 }
 
 function renderChat(items){
