@@ -464,3 +464,22 @@ test("un administrador suspendido no puede borrar perfiles ni retirar roles", as
   await assertFails(deleteDoc(doc(suspendedAdmin, "staff", "mod-2")));
   await assertFails(getDoc(doc(suspendedAdmin, "staff", "mod-2")));
 });
+
+
+test("solo el creador del tema o el staff puede activar o quitar el bloqueo de mantenimiento", async () => {
+  await seed({
+    "topics/creator-topic": { b: "gen", t: "Tema", u: "alice", uid: "alice", ts: 1, lr: 1, lu: "alice", n: 0, maintenanceLocked: false, moderationHidden: false, moderationHiddenUntil: null },
+    "topics/legacy-topic": { b: "gen", t: "Tema antiguo", u: "alice", uid: "alice", ts: 1, lr: 1, lu: "alice", n: 0, moderationHidden: false, moderationHiddenUntil: null },
+    "staff/mod-1": { role: "moderator" },
+    "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 },
+    "users/bob": { u: "bob", ts: 1, rulesAcceptedAt: 1 }
+  });
+  const alice = account("alice");
+  const bob = account("bob");
+  const moderator = account("mod-1");
+  await assertSucceeds(updateDoc(doc(alice, "topics", "creator-topic"), { maintenanceLocked: true }));
+  await assertSucceeds(updateDoc(doc(alice, "topics", "legacy-topic"), { maintenanceLocked: true }));
+  await assertFails(updateDoc(doc(bob, "topics", "creator-topic"), { maintenanceLocked: false }));
+  await assertSucceeds(updateDoc(doc(moderator, "topics", "creator-topic"), { maintenanceLocked: false }));
+  await assertFails(updateDoc(doc(alice, "topics", "creator-topic"), { maintenanceLocked: true, t: "Cambio no permitido" }));
+});

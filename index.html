@@ -40,7 +40,7 @@ body{
   max-width:none;
   min-width:0;
   margin:0;
-}.sd#sl{display:none}.moderationPanel{margin:9px 0;padding:9px;border:1px solid #b77;background:#fff4f0;color:#512d26}.moderationPanel h3{margin:0 0 7px;color:#8a2e22}.moderationPanel .modActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px}.moderationPanel input, .moderationPanel select{max-width:100%}.moderationHistory{font-size:10px;margin:5px 0;padding-left:20px}.moderationNotice{border:1px solid #b77;background:#fff0ed;color:#702a20;padding:8px;margin:6px 0;font-size:11px;line-height:1.5}.moderationNotice[hidden]{display:none!important}.moderationNotice strong{color:#8a1c12}#m{min-width:0;overflow-x:auto}#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}#nav a{margin:0;white-space:normal}
+}.sd#sl{display:none}.moderationPanel{margin:9px 0;padding:9px;border:1px solid #b77;background:#fff4f0;color:#512d26}.moderationPanel h3{margin:0 0 7px;color:#8a2e22}.moderationPanel .modActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px}.moderationPanel input, .moderationPanel select{max-width:100%}.moderationHistory{font-size:10px;margin:5px 0;padding-left:20px}.moderationNotice{border:1px solid #b77;background:#fff0ed;color:#702a20;padding:8px;margin:6px 0;font-size:11px;line-height:1.5}.maintenanceTopicLink{color:#b00000!important;font-weight:bold;text-decoration:underline;text-decoration-color:#e2a0a0}.topicMaintenancePanel{margin:9px 0;padding:10px;border:2px solid #a40000;background:#fff0f0;color:#680000;box-shadow:3px 3px 0 #d8aaaa}.topicMaintenancePanel strong{color:#a00000}.topicMaintenanceControls{display:inline-flex;gap:5px;flex-wrap:wrap;margin-left:5px}.topicMaintenanceControls a{color:#a00000;font-weight:bold}.moderationNotice[hidden]{display:none!important}.moderationNotice strong{color:#8a1c12}#m{min-width:0;overflow-x:auto}#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}#nav a{margin:0;white-space:normal}
 .globalTopicSearch{
   display:inline-flex;align-items:center;gap:4px;max-width:100%;
   margin:2px 4px;padding:3px;border:1px solid #9bb2bd;
@@ -1027,7 +1027,13 @@ const D = {
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
     const cleanGallery=Array.isArray(gallery)?gallery.slice(0,30).map(item=>({type:item?.type,url:item?.type==="image"?safeHttps(item.url):item?.type==="link"?safeGalleryLinkUrl(item.url):"",caption:String(item?.caption||"").slice(0,80)})):[];
     if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");
-    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,staffBadge,lastStaffBadge:staffBadge,gallery:cleanGallery,ts:n,lr:n,lu:u,n:0,moderationHidden:false,moderationHiddenUntil:null});batch.set(postRef,{tp:topicRef.id,u,uid,staffBadge,x,ts:n,moderationHidden:false,moderationHiddenUntil:null});await batch.commit();return topicRef.id;
+    const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,staffBadge,lastStaffBadge:staffBadge,gallery:cleanGallery,ts:n,lr:n,lu:u,n:0,maintenanceLocked:false,moderationHidden:false,moderationHiddenUntil:null});batch.set(postRef,{tp:topicRef.id,u,uid,staffBadge,x,ts:n,moderationHidden:false,moderationHiddenUntil:null});await batch.commit();return topicRef.id;
+  },
+  async setTopicMaintenance(id,locked){
+    await assertCurrentUserNotBanned();
+    const topic=await this.topic(id);
+    if(!topic||(!isStaff()&&auth?.currentUser?.uid!==topic.uid))throw new Error("Solo el creador del tema o el staff puede cambiar el mantenimiento.");
+    await updateDoc(doc(db,"topics",id),{maintenanceLocked:!!locked});
   },
   async reply(t,x){
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
@@ -1238,6 +1244,7 @@ const Demo = {
   async ratings(t){return uniqueTopicRatings(demo.t.find(x=>x.id===t)?.ratings||[]);},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
   async newT(b,t,x,gallery=[]){const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30).map(item=>({type:item?.type,url:item?.type==="image"?safeHttps(item.url):item?.type==="link"?safeGalleryLinkUrl(item.url):"",caption:String(item?.caption||"").slice(0,80)})):[];if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");demo.t.push({id,b,t,u:demo.m,staffBadge:hasStaffBadge(),lastStaffBadge:hasStaffBadge(),gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:hasStaffBadge(),x,ts:n});saveDemo();return id;},
+  async setTopicMaintenance(id,locked){const topic=demo.t.find(y=>y.id===id);if(!topic||(!isStaff()&&topic.u!==demo.m))throw new Error("Solo el creador del tema o el staff puede cambiar el mantenimiento.");topic.maintenanceLocked=!!locked;saveDemo();},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
   async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
   async members(){return Object.keys(demo.u).length;},
@@ -1312,7 +1319,7 @@ async function brd(m,id){
     const results=m.querySelector("#boardTopicResults");
     if(!results)return;
     results.innerHTML=pagination+
-      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td> <a href="/t/${encodeURIComponent(t.id)}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${emptyMessage}</td></tr>`}</table>`+
+      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td> <a href="/t/${encodeURIComponent(t.id)}">${t.maintenanceLocked?'<span class="maintenanceTopicLink">🔴 '+E(t.t)+' · EN MANTENIMIENTO</span>':E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${emptyMessage}</td></tr>`}</table>`+
       pagination;
     results.querySelectorAll("[data-board-topic-page]").forEach(button=>button.addEventListener("click",()=>{
       const target=Number(button.dataset.boardTopicPage);
@@ -1434,6 +1441,7 @@ async function thr(m,id){
   const B=BL.find(x=>x[0]===t.b)||["","","?"];
   const name=Store.me(),locked=t.b==="reglas"&&!isStaff();
   const canDeleteTopic=isStaff()||(t.b!=="reglas"&&(configured?auth?.currentUser?.uid===t.uid:name===t.u));
+  const canManageTopicMaintenance=isStaff()||(configured?auth?.currentUser?.uid===t.uid:!!name&&name===t.u);
   const canReply=!!name&&(!configured||emailVerified())&&!locked;
   const canRate=isRegisteredMember()&&!locked;
   const counts={},profiles={};
@@ -1463,7 +1471,9 @@ async function thr(m,id){
   const comments=P.length>1?P.length-1:0;
   const galleryHtml=renderTopicGallery(t.gallery);
   m.innerHTML=
-    '<p><a href="/"> Inicio</a> &raquo; <a href="/b/'+E(t.b)+'">'+E(B[2])+'</a> &raquo; <b>'+E(t.t)+'</b> <a class="bt" href="/b/'+E(t.b)+'">Volver al foro</a>'+(canDeleteTopic?' <a class="bt" href="#" id="deleteWholeTopic"> Eliminar tema</a>':'')+'</p>'+
+    '<p><a href="/"> Inicio</a> &raquo; <a href="/b/'+E(t.b)+'">'+E(B[2])+'</a> &raquo; <b'+(t.maintenanceLocked?' class="maintenanceTopicLink"':'')+'>'+E(t.t)+(t.maintenanceLocked?' · EN MANTENIMIENTO':'')+'</b> <a class="bt" href="/b/'+E(t.b)+'">Volver al foro</a>'+(canDeleteTopic?' <a class="bt" href="#" id="deleteWholeTopic"> Eliminar tema</a>':'')+'</p>'+
+    (t.maintenanceLocked?'<section class="topicMaintenancePanel"><strong>🔴 TEMA EN MANTENIMIENTO</strong><br>Este tema está marcado para mantenimiento.</section>':'')+
+    (canManageTopicMaintenance?'<section class="topicMaintenancePanel"><b>Bloquear mantenimiento</b><br><small>Marca el tema en rojo y muestra el aviso de mantenimiento a todos los visitantes.</small><div class="topicMaintenanceControls"><a href="#" id="toggleTopicMaintenance">'+(t.maintenanceLocked?'[quitar mantenimiento]':'[bloquear mantenimiento]')+'</a></div></section>':'')+
     ratingPanel+
     '<h3 id="topicComments"> Comentarios y conversación · '+comments+'</h3>'+
     '<table><tr><th width="120">Autor</th><th>Publicación / comentario</th></tr>'+
@@ -1473,7 +1483,7 @@ async function thr(m,id){
         const body=p.deleted?renderTopicPostBody(p,P):renderTopicPostBody(p,P)+renderTopicExternalMediaPreview(p.x||"");
         const authorLink=isRegisteredMember()?'<a href="/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a>':E(p.u);
         const authorStats=isRegisteredMember()?'<br>Mensajes: '+(counts[p.u]||0):'';
-        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b>'+authorLink+'</b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+authorStats+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost&&i>0?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>'+(i===0&&galleryHtml?'<tr><td colspan="2">'+galleryHtml+'</td></tr>':"");
+        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b>'+authorLink+'</b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+authorStats+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(i===0&&canManageTopicMaintenance?'<a href="#" data-topic-maintenance="1">['+(t.maintenanceLocked?'quitar mantenimiento':'bloquear mantenimiento')+']</a> ':"")+(canDeletePost&&i>0?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>'+(i===0&&galleryHtml?'<tr><td colspan="2">'+galleryHtml+'</td></tr>':"");
      }).join("")+
     '</table>'+
     (canReply
@@ -1481,6 +1491,17 @@ async function thr(m,id){
       : '<p class="notice">'+(locked?"Este foro es de solo lectura: publica solo el staff.":!name?'Debes <a href="/login">iniciar sesión</a> para comentar.':'Para comentar, verifica tu correo desde el aviso superior.')+'</p>');
   bindTopicGallery(m,t.gallery);
   bindExternalMediaFallback(m);
+  $("#toggleTopicMaintenance")?.addEventListener("click",async event=>{
+    event.preventDefault();
+    const button=$("#toggleTopicMaintenance");button.textContent="[guardando…]";
+    try{await Store.setTopicMaintenance(id,!t.maintenanceLocked);await refreshRouteContent();}
+    catch(error){alert(errText(error));button.textContent=t.maintenanceLocked?'[quitar mantenimiento]':'[bloquear mantenimiento]';}
+  });
+  m.querySelectorAll("[data-topic-maintenance]").forEach(button=>button.addEventListener("click",async event=>{
+    event.preventDefault();
+    try{await Store.setTopicMaintenance(id,!t.maintenanceLocked);await refreshRouteContent();}
+    catch(error){alert(errText(error));}
+  }));
   $("#deleteWholeTopic")?.addEventListener("click",async event=>{
     event.preventDefault();
     if(!confirm("¿Eliminar definitivamente este tema, su publicación inicial, todos sus comentarios y sus valoraciones? Esta acción no se puede deshacer."))return;
