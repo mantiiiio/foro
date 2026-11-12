@@ -2002,7 +2002,7 @@ function bindCatboxUpload(formSelector,fileSelector,statusSelector,imageOnly=fal
   mirrorButton.addEventListener("click",()=>{
     window.open("https://remote.catbox.tech/","_blank","noopener,noreferrer");
     const status=statusSelector?$(statusSelector):null;
-    if(status)status.textContent="Se abrió el mirror alternativo. Sube allí el archivo, copia el enlace que te dé y pégalo en el chat o en la URL del avatar.";
+    if(status)status.textContent="Se abrió el mirror alternativo. Sube allí el archivo, copia el enlace que te dé y pégalo en la configuración de tu foto de perfil.";
   });
   form.appendChild(mirrorButton);
   form.addEventListener("submit",event=>{
@@ -2317,7 +2317,7 @@ async function go(){
     if(firebaseReady&&isRegisteredMember()&&(z?.code==="permission-denied"||z?.code==="firestore/permission-denied")){
       stopChatSubscription();
       setSuspendedShell(true);
-      m.innerHTML='<div class="moderationLoading"><b>Verificando el acceso de tu cuenta...</b><p>Por seguridad, los foros, enlaces, archivos y el chat quedan ocultos mientras se comprueba la moderación.</p></div>';
+      m.innerHTML='<div class="moderationLoading"><b>Verificando el acceso de tu cuenta...</b><p>Por seguridad, los foros, enlaces y archivos quedan ocultos mientras se comprueba la moderación.</p></div>';
       refreshOwnModerationFromServer();
       return;
     }
