@@ -26,8 +26,14 @@ jobs:
 
       - name: Stamp release version for automatic browser updates
         run: |
-          sed -i "s/__MP_BUILD_ID__/${GITHUB_SHA}/g" index.html
-          printf '{"version":"%s"}\n' "$GITHUB_SHA" > build-version.json
+          sed -i "s/__MP_BUILD_ID__/${GITHUB_SHA}/g" index.html build-version.json
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          version = json.loads(Path("build-version.json").read_text())["version"]
+          assert version == os.environ["GITHUB_SHA"], "El marcador local no coincide con el commit."
+          PY
+
 
       - name: Validate application JavaScript syntax
         run: |
