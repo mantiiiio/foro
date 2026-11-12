@@ -1312,7 +1312,7 @@ function bindTopicGallery(root,items){
     previous.hidden=false;next.hidden=false;dots.hidden=false;
     slide.innerHTML=item.type==="image"
       ? '<a class="topicGalleryImageLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><img class="topicGalleryImage" src="'+E(item.url)+'" alt="'+E(item.caption||"Imagen del tema")+'" loading="lazy"></a>'
-      : '<a class="topicGalleryExternalLink" href="'+E(item.url)+'" target="_blank" rel="noopener noreferrer"><b> Abrir enlace</b><small>'+E(item.url)+'</small></a>';
+      : '<a class="topicGalleryExternalLink" href="'+E(item.url)+'"'+(item.url.startsWith("magnet:")?"":' target="_blank"')+' rel="noopener noreferrer"><b> Abrir enlace</b><small>'+E(item.url)+'</small></a>';
     if(item.caption){
       const caption=document.createElement("p");
       caption.className="topicGalleryCaption";caption.textContent=item.caption;slide.appendChild(caption);
