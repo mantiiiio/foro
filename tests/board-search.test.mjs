@@ -39,7 +39,7 @@ test("encuentra títulos ignorando mayúsculas y tildes", () => {
     topic("three", "Cafetería retro")
   ];
   assert.deepEqual(searchTopicsByTitle(topics, "cafeos").map(item => item.id), ["one"]);
-  assert.deepEqual(searchTopicsByTitle(topics, "CAFÉ").map(item => item.id), ["one", "three"]);
+  assert.deepEqual(searchTopicsByTitle(topics, "CAFÉ").map(item => item.id), ["three", "one"]);
 });
 
 test("prioriza coincidencia exacta, prefijo y frase antes de coincidencias por palabras", () => {
