@@ -620,6 +620,8 @@ function renderDiscordTimestamp(raw,style="f"){
     case "T":label=timeLong;break;
     case "d":label=dateShort;break;
     case "D":label=dateLong;break;
+    case "s":label=dateShort+" "+timeShort;break;
+    case "S":label=dateShort+" "+timeLong;break;
     case "F":label=date.toLocaleDateString("es-UY",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+" "+timeShort;break;
     case "R":{
       const delta=date.getTime()-Date.now(),absolute=Math.abs(delta);
@@ -682,7 +684,7 @@ function markdownInline(value,options={}){
     if(!href)return match;
     return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank"'+(title?' title="'+E(title)+'"':'')+'>'+E(label)+'</a>');
   });
-  source=source.replace(/<t:(\d{9,12})(?::([tTdDfFR]))?>/g,(match,epoch,style)=>protect(renderDiscordTimestamp(epoch,style||"f")));
+  source=source.replace(/<t:(\d{9,12})(?::([tTdDfFRsS]))?>/g,(match,epoch,style)=>protect(renderDiscordTimestamp(epoch,style||"f")));
   source=source.replace(/<((?:https?:\/\/|www\.)[^>\s]+)>/gi,(match,rawUrl)=>{
     const href=safeWebUrl(rawUrl.startsWith("www.")?"https://"+rawUrl:rawUrl);
     if(!href)return match;
