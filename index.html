@@ -414,26 +414,29 @@ function markdownInline(value,options={}){
       :code;
     return protect('<code class="mdInlineCode">'+E(safeCode)+'</code>');
   });
-  source=source.replace(/(?<!!)\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|www\.[^\s)]+)(?:\s+["']([^"']*)["'])?\)/gi,(match,label,rawUrl,title)=>{
-    const href=safeWebUrl(rawUrl.startsWith("www.")?"https://"+rawUrl:rawUrl);
+  source=source.replace(/(?<!!)\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|www\.[^\s)]+|magnet:\?[^\s)]+)(?:\s+["']([^"']*)["'])?\)/gi,(match,label,rawUrl,title)=>{
+    const href=safeLinkUrl(rawUrl.startsWith("www.")?"https://"+rawUrl:rawUrl);
     if(!href)return match;
-    return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank"'+(title?' title="'+E(title)+'"':'')+'>'+E(label)+'</a>');
+    const target=href.startsWith("magnet:")?"":' target="_blank"';
+    return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer"'+target+(title?' title="'+E(title)+'"':'')+'>'+E(label)+'</a>');
   });
   source=source.replace(/<t:(\d{9,12})(?::([tTdDfFRsS]))?>/g,(match,epoch,style)=>protect(renderDiscordTimestamp(epoch,style||"f")));
-  source=source.replace(/<((?:https?:\/\/|www\.)[^>\s]+)>/gi,(match,rawUrl)=>{
-    const href=safeWebUrl(rawUrl.startsWith("www.")?"https://"+rawUrl:rawUrl);
+  source=source.replace(/<((?:https?:\/\/|www\.|magnet:\?)[^>\s]+)>/gi,(match,rawUrl)=>{
+    const href=safeLinkUrl(rawUrl.startsWith("www.")?"https://"+rawUrl:rawUrl);
     if(!href)return match;
-    return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank">'+E(rawUrl)+'</a>');
+    const target=href.startsWith("magnet:")?"":' target="_blank"';
+    return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer"'+target+'>'+E(rawUrl)+'</a>');
   });
   source=source.replace(/\\([\\*_~|#>+\-.])/g,(match,character)=>protect(E(character)));
   let html=E(source);
-  html=html.replace(/((?:https?:\/\/|www\.)[^\s<>"']+)/gi,raw=>{
+  html=html.replace(/((?:https?:\/\/|www\.|magnet:\?)[^\s<>"']+)/gi,raw=>{
     const clean=raw.replace(/[),.!?;:]+$/g,"");
     const trailing=raw.slice(clean.length);
     const decoded=clean.replace(/&amp;/g,"&");
-    const href=safeWebUrl(decoded.startsWith("www.")?"https://"+decoded:decoded);
+    const href=safeLinkUrl(decoded.startsWith("www.")?"https://"+decoded:decoded);
     if(!href)return raw;
-    return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank">'+clean+'</a>')+trailing;
+    const target=href.startsWith("magnet:")?"":' target="_blank"';
+    return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer"'+target+'>'+clean+'</a>')+trailing;
   });
   html=html
     .replace(/__(?!\s)(.+?)(?<!\s)__/g,"<u>$1</u>")
@@ -2004,6 +2007,19 @@ function safeWebUrl(value){
   try{
     const url=new URL(String(value||""));
     if(!["https:","http:"].includes(url.protocol)||url.username||url.password)return "";
+    return url.href;
+  }catch{return "";}
+}
+function safeLinkUrl(value){
+  const web=safeWebUrl(value);
+  if(web)return web;
+  try{
+    const raw=String(value||"");
+    if(raw.length>8192||/[\u0000-\u0020\u007f]/.test(raw))return "";
+    const url=new URL(raw);
+    if(url.protocol!=="magnet:"||url.username||url.password)return "";
+    const topics=url.searchParams.getAll("xt");
+    if(!topics.length||!topics.some(topic=>/^urn:(?:btih|btmh):[a-z0-9]+$/i.test(topic)))return "";
     return url.href;
   }catch{return "";}
 }
