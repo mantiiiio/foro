@@ -23,7 +23,7 @@ jobs:
       - name: Stamp release version for automatic browser updates
         run: |
           sed -i "s/__MP_BUILD_ID__/${GITHUB_SHA}/g" index.html
-          printf '{"version":"%s"}\\n' "$GITHUB_SHA" > build-version.json
+          printf '{"version":"%s"}\n' "$GITHUB_SHA" > build-version.json
 
       - name: Validate application JavaScript syntax
         run: |
