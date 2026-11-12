@@ -38,13 +38,16 @@ jobs:
       - name: Validate application JavaScript syntax
         run: |
           python3 - <<'PY'
-          import re
           from pathlib import Path
           source = Path("index.html").read_text(encoding="utf-8")
-          match = re.search(r'<script type="module">([\\s\\S]*?)</script>', source)
-          if not match:
+          opening = '<script type="module">'
+          closing = '</script>'
+          if opening not in source:
               raise SystemExit("No se encontró el script principal de la aplicación.")
-          Path("/tmp/mantipobres-app.mjs").write_text(match.group(1), encoding="utf-8")
+          script = source.split(opening, 1)[1].split(closing, 1)[0]
+          if not script.strip():
+              raise SystemExit("El script principal de la aplicación está vacío.")
+          Path("/tmp/mantipobres-app.mjs").write_text(script, encoding="utf-8")
           PY
           node --check /tmp/mantipobres-app.mjs
           node --check board-search.js
@@ -112,7 +115,7 @@ jobs:
           projectId: foro-66dd5
           target: main
 
-      - name: Verify forum search module is publicly served
+      - name: Verify forum search module and deep forum routes are publicly served
         run: |
           curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
             -D /tmp/mantipobres-search-headers.txt \
@@ -120,6 +123,10 @@ jobs:
             -o /tmp/mantipobres-board-search.js
           grep -Eiq '^content-type:.*(javascript|ecmascript)' /tmp/mantipobres-search-headers.txt
           grep -Fq 'normalizeTopicSearchText' /tmp/mantipobres-board-search.js
+          curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
+            "https://mantipobres.web.app/b/gen?verify=$GITHUB_SHA" \
+            -o /tmp/mantipobres-forum-route.html
+          grep -Fq 'from "/board-search.js"' /tmp/mantipobres-forum-route.html
       - name: Verify public sitemap and robots after deployment
         run: |
           curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error -D /tmp/mantipobres-version-headers.txt "https://mantipobres.web.app/build-version.json?verify=$GITHUB_SHA" -o /tmp/mantipobres-version.json
