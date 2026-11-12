@@ -177,6 +177,44 @@ test("solo se pueden crear temas en categorías publicadas", async () => {
   }));
 });
 
+test("la galería acepta magnets torrent como enlaces, pero no como imágenes ni magnets inválidos", async () => {
+  await seed({
+    "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 }
+  });
+
+  const alice = account("alice");
+  const magnet = "magnet:?xt=urn:btih:e70d97b233880158334abc3301c98418b0d996c4&xt=urn:btmh:12206187985722ba8f68ca9985a4ccd92d8f7b2025b39c344d89451aeb35cd18ad87&dn=MantiTV.zip&xl=200876509&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Ftracker.moeking.me%3A6969%2Fannounce&tr=http%3A%2F%2Fopenbittorrent.com&ws=mantipobres.web.app";
+
+  function topicPayload(gallery) {
+    return {
+      b: "gen", t: "Tema con galería", u: "alice", uid: "alice",
+      ts: 2, lr: 2, lu: "alice", n: 0,
+      staffBadge: false, lastStaffBadge: false,
+      gallery, moderationHidden: false, moderationHiddenUntil: null
+    };
+  }
+
+  await assertSucceeds(setDoc(doc(alice, "topics", "magnet-link"), topicPayload([
+    { type: "link", url: magnet, caption: "MantiTV.zip" }
+  ])));
+
+  await assertFails(setDoc(doc(alice, "topics", "magnet-as-image"), topicPayload([
+    { type: "image", url: magnet, caption: "No es una imagen" }
+  ])));
+
+  await assertFails(setDoc(doc(alice, "topics", "magnet-without-hash"), topicPayload([
+    { type: "link", url: "magnet:?dn=archivo.zip", caption: "Magnet inválido" }
+  ])));
+
+  await assertFails(setDoc(doc(alice, "topics", "http-link"), topicPayload([
+    { type: "link", url: "http://example.com/archivo.torrent", caption: "Enlace no HTTPS" }
+  ])));
+
+  await assertSucceeds(setDoc(doc(alice, "topics", "https-link"), topicPayload([
+    { type: "link", url: "https://example.com/archivo.torrent", caption: "Enlace HTTPS" }
+  ])));
+});
+
 test("solo el OWNER puede crear temas en Avisos del Staff y Nuevo proyecto", async () => {
   await seed({
     [`users/${OWNER_UID}`]: { u: "propietario", ts: 1, rulesAcceptedAt: 1 },
