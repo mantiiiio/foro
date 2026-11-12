@@ -249,7 +249,7 @@ const OWNER_UID = "YgTAVFNclBgScVybW82xE0jKJg32";
 const ADMINS_UID = []; // Compatibilidad para administradores antiguos; los nuevos roles se guardan en Firestore.
 const MODERATORS_UID = []; // Compatibilidad para moderadores antiguos.
 const STAFF_ROLE_LABELS = {co_owner:"Co-owner",admin:"Administrador",moderator:"Moderador",helper:"Ayudante"};
-// Adjuntos del chat y fotos de perfil: requieren Firebase Storage (plan Blaze).
+// Las fotos de perfil requieren Firebase Storage (plan Blaze).
 const STORAGE_ENABLED = false; // No activar Firebase Storage: requiere Blaze.
 // ImageKit se activa al configurar el Worker seguro descrito en README.md.
 const IMAGEKIT_AUTH_ENDPOINT = ""; // URL pública del Worker, terminando en /auth.
@@ -259,7 +259,6 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
-const CHAT_LIMIT = 60;
 const BOARDS = [
   ["Información", [["reglas","foro.reglas","Reglas y políticas","Léelas antes de publicar. Solo publica el staff"]]],
   ["Staff", [["avisos","foro.avisos","Avisos del Staff","Comunicados oficiales del propietario"],["proyecto","foro.proyecto","Nuevo proyecto","Novedades y publicaciones oficiales del nuevo proyecto"]]],
@@ -691,7 +690,6 @@ const errText = z => ({
   "auth/weak-password":"La clave debe tener al menos 6 caracteres.",
   "auth/too-many-requests":"Demasiados intentos. Prueba más tarde.",
   "permission-denied":"Firebase rechazó la operación. Revisa las reglas de Firestore/Storage.",
-  "CHAT_RATE_LIMIT":"Espera al menos 2 segundos entre mensajes del chat.",
   "POST_RATE_LIMIT":"Espera al menos 3 segundos entre publicaciones o respuestas.",
   "storage/unauthorized":"No tienes permiso para subir ese archivo.",
   "storage/bucket-not-found":"No se encontró el bucket de Storage. Revisa firebaseConfig.",
@@ -1962,7 +1960,7 @@ async function go(){
   }
 }
 
-// Chat: suscripción Firestore en vivo, solo para cuentas registradas.
+// Seguridad y previsualización de enlaces multimedia externos.
 function safeWebUrl(value){
   try{
     const url=new URL(String(value||""));
