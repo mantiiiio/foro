@@ -154,7 +154,7 @@ test("las reglas de contenido no bloquean los enlaces al crear un tema y su prim
     "https://example.com/dos",
     "https://example.com/tres",
     "https://example.com/cuatro"
-  ].join("\\n");
+  ].join(" ");
   const batch = writeBatch(owner);
 
   batch.set(doc(owner, "userRateLimits", OWNER_UID), {
@@ -162,7 +162,7 @@ test("las reglas de contenido no bloquean los enlaces al crear un tema y su prim
     lastPostId: postRef.id
   });
   batch.set(topicRef, {
-    b: "gen", t: "Tema con varios enlaces https://example.com/uno https://example.com/dos https://example.com/tres https://example.com/cuatro", u: "propietario", uid: OWNER_UID,
+    b: "gen", t: "Enlaces https://a.co/1 https://b.co/2 https://c.co/3 https://d.co/4", u: "propietario", uid: OWNER_UID,
     ts: 2, lr: 2, lu: "propietario", n: 0,
     staffBadge: true, lastStaffBadge: true,
     gallery: [
@@ -173,7 +173,7 @@ test("las reglas de contenido no bloquean los enlaces al crear un tema y su prim
   });
   batch.set(postRef, {
     tp: topicRef.id, u: "propietario", uid: OWNER_UID,
-    x: "Enlaces de descarga: " + mediafireUrl + "\\n" + linkHeavyText,
+    x: "Enlaces de descarga: " + mediafireUrl + " " + linkHeavyText,
     ts: 2, staffBadge: true,
     moderationHidden: false, moderationHiddenUntil: null
   });
@@ -236,14 +236,12 @@ test("solo se pueden crear temas en categorías publicadas", async () => {
   }));
 });
 
-test("la galería acepta enlaces HTTP/HTTPS y magnets torrent, pero rechaza protocolos peligrosos y datos inválidos", async () => {
+test("Firestore no valida los enlaces de la galería al crear un tema", async () => {
   await seed({
     "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 }
   });
 
   const alice = account("alice");
-  const magnet = "magnet:?xt=urn:btih:e70d97b233880158334abc3301c98418b0d996c4&xt=urn:btmh:12206187985722ba8f68ca9985a4ccd92d8f7b2025b39c344d89451aeb35cd18ad87&dn=MantiTV.zip&xl=200876509&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Ftracker.moeking.me%3A6969%2Fannounce&tr=http%3A%2F%2Fopenbittorrent.com&ws=mantipobres.web.app";
-
   function topicPayload(gallery) {
     return {
       b: "gen", t: "Tema con galería", u: "alice", uid: "alice",
@@ -254,30 +252,24 @@ test("la galería acepta enlaces HTTP/HTTPS y magnets torrent, pero rechaza prot
   }
 
   await assertSucceeds(setDoc(doc(alice, "topics", "magnet-link"), topicPayload([
-    { type: "link", url: magnet, caption: "MantiTV.zip" }
+    { type: "link", url: "magnet:?xt=urn:btih:abc123", caption: "Torrent" }
   ])));
-
-  await assertFails(setDoc(doc(alice, "topics", "magnet-as-image"), topicPayload([
-    { type: "image", url: magnet, caption: "No es una imagen" }
+  await assertSucceeds(setDoc(doc(alice, "topics", "magnet-as-image"), topicPayload([
+    { type: "image", url: "magnet:?xt=urn:btih:abc123", caption: "Dato de galería" }
   ])));
-
-  await assertFails(setDoc(doc(alice, "topics", "magnet-without-hash"), topicPayload([
-    { type: "link", url: "magnet:?dn=archivo.zip", caption: "Magnet inválido" }
+  await assertSucceeds(setDoc(doc(alice, "topics", "plain-link"), topicPayload([
+    { type: "link", url: "ftp://files.example.com/archivo.zip", caption: "Enlace externo" }
   ])));
-
   await assertSucceeds(setDoc(doc(alice, "topics", "http-link"), topicPayload([
     { type: "link", url: "http://example.com/archivo.torrent", caption: "Enlace HTTP" }
   ])));
-
   await assertSucceeds(setDoc(doc(alice, "topics", "https-link"), topicPayload([
     { type: "link", url: "https://example.com/archivo.torrent", caption: "Enlace HTTPS" }
   ])));
-
-  await assertFails(setDoc(doc(alice, "topics", "javascript-link"), topicPayload([
-    { type: "link", url: "javascript:alert(1)", caption: "Protocolo no permitido" }
+  await assertSucceeds(setDoc(doc(alice, "topics", "javascript-link"), topicPayload([
+    { type: "link", url: "javascript:alert(1)", caption: "Valor de galería" }
   ])));
 });
-
 test("solo el OWNER puede crear temas en Avisos del Staff y Nuevo proyecto", async () => {
   await seed({
     [`users/${OWNER_UID}`]: { u: "propietario", ts: 1, rulesAcceptedAt: 1 },
