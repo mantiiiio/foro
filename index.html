@@ -40,7 +40,26 @@ body{
   max-width:none;
   min-width:0;
   margin:0;
-}.sd#sl{display:none}.moderationPanel{margin:9px 0;padding:9px;border:1px solid #b77;background:#fff4f0;color:#512d26}.moderationPanel h3{margin:0 0 7px;color:#8a2e22}.moderationPanel .modActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px}.moderationPanel input, .moderationPanel select{max-width:100%}.moderationHistory{font-size:10px;margin:5px 0;padding-left:20px}.moderationNotice{border:1px solid #b77;background:#fff0ed;color:#702a20;padding:8px;margin:6px 0;font-size:11px;line-height:1.5}.moderationNotice[hidden]{display:none!important}.moderationNotice strong{color:#8a1c12}#m{min-width:0;overflow-x:auto}#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}#nav a{margin:0;white-space:normal}#hd>#lg{min-width:0;flex:1 1 260px}#ban{max-width:100%;flex:0 1 auto}table{max-width:100%;table-layout:auto}td, th{overflow-wrap:anywhere}input, textarea, select{max-width:100%}#m img, #m video, #m iframe{max-width:100%}
+}.sd#sl{display:none}.moderationPanel{margin:9px 0;padding:9px;border:1px solid #b77;background:#fff4f0;color:#512d26}.moderationPanel h3{margin:0 0 7px;color:#8a2e22}.moderationPanel .modActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px}.moderationPanel input, .moderationPanel select{max-width:100%}.moderationHistory{font-size:10px;margin:5px 0;padding-left:20px}.moderationNotice{border:1px solid #b77;background:#fff0ed;color:#702a20;padding:8px;margin:6px 0;font-size:11px;line-height:1.5}.moderationNotice[hidden]{display:none!important}.moderationNotice strong{color:#8a1c12}#m{min-width:0;overflow-x:auto}#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}#nav a{margin:0;white-space:normal}
+.globalTopicSearch{
+  display:inline-flex;align-items:center;gap:4px;max-width:100%;
+  margin:2px 4px;padding:3px;border:1px solid #9bb2bd;
+  background:linear-gradient(#f8fbfc,#e3eaed);vertical-align:middle;
+}
+.globalTopicSearch input{
+  width:clamp(115px,17vw,185px);min-width:0;min-height:29px;
+  padding:5px 7px;border:1px solid #8ba9b6;background:#fff;
+  color:#172d38;font:11px Verdana,Arial,sans-serif;
+}
+.globalTopicSearch button{min-height:29px;padding:4px 7px;font-size:10px}
+.globalTopicSearch button:focus-visible,.globalTopicSearch input:focus-visible{
+  outline:2px solid var(--orange);outline-offset:1px;
+}
+@media(max-width:520px){
+  .globalTopicSearch{flex:1 1 100%;order:20;width:100%;margin:3px 0 0}
+  .globalTopicSearch input{width:auto;flex:1 1 auto}
+}
+#hd>#lg{min-width:0;flex:1 1 260px}#ban{max-width:100%;flex:0 1 auto}table{max-width:100%;table-layout:auto}td, th{overflow-wrap:anywhere}input, textarea, select{max-width:100%}#m img, #m video, #m iframe{max-width:100%}
 
 @media(min-width:1024px){body{grid-template-columns:minmax(0,1fr) 250px}#w{grid-column:1}
 }
@@ -259,7 +278,7 @@ import {
   compareTopicsAlphabetically,
   normalizeTopicSearchText,
   searchTopicsByTitle
-} from "./board-search.js";
+} from "/board-search.js";
 
 const NAME = "MantiPobres";
 const MP_BUILD_ID = "__MP_BUILD_ID__";
@@ -1910,8 +1929,34 @@ function renderAccountNotice(){
     finally{if($("#refreshVerification"))$("#refreshVerification").disabled=false;}
   });
 }
+async function srch(m,rawQuery){
+  const searchText=decodeRoutePart(rawQuery).trim();
+  if(!normalizeTopicSearchText(searchText)){
+    setSeoMetadata("/search","Buscar temas — MantiPobres","Busca conversaciones por título en todos los foros.",false);
+    m.innerHTML='<p><a href="/">Índice</a></p><section class="notice"><b>Escribe qué tema quieres encontrar.</b><p>Usa el buscador de la barra superior para buscar en todos los foros.</p></section>';
+    return;
+  }
+  setSeoMetadata("/search","Resultados de búsqueda — MantiPobres","Resultados de temas para "+searchText,false);
+  const allTopics=await Store.topics();
+  const matches=searchTopicsByTitle(allTopics,searchText);
+  const rows=matches.map(topic=>{
+    const board=BL.find(item=>item[0]===topic.b);
+    return `<tr>
+      <td><a href="/t/${encodeURIComponent(topic.id)}"><b>${E(topic.t)}</b></a><br><small>por ${E(topic.u)}${staffTagHtml(topic.staffBadge)}</small></td>
+      <td><a href="/b/${encodeURIComponent(topic.b)}">${E(board?.[2]||topic.b)}</a></td>
+      <td class="c">${topic.n||0}</td>
+      <td><small>${dt(topic.lr)}<br>por ${E(topic.lu||topic.u)}</small></td>
+    </tr>`;
+  }).join("");
+  m.innerHTML=`<p><a href="/">Índice</a> &raquo; <b>Buscar temas</b></p>
+    <section class="notice"><b>${matches.length} ${matches.length===1?"tema encontrado":"temas encontrados"}</b> para «${E(searchText)}».</section>
+    <table><tr><th>Tema</th><th>Foro</th><th class="c">Resp.</th><th>Último mensaje</th></tr>
+    ${rows||'<tr><td colspan="4">No se encontraron temas. Prueba con otras palabras o sin tildes.</td></tr>'}
+    </table>
+    <p><a href="/">Volver al índice de foros</a></p>`;
+}
 async function out(){await Store.out();location.hash="#/";}
-const ROUTES={"":idx,b:brd,t:thr,n:neu,login:frm,reg:frm,out,setup,faq,u:prf,staff:staffPanel};
+const ROUTES={"":idx,b:brd,t:thr,search:srch,n:neu,login:frm,reg:frm,out,setup,faq,u:prf,staff:staffPanel};
 const ROUTE_MEMORY_KEY="mantipobres_last_route_v2";
 const routeScrollKey=route=> "mantipobres_scroll_v2:"+route;
 let routeLiveUnsubs=[];
@@ -1941,7 +1986,7 @@ async function refreshRouteContent(expectedRenderId=routeRenderId){
   if(expectedRenderId!==routeRenderId||routeKey!==activeRouteKey)return;
   const parts=routeKey.replace(/^#\/?/,"").split("/");
   const routeName=parts[0]||"",arg=parts.slice(1).join("/");
-  const publicRoutes=new Set(["","b","t","login","reg","faq","setup","out"]);
+  const publicRoutes=new Set(["","b","t","search","login","reg","faq","setup","out"]);
   if(firebaseReady&&!isRegisteredMember()&&!publicRoutes.has(routeName)){go();return;}
   const renderer=ROUTES[routeName]||idx,m=$("#m");
   if(!m)return;
@@ -1978,6 +2023,28 @@ addEventListener("pagehide",()=>{
 function restoreLastRoute(){
   // Las URLs /b/... y /t/... ya conservan la ruta; / siempre debe abrir el índice.
   if(location.hash)return;
+}
+function decodeRoutePart(value){
+  try{return decodeURIComponent(String(value||""));}catch{return String(value||"");}
+}
+function globalTopicSearchMarkup(initialValue=""){
+  return `<form id="globalTopicSearch" class="globalTopicSearch" role="search" aria-label="Buscar temas en todos los foros">
+    <input type="search" name="q" maxlength="100" autocomplete="off" spellcheck="false"
+      aria-label="Buscar temas en todos los foros" placeholder="Buscar temas en todos los foros..."
+      value="${E(initialValue)}">
+    <button type="submit">Buscar</button>
+  </form>`;
+}
+function bindGlobalTopicSearch(){
+  const form=$("#globalTopicSearch");
+  if(!form)return;
+  form.addEventListener("submit",event=>{
+    event.preventDefault();
+    const field=form.querySelector('input[name="q"]');
+    const value=String(field?.value||"").trim();
+    if(!normalizeTopicSearchText(value)){field?.focus();return;}
+    location.hash="#/search/"+encodeURIComponent(value);
+  });
 }
 async function go(){
   const routeKey=routeKeyFromLocation();
@@ -2021,13 +2088,14 @@ async function go(){
     $("#tk").hidden=false;
     renderModerationNotice();
   }
-  const publicRoutes=new Set(["","b","t","login","reg","faq","setup","out"]);
+  const publicRoutes=new Set(["","b","t","search","login","reg","faq","setup","out"]);
   if(firebaseReady&&!isRegisteredMember()&&!publicRoutes.has(r)){
     
     $("#tk").hidden=false;
     
     $("#accountNotice").hidden=true;$("#moderationNotice").hidden=true;$("#ann").hidden=true;
-    $("#nav").innerHTML=' <a href="/">Inicio</a>  <a href="/faq">Ayuda</a>  <a href="/login">Entrar</a>  <a href="/reg">Registrarse</a>';
+    $("#nav").innerHTML=' <a href="/">Inicio</a>  <a href="/faq">Ayuda</a>  <a href="/login">Entrar</a>  <a href="/reg">Registrarse</a>'+globalTopicSearchMarkup(r==="search"?decodeRoutePart(a):"");
+    bindGlobalTopicSearch();
     m.innerHTML='<section class="notice"><h2> Inicia sesión para acceder al foro</h2><p>Los foros, temas, comentarios y adjuntos públicos se pueden leer sin iniciar sesión. Para publicar, comentar y valorar necesitas una cuenta verificada.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Crear una cuenta gratis</a></p></section>';
     return;
   }
@@ -2040,7 +2108,9 @@ async function go(){
     (isOwner()
       ? '  <b>OWNER</b> <a href="/staff">Administración</a>'
       : canManageStaff()?'  <a href="/staff">Administración</a>':'')+
-    ' <span style="float:right"><a href="/setup"> Configuración</a></span>';
+    globalTopicSearchMarkup(r==="search"?decodeRoutePart(a):"")+
+    ' <span style="margin-left:auto"><a href="/setup"> Configuración</a></span>';
+  bindGlobalTopicSearch();
   m.innerHTML="Cargando...";
   $("#ann").hidden=!!r;
   try{
