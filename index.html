@@ -649,7 +649,7 @@ function markdownInline(value,options={}){
 function renderMarkdownList(entries,options){
   const first=entries[0];
   const root={type:first.type,items:[]};
-  const stack=[{indent:-1,node:root,last:null}];
+  const stack=[{indent:first.indent,node:root,last:null}];
   for(const entry of entries){
     while(stack.length>1&&entry.indent<=stack[stack.length-1].indent)stack.pop();
     let current=stack[stack.length-1];
@@ -1493,7 +1493,7 @@ async function idx(m){
   let h=`<table><tr><th colspan="2">Foro</th><th width="60" class="c">Temas</th><th width="70" class="c">Mensajes</th><th width="200">Último mensaje</th></tr>`;
   BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"":""}</td><td><a href="/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
   const recent=[...T].sort(compareTopicsStaffFirst).slice(0,15);
-  m.innerHTML=h+`</table><table><tr><th colspan="3"> TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td> <a href="/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. ${n===null?"Inicia sesión para consultar los miembros registrados.":`Hay <b>${n}</b> miembros registrados.`}</small></td></tr></table>`;
+  m.innerHTML=h+`</table><table><tr><th colspan="3"> TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td> <a href="/t/${t.id}"><b>${markdownInline(t.t,{hideLinks:isAnonymousForumVisitor()})}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. ${n===null?"Inicia sesión para consultar los miembros registrados.":`Hay <b>${n}</b> miembros registrados.`}</small></td></tr></table>`;
   if(configured)watchRouteData(query(collection(db,"topics"),where("moderationHidden","==",false)),routeRenderId);
 }
 const BOARD_TOPICS_PER_PAGE=12;
@@ -1524,7 +1524,7 @@ async function brd(m,id){
     const pagination=renderPagination(pageCount);
     m.innerHTML=rulesIntro+boardAccessNotice+`<p><a href="/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${(!configured||isRegisteredMember())&&canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="/n/${id}">Nuevo tema</a>`:""}</p>`+
       pagination+
-      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td> <a href="/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>`+
+      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td> <a href="/t/${t.id}">${markdownInline(t.t,{hideLinks:isAnonymousForumVisitor()})}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>`+
       pagination+
       (isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:"");
     m.querySelectorAll("[data-board-topic-page]").forEach(button=>button.addEventListener("click",()=>{
@@ -2226,7 +2226,7 @@ async function go(){
     $("#chatShortcutDialog").hidden=true;
     $("#accountNotice").hidden=true;$("#moderationNotice").hidden=true;$("#ann").hidden=true;
     $("#nav").innerHTML=' <a href="/">Inicio</a>  <a href="/faq">Ayuda</a>  <a href="/login">Entrar</a>  <a href="/reg">Registrarse</a>';
-    m.innerHTML='<section class="notice"><h2> Inicia sesión para acceder al foro</h2><p>Los foros, temas, comentarios y adjuntos públicos se pueden leer sin iniciar sesión. Para publicar, comentar y valorar necesitas una cuenta verificada. El chat online sigue reservado para miembros.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Crear una cuenta gratis</a></p></section>';
+    m.innerHTML='<section class="notice"><h2> Inicia sesión para acceder al foro</h2><p>Los foros, temas, comentarios y adjuntos públicos se pueden leer sin iniciar sesión. Para publicar, comentar y valorar necesitas una cuenta verificada.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Crear una cuenta gratis</a></p></section>';
     return;
   }
   renderAccountNotice();
@@ -2492,45 +2492,8 @@ $("#chatForm").addEventListener("submit",async e=>{
 });
 
 const shortcutDialog=$("#chatShortcutDialog");
-function openChatShortcuts(){
-  if(!shortcutDialog)return;
-  if(firebaseReady&&(!isRegisteredMember()||moderationAccessState()!=="ready"||getActiveBanDetails()))return;
-  shortcutDialog.hidden=false;
-  $("#chatShortcutClose").focus();
-}
-function closeChatShortcuts(){if(shortcutDialog.hidden)return;shortcutDialog.hidden=true;$("#chatShortcuts").focus();}
-$("#chatShortcuts").addEventListener("click",openChatShortcuts);
-$("#chatShortcutClose").addEventListener("click",closeChatShortcuts);
-$("#chatShortcutDone").addEventListener("click",closeChatShortcuts);
-shortcutDialog.addEventListener("click",e=>{if(e.target===shortcutDialog)closeChatShortcuts();});
-
-// Enter envía; Shift+Enter conserva el salto de línea. Se respeta IME/composición.
-$("#chatText").addEventListener("keydown",e=>{
-  if(e.key!=="Enter"||e.isComposing||e.keyCode===229)return;
-  if(e.shiftKey&&!e.ctrlKey&&!e.metaKey)return;
-  e.preventDefault();$("#chatForm").requestSubmit();
-});
-
-// Atajos globales: ? abre ayuda, Alt+M enfoca el chat, Esc cierra ayuda/chat ampliado.
-document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"){
-    if(!shortcutDialog.hidden){e.preventDefault();closeChatShortcuts();return;}
-    const chat=$("#chatBox");if(chat.classList.contains("chat-expanded")){e.preventDefault();chat.classList.remove("chat-expanded");$("#chatExpand").textContent="⛶ Ampliar";$("#chatExpand").setAttribute("aria-expanded","false");}
-    return;
-  }
-  const typing=e.target instanceof HTMLElement&&(e.target.matches("input,textarea,select")||e.target.isContentEditable);
-  if(!typing&&e.key==="?"&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();openChatShortcuts();return;}
-  if(!typing&&e.altKey&&e.key.toLowerCase()==="m"){e.preventDefault();$("#chatText").focus();}
-});
-$("#chatCatbox").addEventListener("click",()=>{
-  if(!isRegisteredMember()){alert("Inicia sesión con una cuenta registrada para usar el chat y adjuntar archivos.");return;}
-  const panel=$("#chatCatboxForm");panel.hidden=!panel.hidden;
-  if(!panel.hidden)$("#chatCatboxFile").focus();
-});
-$("#chatCatboxCancel").addEventListener("click",()=>{$("#chatCatboxForm").hidden=true;$("#chatCatboxFile").value="";});
-bindCatboxUpload("#chatCatboxForm","#chatCatboxFile","#chatCatboxStatus",false);
-$("#chatExpand").addEventListener("click",()=>{const box=$("#chatBox"),expanded=box.classList.toggle("chat-expanded");$("#chatExpand").textContent=expanded?"✕ Cerrar":"⛶ Ampliar";$("#chatExpand").setAttribute("aria-expanded",String(expanded));});
-$("#chatClear").addEventListener("click",async()=>{if(!isAdmin())return alert("No autorizado.");if(!confirm("¿Marcar los últimos 500 mensajes del chat como eliminados? Se conservarán los avisos de eliminación."))return;try{await Store.chatClear();}catch(z){alert(errText(z));}});
+function openChatShortcuts(){}
+function closeChatShortcuts(){}
 
 // Inicio Firebase y sesión de invitado
 async function startFirebase(){
