@@ -83,10 +83,6 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
       moderationHidden: true, moderationHiddenUntil: null
     },
     "users/alice": { u: "alice", ts: 1 },
-    "chatMessages/message-1": {
-      uid: "alice", u: "alice", x: "No público", ts: 1,
-      avatarUrl: "", staffBadge: false, media: null
-    },
     "topics/topic-public/ratings/vote-1": { uid: "alice", stars: 5, ts: 1 }
   });
 
@@ -102,7 +98,6 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
   await assertFails(getDocs(collection(guest, "posts")));
   await assertFails(getDoc(doc(guest, "posts", "post-hidden")));
   await assertFails(getDoc(doc(guest, "users", "alice")));
-  await assertFails(getDoc(doc(guest, "chatMessages", "message-1")));
   await assertFails(getDoc(doc(guest, "topics", "topic-public", "ratings", "vote-1")));
 
   const topicWrite = {
@@ -219,39 +214,29 @@ test("solo el OWNER puede crear temas en Avisos del Staff y Nuevo proyecto", asy
   }
 });
 
-test("la automoderación bloquea insultos dirigidos en el propio servidor", async () => {
+
+test("el chat online está retirado y solo el OWNER puede purgar mensajes antiguos", async () => {
   await seed({
-    "users/alice": { u: "alice", avatarUrl: "", ts: 1, rulesAcceptedAt: 1 }
+    "chatMessages/legacy-message": {
+      uid: "alice", u: "alice", x: "Mensaje antiguo", ts: 1,
+      avatarUrl: "", staffBadge: false, media: null
+    }
   });
 
+  const owner = account(OWNER_UID);
   const alice = account("alice");
 
-  async function sendChat(text) {
-    const batch = writeBatch(alice);
-    const messageRef = doc(collection(alice, "chatMessages"));
-    batch.set(doc(alice, "userRateLimits", "alice"), {
-      lastChatAt: serverTimestamp(),
-      lastChatMessageId: messageRef.id
-    }, { merge: true });
-    batch.set(messageRef, {
-      uid: "alice",
-      u: "alice",
-      avatarUrl: "",
-      x: text,
-      media: null,
-      ts: Date.now(),
-      staffBadge: false
-    });
-    await batch.commit();
-  }
-
-  await assertFails(sendChat("Sos un pelotudo."));
-  await assertFails(sendChat("Eres un imbécil."));
-  await assertFails(sendChat("@bob, sos un idiota."));
-  await assertFails(sendChat("Vete a la mierda."));
-  await assertSucceeds(sendChat("Este juego es una mierda, pero me gusta."));
+  await assertSucceeds(getDocs(collection(owner, "chatMessages")));
+  await assertSucceeds(getDoc(doc(owner, "chatMessages", "legacy-message")));
+  await assertFails(getDocs(collection(alice, "chatMessages")));
+  await assertFails(getDoc(doc(alice, "chatMessages", "legacy-message")));
+  await assertFails(setDoc(doc(alice, "chatMessages", "new-message"), {
+    uid: "alice", u: "alice", x: "No debe publicarse", ts: 2,
+    avatarUrl: "", staffBadge: false, media: null
+  }));
+  await assertFails(updateDoc(doc(owner, "chatMessages", "legacy-message"), { x: "No editable" }));
+  await assertSucceeds(deleteDoc(doc(owner, "chatMessages", "legacy-message")));
 });
-
 test("el contador solo aumenta cuando se crea una respuesta real en la misma operación", async () => {
   await seed({
     "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 },
@@ -340,10 +325,6 @@ test("una cuenta baneada solo puede leer y ocultar su propio contenido; no puede
       tp: "topic-1", uid: "other", u: "other",
       x: "Publicación ajena", ts: 2, staffBadge: false
     },
-    "chatMessages/own-message": {
-      uid: "banned", u: "banned", x: "Mensaje", ts: 1,
-      avatarUrl: "", staffBadge: false, media: null
-    }
   });
 
   const banned = account("banned");
@@ -355,7 +336,6 @@ test("una cuenta baneada solo puede leer y ocultar su propio contenido; no puede
     x: "", deleted: true, deletedBy: "usuario",
     deletedByUid: "banned", deletedAt: 4, deletedQuoteHash: "abc"
   }));
-  await assertFails(deleteDoc(doc(banned, "chatMessages", "own-message")));
 
   await assertSucceeds(updateDoc(doc(banned, "posts", "own-post"), {
     moderationHidden: true,
