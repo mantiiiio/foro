@@ -416,6 +416,8 @@ pre,code{max-width:100%}
   #m .topicGalleryStage{grid-template-columns:26px minmax(0,1fr) 26px;gap:3px;padding:4px}
   #m .topicGalleryNav{min-width:24px;padding:2px}
 }
+
+.markdownHelp{display:block;margin:5px 0;color:#526773;font:10px/1.5 Verdana,Arial,sans-serif}
 </style>
 </head>
 <body>
@@ -885,7 +887,7 @@ function renderBannedAccess(m,ban){
     +(history?'<ol class="moderationHistory">'+history+'</ol>':'<p>No hay avisos previos registrados.</p>')+'</div>'
     +'<div class="banMeta"><b>Por qué se te baneó:</b><br>'+E(ban.reason)+'</div>'
     +untilLine
-    +'<p>Mientras dure la suspensión, no puedes acceder a los foros, temas, respuestas ni chats.</p>'
+    +'<p>Mientras dure la suspensión, no puedes acceder a los foros, temas ni respuestas.</p>'
     +'<div class="banActions"><a href="/out">Cerrar sesión</a></div>'
     +'</section>';
 }
@@ -1656,7 +1658,7 @@ async function thr(m,id){
      }).join("")+
     '</table>'+
     (canReply
-      ? '<form id="rf" class="commentForm"><b> Añadir un comentario</b><br><textarea id="rx" rows="5" style="width:100%" maxlength="6000" placeholder="Escribe tu comentario o respuesta..."></textarea><br><button class="bt">Publicar comentario</button> <span id="er" class="err"></span></form>'
+      ? '<form id="rf" class="commentForm"><b> Añadir un comentario</b><br><textarea id="rx" rows="5" style="width:100%" maxlength="6000" placeholder="Escribe tu comentario o respuesta..."></textarea><small class="markdownHelp">También puedes escribir con Markdown, igual que en Discord.</small><br><button class="bt">Publicar comentario</button> <span id="er" class="err"></span></form>'
       : '<p class="notice">'+(locked?"Este foro es de solo lectura: publica solo el staff.":!name?'Debes <a href="/login">iniciar sesión</a> para comentar.':'Para comentar, verifica tu correo desde el aviso superior.')+'</p>');
   bindTopicGallery(m,t.gallery);
   bindExternalMediaFallback(m);
@@ -1788,7 +1790,7 @@ function neu(m,id){
   }
   if(configured&&!emailVerified()){m.innerHTML=`<div class="notice"><b>Verifica tu correo para publicar.</b><br>Abre el enlace enviado a tu correo. Puedes reenviarlo desde el aviso superior.</div>`;return;}
   const savedDraft=loadTopicDraft(id);
-  m.innerHTML=`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea></td></tr><tr><td colspan="2">
+  m.innerHTML=`<form id="nf"><table><tr><th colspan="2">Nuevo tema</th></tr><tr><td class="b">Asunto</td><td><input id="ti" maxlength="100" size="60" required></td></tr><tr><td class="b" valign="top">Mensaje</td><td><textarea id="tx" rows="10" style="width:98%" maxlength="6000" required></textarea><small class="markdownHelp">Markdown: **negrita** · *cursiva* · __subrayado__ · ~~tachado~~ · ||spoiler|| · ### título · - lista · &gt; cita · &#96;código&#96;.</small></td></tr><tr><td colspan="2">
     <section class="topicGalleryComposer" aria-label="Galería opcional del tema">
       <div class="topicGalleryBar">
         <button type="button" id="topicGalleryToggle" aria-expanded="false">▸ Agregar imágenes o enlaces (opcional)</button>
@@ -2087,7 +2089,7 @@ async function setup(m){
     (firebaseReady?"La aplicación está conectada. Inicia sesión para editar tu perfil y subir archivos.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio.")+
     '</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los visitantes pueden leer todos los foros, temas y comentarios públicos sin iniciar sesión. Para publicar, comentar o valorar necesitas una cuenta registrada y correo verificado. Los perfiles siguen siendo exclusivos de cuentas registradas.</li><li>El propietario se detecta automáticamente por el UID de Firebase configurado en <code>OWNER_UID</code>. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Sesión actual:</b> '+
     (owner?"<strong>OWNER detectado correctamente.</strong>":"Sesión de visitante: lectura pública. Pulsa Entrar para participar.")+
-    '</p><p><b>Perfiles y archivos:</b> al iniciar sesión podrás cambiar tu foto y subir archivos desde el foro mediante Catbox. Firebase Storage permanece desactivado.</p></td></tr></table>';
+    '</p><p><b>Perfiles y archivos:</b> al iniciar sesión podrás cambiar tu foto y compartir archivos mediante enlaces de Catbox. Firebase Storage permanece desactivado.</p></td></tr></table>';
 }
 function renderAccountNotice(){
   const box=$("#accountNotice"),user=auth?.currentUser;
@@ -2545,7 +2547,7 @@ function failClosedModerationAccess(uid,error){
   stopChatSubscription();
   setSuspendedShell(true);
   if(routeKeyFromLocation()!=="#/out"&&$("#m")){
-    $("#m").innerHTML='<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, los foros, enlaces, archivos y el chat permanecen ocultos. Comprueba tu conexión y recarga la página.</p><button type="button" onclick="location.reload()">Recargar</button></div>';
+    $("#m").innerHTML='<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, los foros, enlaces y archivos permanecen ocultos. Comprueba tu conexión y recarga la página.</p><button type="button" onclick="location.reload()">Recargar</button></div>';
   }
 }
 async function refreshOwnModerationFromServer(){
