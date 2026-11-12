@@ -40,6 +40,12 @@ service cloud.firestore {
     function moderationPath(uid) {
       return /databases/$(database)/documents/moderation/$(uid);
     }
+    function isFirstPostForNewTopic(topicId) {
+      let path = /databases/$(database)/documents/topics/$(topicId);
+      return !exists(path)
+        && existsAfter(path)
+        && getAfter(path).data.uid == request.auth.uid;
+    }
     function hasFreshPostRateLimit(uid, postId) {
       let path = /databases/$(database)/documents/userRateLimits/$(uid);
       return existsAfter(path)
@@ -210,9 +216,6 @@ service cloud.firestore {
     function shortString(value, max) {
       return value is string && value.size() > 0 && value.size() <= max;
     }
-    function containsLink(value) {
-      return value.matches('(?s).*(https?://|www\\.).*');
-    }
     // Filtro adicional en servidor para amenazas explícitas e insultos dirigidos.
     function automodSafe(value) {
       return value is string
@@ -220,64 +223,6 @@ service cloud.firestore {
         && !value.matches('(?is).*(\\b(sos|eres|sois|estas|estás|you are)\\s+(un\\s+|una\\s+|el\\s+|la\\s+)?(idiota|imb[eé]cil|retrasad[oa]|subnormal|tarad[oa]|pelotud[oa]|bolud[oa]|forr[oa]|gil(ipollas)?|est[uú]pid[oa]|in[uú]til|basura|mierda|scum|moron|dumbass|asshole|bitch|pendej[oa]|cabr[oó]n|malparid[oa]|put[oa]|hij[oa] de puta)\\b|\\b(vete|andate|ándate)\\s+(a la mierda|al carajo|a cagar)\\b|\\b(fuck you|fuck off|go to hell|shut up|la concha de tu madre|chupame un huevo)\\b|@[a-z0-9_]{2,16}\\s*[,;:!-]?\\s*(?:(sos|eres|sois)\\s+(un\\s+|una\\s+)?)?(idiota|imb[eé]cil|retrasad[oa]|subnormal|tarad[oa]|pelotud[oa]|bolud[oa]|forr[oa]|gilipollas|est[uú]pid[oa]|in[uú]til|basura|mierda|moron|dumbass|asshole|bitch|pendej[oa]|cabr[oó]n|malparid[oa]|put[oa])\\b).*')
         && !value.matches('(?is).*(https?://.*https?://.*https?://.*https?://|www\\..*www\\..*www\\..*www\\.).*')
         && !value.matches('(?s)^(?:[^a-záéíóúüñ]*[A-ZÁÉÍÓÚÜÑ]){28,}[^a-záéíóúüñ]*$');
-    }
-    function validTopicGalleryItem(item) {
-      return item is map
-        && item.keys().hasOnly(['type','url','caption'])
-        && item.keys().hasAll(['type','url','caption'])
-        && item.type in ['image','link']
-        && item.url is string
-        && item.url.size() >= 9
-        && item.url.size() <= 8192
-        && !item.url.matches('(?s).*\\s.*')
-        && (
-          (item.type == 'image'
-            && item.url.size() <= 2048
-            && item.url.matches('https://.*'))
-          || (
-            item.type == 'link'
-            && (
-              (item.url.size() <= 8192 && item.url.matches('(?i)^https?://.*'))
-              || item.url.matches('(?i)^magnet:\\?.*([?&])xt=urn:(btih|btmh):[a-z0-9]+(&.*)?$')
-            )
-          )
-        )
-        && item.caption is string
-        && item.caption.size() <= 80;
-    }
-    function validTopicGallery(gallery) {
-      return gallery is list
-        && gallery.size() <= 30
-        && (gallery.size() < 1 || validTopicGalleryItem(gallery[0]))
-        && (gallery.size() < 2 || validTopicGalleryItem(gallery[1]))
-        && (gallery.size() < 3 || validTopicGalleryItem(gallery[2]))
-        && (gallery.size() < 4 || validTopicGalleryItem(gallery[3]))
-        && (gallery.size() < 5 || validTopicGalleryItem(gallery[4]))
-        && (gallery.size() < 6 || validTopicGalleryItem(gallery[5]))
-        && (gallery.size() < 7 || validTopicGalleryItem(gallery[6]))
-        && (gallery.size() < 8 || validTopicGalleryItem(gallery[7]))
-        && (gallery.size() < 9 || validTopicGalleryItem(gallery[8]))
-        && (gallery.size() < 10 || validTopicGalleryItem(gallery[9]))
-        && (gallery.size() < 11 || validTopicGalleryItem(gallery[10]))
-        && (gallery.size() < 12 || validTopicGalleryItem(gallery[11]))
-        && (gallery.size() < 13 || validTopicGalleryItem(gallery[12]))
-        && (gallery.size() < 14 || validTopicGalleryItem(gallery[13]))
-        && (gallery.size() < 15 || validTopicGalleryItem(gallery[14]))
-        && (gallery.size() < 16 || validTopicGalleryItem(gallery[15]))
-        && (gallery.size() < 17 || validTopicGalleryItem(gallery[16]))
-        && (gallery.size() < 18 || validTopicGalleryItem(gallery[17]))
-        && (gallery.size() < 19 || validTopicGalleryItem(gallery[18]))
-        && (gallery.size() < 20 || validTopicGalleryItem(gallery[19]))
-        && (gallery.size() < 21 || validTopicGalleryItem(gallery[20]))
-        && (gallery.size() < 22 || validTopicGalleryItem(gallery[21]))
-        && (gallery.size() < 23 || validTopicGalleryItem(gallery[22]))
-        && (gallery.size() < 24 || validTopicGalleryItem(gallery[23]))
-        && (gallery.size() < 25 || validTopicGalleryItem(gallery[24]))
-        && (gallery.size() < 26 || validTopicGalleryItem(gallery[25]))
-        && (gallery.size() < 27 || validTopicGalleryItem(gallery[26]))
-        && (gallery.size() < 28 || validTopicGalleryItem(gallery[27]))
-        && (gallery.size() < 29 || validTopicGalleryItem(gallery[28]))
-        && (gallery.size() < 30 || validTopicGalleryItem(gallery[29]));
     }
 
 
@@ -434,7 +379,6 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.staffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
         && request.resource.data.lastStaffBadge == request.resource.data.staffBadge
-        && (!('gallery' in request.resource.data) || validTopicGallery(request.resource.data.gallery))
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
         && shortString(request.resource.data.b, 24)
@@ -442,7 +386,6 @@ service cloud.firestore {
         && (request.resource.data.b != 'avisos' || isOwner())
         && (request.resource.data.b != 'proyecto' || isOwner())
         && shortString(request.resource.data.t, 100)
-        && automodSafe(request.resource.data.t)
         && shortString(request.resource.data.u, 16)
         && request.resource.data.n == 0
         && request.resource.data.moderationHidden == false
@@ -542,7 +485,7 @@ service cloud.firestore {
         && request.resource.data.x is string
         && request.resource.data.x.size() > 0
         && request.resource.data.x.size() <= 6000
-        && automodSafe(request.resource.data.x)
+        && (isFirstPostForNewTopic(request.resource.data.tp) || automodSafe(request.resource.data.x))
         && request.resource.data.ts is int
         && request.resource.data.moderationHidden == false
         && request.resource.data.moderationHiddenUntil == null

@@ -140,7 +140,7 @@ test("una cuenta sin verificar puede leer el foro, pero no crear temas ni respue
   }));
 });
 
-test("el OWNER puede publicar el tema, primer mensaje y enlace MediaFire en un lote aunque su correo no esté verificado", async () => {
+test("las reglas de contenido no bloquean los enlaces al crear un tema y su primer mensaje, pero siguen activas en respuestas", async () => {
   await seed({
     [`users/${OWNER_UID}`]: { u: "propietario", ts: 1, rulesAcceptedAt: 1 }
   });
@@ -149,6 +149,12 @@ test("el OWNER puede publicar el tema, primer mensaje y enlace MediaFire en un l
   const topicRef = doc(owner, "topics", "owner-mediafire-topic");
   const postRef = doc(owner, "posts", "owner-mediafire-post");
   const mediafireUrl = "https://www.mediafire.com/file/9zswoifkqd0pe0o/Parche_WinRAR.zip/file";
+  const linkHeavyText = [
+    "https://example.com/uno",
+    "https://example.com/dos",
+    "https://example.com/tres",
+    "https://example.com/cuatro"
+  ].join("\\n");
   const batch = writeBatch(owner);
 
   batch.set(doc(owner, "userRateLimits", OWNER_UID), {
@@ -156,20 +162,41 @@ test("el OWNER puede publicar el tema, primer mensaje y enlace MediaFire en un l
     lastPostId: postRef.id
   });
   batch.set(topicRef, {
-    b: "gen", t: "Parche WinRAR", u: "propietario", uid: OWNER_UID,
+    b: "gen", t: "Tema con varios enlaces https://example.com/uno https://example.com/dos https://example.com/tres https://example.com/cuatro", u: "propietario", uid: OWNER_UID,
     ts: 2, lr: 2, lu: "propietario", n: 0,
     staffBadge: true, lastStaffBadge: true,
-    gallery: [{ type: "link", url: mediafireUrl, caption: "Parche WinRAR" }],
+    gallery: [
+      { type: "link", url: mediafireUrl, caption: "Parche WinRAR" },
+      { type: "link", url: "ftp://files.example.com/archive.zip", caption: "Otro enlace externo" }
+    ],
     moderationHidden: false, moderationHiddenUntil: null
   });
   batch.set(postRef, {
     tp: topicRef.id, u: "propietario", uid: OWNER_UID,
-    x: "Enlace de descarga: " + mediafireUrl,
+    x: "Enlaces de descarga: " + mediafireUrl + "\\n" + linkHeavyText,
     ts: 2, staffBadge: true,
     moderationHidden: false, moderationHiddenUntil: null
   });
 
   await assertSucceeds(batch.commit());
+
+  // La excepción es solo para el tema recién creado: la respuesta posterior sigue filtrándose.
+  await seed({
+    "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 }
+  });
+  const alice = account("alice");
+  const replyRef = doc(alice, "posts", "reply-many-links");
+  const replyBatch = writeBatch(alice);
+  replyBatch.set(doc(alice, "userRateLimits", "alice"), {
+    lastPostAt: serverTimestamp(),
+    lastPostId: replyRef.id
+  });
+  replyBatch.set(replyRef, {
+    tp: topicRef.id, u: "alice", uid: "alice",
+    x: linkHeavyText, ts: 3, staffBadge: false,
+    moderationHidden: false, moderationHiddenUntil: null
+  });
+  await assertFails(replyBatch.commit());
 });
 
 test("un moderador puede editar el texto, pero no apropiarse del UID de una respuesta", async () => {
