@@ -1619,7 +1619,7 @@ function neu(m,id){
         <b>¿Cómo funciona?</b>
         <ol>
           <li>Pulsa «Agregar elemento» y elige si vas a poner una imagen o un enlace.</li>
-          <li>Para imágenes, pega una URL HTTPS directa. Para enlaces, puedes usar una URL HTTPS o un enlace <b>magnet:</b> de torrent.</li>
+          <li>Para imágenes, pega una URL HTTPS directa. Para enlaces, puedes usar una URL HTTP/HTTPS o un enlace <b>magnet:</b> de torrent.</li>
           <li>Opcionalmente escribe un texto corto para describirla.</li>
           <li>Cuando publiques el tema, aparecerá un visor con flechas para recorrer los elementos.</li>
         </ol>
@@ -1628,7 +1628,7 @@ function neu(m,id){
       <div id="topicGalleryEditor" hidden>
         <div id="topicGalleryItems"></div>
         <button type="button" id="topicGalleryAdd">＋ Agregar elemento</button>
-        <small class="topicGalleryNote">Las imágenes necesitan una URL HTTPS directa. Los enlaces admiten HTTPS o magnet: de torrents y se mostrarán como tarjetas que se pueden abrir.</small>
+        <small class="topicGalleryNote">Las imágenes necesitan una URL HTTPS directa. Los enlaces admiten HTTP, HTTPS o magnet: de torrents y se mostrarán como tarjetas que se pueden abrir.</small>
       </div>
     </section>
   </td></tr><tr><td colspan="2" class="c"><button type="submit" class="bt">Publicar</button> <span id="er" class="err"></span></td></tr></table></form>`;
@@ -1654,7 +1654,7 @@ function neu(m,id){
     const rowId=galleryRowId++;
     galleryItems.insertAdjacentHTML("beforeend",`<div class="topicGalleryRow" data-gallery-row="${rowId}">
       <div class="topicGalleryField"><label for="galleryType${rowId}">Tipo</label><select id="galleryType${rowId}" data-gallery-type><option value="image">Imagen</option><option value="link">Enlace</option></select></div>
-      <div class="topicGalleryField"><label for="galleryUrl${rowId}">URL o magnet</label><input id="galleryUrl${rowId}" data-gallery-url type="text" inputmode="url" maxlength="8192" placeholder="https://... o magnet:?xt=urn:btih:..." required></div>
+      <div class="topicGalleryField"><label for="galleryUrl${rowId}">URL o magnet</label><input id="galleryUrl${rowId}" data-gallery-url type="text" inputmode="url" maxlength="8192" placeholder="http(s)://... o magnet:?xt=urn:btih:..." required></div>
       <div class="topicGalleryField"><label for="galleryCaption${rowId}">Descripción (opcional)</label><input id="galleryCaption${rowId}" data-gallery-caption type="text" maxlength="80" placeholder="Imagen 1, mis gatos..."></div>
       <button type="button" class="topicGalleryRemove" data-gallery-remove>Quitar</button>
     </div>`);
@@ -1705,7 +1705,7 @@ function neu(m,id){
       const rawUrl=row.querySelector("[data-gallery-url]").value.trim();
       const caption=row.querySelector("[data-gallery-caption]").value.trim();
       const url=type==="image"?safeHttps(rawUrl):safeGalleryLinkUrl(rawUrl);
-      if(!url){$("#er").textContent=type==="image"?"Las imágenes necesitan una URL HTTPS válida.":"El enlace debe ser una URL HTTPS o un magnet torrent válido (con xt=urn:btih o xt=urn:btmh).";row.querySelector("[data-gallery-url]").focus();return;}
+      if(!url){$("#er").textContent=type==="image"?"Las imágenes necesitan una URL HTTPS válida.":"El enlace debe ser una URL HTTP/HTTPS válida o un magnet torrent válido (con xt=urn:btih o xt=urn:btmh).";row.querySelector("[data-gallery-url]").focus();return;}
       gallery.push({type,url,caption});
     }
     const publish=$("#nf button[type=submit]");
@@ -2165,10 +2165,10 @@ function safeLinkUrl(value){
     return url.href;
   }catch{return "";}
 }
-// La galería publica solo HTTPS o magnet válidos; HTTP queda fuera de los adjuntos.
+// La galería acepta enlaces HTTP/HTTPS y magnets torrent válidos.
 function safeGalleryLinkUrl(value){
   const safe=safeLinkUrl(value);
-  return safe.startsWith("https://")||safe.startsWith("magnet:")?safe:"";
+  return safe.startsWith("https://")||safe.startsWith("http://")||safe.startsWith("magnet:")?safe:"";
 }
 function cleanUrlToken(value){
   return String(value||"").replace(/[),.!?;:]+$/g,"");

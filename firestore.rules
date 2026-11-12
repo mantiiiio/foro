@@ -237,7 +237,7 @@ service cloud.firestore {
           || (
             item.type == 'link'
             && (
-              (item.url.size() <= 2048 && item.url.matches('https://.*'))
+              (item.url.size() <= 8192 && item.url.matches('(?i)^https?://.*'))
               || item.url.matches('(?i)^magnet:\\?.*([?&])xt=urn:(btih|btmh):[a-z0-9]+(&.*)?$')
             )
           )

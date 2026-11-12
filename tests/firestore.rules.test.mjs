@@ -209,7 +209,7 @@ test("solo se pueden crear temas en categorías publicadas", async () => {
   }));
 });
 
-test("la galería acepta magnets torrent como enlaces, pero no como imágenes ni magnets inválidos", async () => {
+test("la galería acepta enlaces HTTP/HTTPS y magnets torrent, pero rechaza protocolos peligrosos y datos inválidos", async () => {
   await seed({
     "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 }
   });
@@ -238,12 +238,16 @@ test("la galería acepta magnets torrent como enlaces, pero no como imágenes ni
     { type: "link", url: "magnet:?dn=archivo.zip", caption: "Magnet inválido" }
   ])));
 
-  await assertFails(setDoc(doc(alice, "topics", "http-link"), topicPayload([
-    { type: "link", url: "http://example.com/archivo.torrent", caption: "Enlace no HTTPS" }
+  await assertSucceeds(setDoc(doc(alice, "topics", "http-link"), topicPayload([
+    { type: "link", url: "http://example.com/archivo.torrent", caption: "Enlace HTTP" }
   ])));
 
   await assertSucceeds(setDoc(doc(alice, "topics", "https-link"), topicPayload([
     { type: "link", url: "https://example.com/archivo.torrent", caption: "Enlace HTTPS" }
+  ])));
+
+  await assertFails(setDoc(doc(alice, "topics", "javascript-link"), topicPayload([
+    { type: "link", url: "javascript:alert(1)", caption: "Protocolo no permitido" }
   ])));
 });
 
