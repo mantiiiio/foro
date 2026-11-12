@@ -58,7 +58,11 @@ jobs:
               'from "/board-search.js"',
               'id="globalTopicSearch"',
               'async function srch(',
-              'search:srch'
+              'search:srch',
+              'class="topicMaintenanceShell"',
+              'class="topicMaintenanceBlur" inert',
+              'Estamos teniendo problemas con el proyecto/tema.',
+              'link.removeAttribute("href")'
           ]
           missing = [item for item in required if item not in source]
           if missing:

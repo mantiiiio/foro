@@ -1519,6 +1519,23 @@ async function thr(m,id){
     (t.maintenanceLocked?'</div><div class="topicMaintenanceCurtain" role="status" aria-live="polite"><div class="topicMaintenanceMessage"><span class="topicMaintenanceEyebrow">AVISO DE MANTENIMIENTO</span><h2>🔴 EN MANTENIMIENTO</h2><p>Estamos teniendo problemas con el proyecto/tema.</p><small>El contenido, los enlaces y las descargas están temporalmente bloqueados.</small></div></div></section>':'');
   bindTopicGallery(m,t.gallery);
   bindExternalMediaFallback(m);
+  if(t.maintenanceLocked){
+    const blockedContent=m.querySelector(".topicMaintenanceBlur");
+    blockedContent?.querySelectorAll("a[href]").forEach(link=>{
+      link.removeAttribute("href");
+      link.removeAttribute("target");
+      link.removeAttribute("download");
+      link.setAttribute("aria-disabled","true");
+    });
+    blockedContent?.querySelectorAll("button,input,textarea,select").forEach(control=>{control.disabled=true;});
+    blockedContent?.querySelectorAll("video,audio").forEach(media=>{
+      try{media.pause();}catch{}
+      media.removeAttribute("src");
+      media.querySelectorAll("source").forEach(source=>source.removeAttribute("src"));
+      try{media.load();}catch{}
+    });
+    blockedContent?.querySelectorAll("iframe,object,embed").forEach(frame=>frame.remove());
+  }
   $("#toggleTopicMaintenance")?.addEventListener("click",async event=>{
     event.preventDefault();
     const button=$("#toggleTopicMaintenance");button.textContent="[guardando…]";
