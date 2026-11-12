@@ -121,7 +121,29 @@ body{
   border:2px outset #fff;background:linear-gradient(#fff,#d8e0e4);
 }.boardTopicPagination button:not(:disabled):hover{background:#fff2cc;color:#8a4300}.boardTopicPagination button:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:420px){.boardTopicPagination{gap:6px;padding:5px}.boardTopicPagination span{flex:1 1 100%;order:2}.boardTopicPagination button:first-child{order:1}.boardTopicPagination button:last-child{order:3}
-}/* Los enlaces y adjuntos de los temas solo se muestran a cuentas registradas. */
+}
+.boardTopicSearch{
+  display:grid;gap:5px;margin:8px 0;padding:9px;
+  border:1px solid #9bb2bd;background:linear-gradient(#f8fbfc,#e8eff2);
+}
+.boardTopicSearch label{
+  color:#17445b;font:bold 11px Verdana,Arial,sans-serif;
+}
+.boardTopicSearchControls{display:flex;align-items:stretch;gap:6px;min-width:0}
+.boardTopicSearchControls input{
+  flex:1 1 auto;width:100%;min-width:0;min-height:34px;
+  padding:7px 9px;border:1px solid #6c91a3;background:#fff;
+  color:#172d38;font:12px Verdana,Arial,sans-serif;
+}
+.boardTopicSearchControls button{flex:0 0 auto;min-width:66px}
+.boardTopicSearch small{color:#4c626c;font:10px/1.4 "Courier New",monospace}
+@media(max-width:380px){
+  .boardTopicSearch{padding:7px}
+  .boardTopicSearchControls{flex-wrap:wrap}
+  .boardTopicSearchControls input{flex-basis:100%}
+  .boardTopicSearchControls button{width:100%}
+}
+/* Los enlaces y adjuntos de los temas solo se muestran a cuentas registradas. */
 .topicLoginGate{
   display:block;
   width:max-content;
@@ -233,6 +255,11 @@ import {
   getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL,
   deleteObject
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-storage.js";
+import {
+  compareTopicsAlphabetically,
+  normalizeTopicSearchText,
+  searchTopicsByTitle
+} from "./board-search.js";
 
 const NAME = "MantiPobres";
 const MP_BUILD_ID = "__MP_BUILD_ID__";
@@ -1228,44 +1255,88 @@ async function idx(m){
 }
 const BOARD_TOPICS_PER_PAGE=12;
 const boardTopicPages=new Map();
+const boardTopicSearches=new Map();
 async function brd(m,id){
   const B=BL.find(x=>x[0]===id);if(!B)return m.innerHTML="Foro inexistente";
-  const T=(await Store.topicsByBoard(id)).sort(compareTopicsStaffFirst),isRules=id==="reglas";
+  const T=await Store.topicsByBoard(id),isRules=id==="reglas";
   setSeoMetadata("/b/"+encodeURIComponent(id),B[2]+" — Foro MantiPobres","Debates y temas de "+B[2]+" en MantiPobres, comunidad retro en español.",true);
   const ownerOnlyBoard=OWNER_ONLY_TOPIC_BOARDS.has(id);
   const boardAccessNotice=ownerOnlyBoard?'<section class="notice"><b>Solo el OWNER puede crear temas en este foro.</b><p>Todos pueden leer las publicaciones. Las cuentas registradas pueden responder a los temas existentes.</p></section>':"";
   const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican a todos los foros. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
   let currentPage=boardTopicPages.get(id)||1;
-  function renderPagination(pageCount){
+  const initialSearch=boardTopicSearches.get(id)||"";
+  function renderPagination(pageCount,resultCount,hasSearch){
     if(pageCount<=1)return "";
     const first=(currentPage-1)*BOARD_TOPICS_PER_PAGE+1;
-    const last=Math.min(T.length,currentPage*BOARD_TOPICS_PER_PAGE);
+    const last=Math.min(resultCount,currentPage*BOARD_TOPICS_PER_PAGE);
+    const label=hasSearch
+      ? `Resultados ${first}–${last} de ${resultCount} · Página ${currentPage}/${pageCount}`
+      : `Temas ${first}–${last} de ${resultCount} · Página ${currentPage}/${pageCount}`;
     return `<nav class="boardTopicPagination" aria-label="Páginas de temas">
       <button type="button" data-board-topic-page="${currentPage-1}" aria-label="Temas anteriores" title="Temas anteriores" ${currentPage<=1?"disabled":""}>‹</button>
-      <span>Temas ${first}–${last} de ${T.length} · Página ${currentPage}/${pageCount}</span>
+      <span>${label}</span>
       <button type="button" data-board-topic-page="${currentPage+1}" aria-label="Temas siguientes" title="Temas siguientes" ${currentPage>=pageCount?"disabled":""}>›</button>
     </nav>`;
   }
-  function renderBoard(){
-    const pageCount=Math.max(1,Math.ceil(T.length/BOARD_TOPICS_PER_PAGE));
+  function renderBoardResults(){
+    const searchValue=boardTopicSearches.get(id)||"";
+    const hasSearch=!!normalizeTopicSearchText(searchValue);
+    const matchedTopics=searchTopicsByTitle(T,searchValue);
+    const pageCount=Math.max(1,Math.ceil(matchedTopics.length/BOARD_TOPICS_PER_PAGE));
     currentPage=Math.max(1,Math.min(currentPage,pageCount));
     boardTopicPages.set(id,currentPage);
-    const visibleTopics=T.slice((currentPage-1)*BOARD_TOPICS_PER_PAGE,currentPage*BOARD_TOPICS_PER_PAGE);
-    const pagination=renderPagination(pageCount);
-    m.innerHTML=rulesIntro+boardAccessNotice+`<p><a href="/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${(!configured||isRegisteredMember())&&canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="/n/${id}">Nuevo tema</a>`:""}</p>`+
-      pagination+
-      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td> <a href="/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>`+
-      pagination+
-      (isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:"");
-    m.querySelectorAll("[data-board-topic-page]").forEach(button=>button.addEventListener("click",()=>{
+    const visibleTopics=matchedTopics.slice((currentPage-1)*BOARD_TOPICS_PER_PAGE,currentPage*BOARD_TOPICS_PER_PAGE);
+    const pagination=renderPagination(pageCount,matchedTopics.length,hasSearch);
+    const emptyMessage=hasSearch
+      ? `No se encontraron temas que coincidan con «${E(searchValue.trim())}».`
+      : (isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero.");
+    const results=m.querySelector("#boardTopicResults");
+    if(!results)return;
+    results.innerHTML=pagination+
+      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td> <a href="/t/${encodeURIComponent(t.id)}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${emptyMessage}</td></tr>`}</table>`+
+      pagination;
+    results.querySelectorAll("[data-board-topic-page]").forEach(button=>button.addEventListener("click",()=>{
       const target=Number(button.dataset.boardTopicPage);
-      const maxPage=Math.max(1,Math.ceil(T.length/BOARD_TOPICS_PER_PAGE));
+      const maxPage=Math.max(1,Math.ceil(matchedTopics.length/BOARD_TOPICS_PER_PAGE));
       if(!Number.isInteger(target)||target<1||target>maxPage||target===currentPage)return;
       currentPage=target;
-      renderBoard();
+      renderBoardResults();
     }));
+    const searchStatus=m.querySelector("#boardTopicSearchStatus");
+    if(searchStatus){
+      searchStatus.textContent=hasSearch
+        ? (matchedTopics.length===1?"1 tema encontrado":`${matchedTopics.length} temas encontrados`)
+        : `${matchedTopics.length} temas · Orden alfabético`;
+    }
+    const clearButton=m.querySelector("[data-board-topic-clear]");
+    if(clearButton)clearButton.disabled=!searchValue.trim();
   }
-  renderBoard();
+  const searchMarkup=`<section class="boardTopicSearch" aria-label="Buscar temas en el foro">
+    <label for="boardTopicSearchInput">Buscar temas en ${E(B[2])}</label>
+    <div class="boardTopicSearchControls">
+      <input id="boardTopicSearchInput" type="search" maxlength="100" autocomplete="off" spellcheck="false" placeholder="Escribe el título del tema..." value="${E(initialSearch)}">
+      <button type="button" data-board-topic-clear ${initialSearch.trim()?"":"disabled"}>Limpiar</button>
+    </div>
+    <small id="boardTopicSearchStatus" aria-live="polite"></small>
+  </section>`;
+  m.innerHTML=rulesIntro+boardAccessNotice+`<p><a href="/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${(!configured||isRegisteredMember())&&canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="/n/${id}">Nuevo tema</a>`:""}</p>`+
+    searchMarkup+`<div id="boardTopicResults" aria-live="polite"></div>`+
+    (isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:"");
+  const searchInput=m.querySelector("#boardTopicSearchInput");
+  searchInput?.addEventListener("input",()=>{
+    boardTopicSearches.set(id,searchInput.value);
+    currentPage=1;
+    renderBoardResults();
+  });
+  m.querySelector("[data-board-topic-clear]")?.addEventListener("click",()=>{
+    if(!searchInput)return;
+    searchInput.value="";
+    boardTopicSearches.set(id,"");
+    currentPage=1;
+    renderBoardResults();
+    searchInput.focus();
+  });
+  renderBoardResults();
   if(configured)watchRouteData(query(collection(db,"topics"),where("b","==",id),where("moderationHidden","==",false)),routeRenderId);
 }
 function cleanTopicGallery(items){
