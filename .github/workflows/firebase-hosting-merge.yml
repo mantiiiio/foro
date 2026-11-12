@@ -20,10 +20,33 @@ jobs:
         with:
           node-version: 24
 
+      - name: Stamp release version for automatic browser updates
+        run: |
+          sed -i "s/__MP_BUILD_ID__/${GITHUB_SHA}/g" index.html
+          printf '{"version":"%s"}\\n' "$GITHUB_SHA" > build-version.json
+
       - name: Validate application JavaScript syntax
         run: |
           sed -n '/<script type="module">/,/<\\/script>/p' index.html | sed '1d;$d' > /tmp/mantipobres-app.mjs
           node --check /tmp/mantipobres-app.mjs
+
+      - name: Verify the retired online chat UI is absent
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path("index.html").read_text(encoding="utf-8")
+          forbidden = [
+              'id="chatBox"', 'id="chatMessages"', 'id="chatForm"',
+              'id="chatShortcutDialog"', 'id="chatSend"', 'id="chatText"',
+              'id="chatCatbox"', 'id="chatAdmin"', 'id="sr"',
+              'function subscribeChat(', 'function renderChat(',
+              'function uploadChatFile('
+          ]
+          found = [item for item in forbidden if item in source]
+          if found:
+              raise SystemExit("Interfaz de chat retirada encontrada: " + ", ".join(found))
+          print("Correcto: la interfaz y los handlers del chat no están en index.html.")
+          PY
 
       - name: Install Firebase CLI
         run: npm install --global firebase-tools@15.35.0
@@ -53,6 +76,18 @@ jobs:
 
       - name: Verify public sitemap and robots after deployment
         run: |
+          curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \\
+            -D /tmp/mantipobres-version-headers.txt \\
+            "https://mantipobres.web.app/build-version.json?verify=$GITHUB_SHA" \\
+            -o /tmp/mantipobres-version.json
+          grep -Eiq '^cache-control:.*no-store' /tmp/mantipobres-version-headers.txt
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          version = json.loads(Path("/tmp/mantipobres-version.json").read_text())["version"]
+          assert version == os.environ["GITHUB_SHA"], f"Versión publicada {version} != commit {os.environ['GITHUB_SHA']}"
+          print(f"Versión automática verificada: {version}")
+          PY
           curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
             -D /tmp/mantipobres-sitemap-headers.txt \
             https://mantipobres.web.app/sitemap.xml \
