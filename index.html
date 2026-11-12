@@ -634,7 +634,7 @@ function markdownInline(value,options={}){
     const decoded=clean.replace(/&amp;/g,"&");
     const href=safeWebUrl(decoded.startsWith("www.")?"https://"+decoded:decoded);
     if(!href)return raw;
-    return (options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank">'+clean+'</a>')+trailing;
+    return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank">'+clean+'</a>')+trailing;
   });
   html=html
     .replace(/__(?!\s)(.+?)(?<!\s)__/g,"<u>$1</u>")
@@ -1493,7 +1493,7 @@ async function idx(m){
   let h=`<table><tr><th colspan="2">Foro</th><th width="60" class="c">Temas</th><th width="70" class="c">Mensajes</th><th width="200">Último mensaje</th></tr>`;
   BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"":""}</td><td><a href="/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
   const recent=[...T].sort(compareTopicsStaffFirst).slice(0,15);
-  m.innerHTML=h+`</table><table><tr><th colspan="3"> TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td> <a href="/t/${t.id}"><b>${markdownInline(t.t,{hideLinks:isAnonymousForumVisitor()})}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. ${n===null?"Inicia sesión para consultar los miembros registrados.":`Hay <b>${n}</b> miembros registrados.`}</small></td></tr></table>`;
+  m.innerHTML=h+`</table><table><tr><th colspan="3"> TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td> <a href="/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. ${n===null?"Inicia sesión para consultar los miembros registrados.":`Hay <b>${n}</b> miembros registrados.`}</small></td></tr></table>`;
   if(configured)watchRouteData(query(collection(db,"topics"),where("moderationHidden","==",false)),routeRenderId);
 }
 const BOARD_TOPICS_PER_PAGE=12;
@@ -1504,7 +1504,7 @@ async function brd(m,id){
   setSeoMetadata("/b/"+encodeURIComponent(id),B[2]+" — Foro MantiPobres","Debates y temas de "+B[2]+" en MantiPobres, comunidad retro en español.",true);
   const ownerOnlyBoard=OWNER_ONLY_TOPIC_BOARDS.has(id);
   const boardAccessNotice=ownerOnlyBoard?'<section class="notice"><b>Solo el OWNER puede crear temas en este foro.</b><p>Todos pueden leer las publicaciones. Las cuentas registradas pueden responder a los temas existentes.</p></section>':"";
-  const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican al foro y al chat. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
+  const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican a todos los foros. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
   let currentPage=boardTopicPages.get(id)||1;
   function renderPagination(pageCount){
     if(pageCount<=1)return "";
@@ -1524,7 +1524,7 @@ async function brd(m,id){
     const pagination=renderPagination(pageCount);
     m.innerHTML=rulesIntro+boardAccessNotice+`<p><a href="/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${(!configured||isRegisteredMember())&&canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="/n/${id}">Nuevo tema</a>`:""}</p>`+
       pagination+
-      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td> <a href="/t/${t.id}">${markdownInline(t.t,{hideLinks:isAnonymousForumVisitor()})}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>`+
+      `<table id="boardTopicTable"><tr><th>Tema</th><th width="60" class="c">Resp.</th><th width="110">Autor</th><th width="170">Último mensaje</th></tr>${visibleTopics.map(t=>`<tr><td> <a href="/t/${t.id}">${E(t.t)}</a></td><td class="c">${t.n||0}</td><td class="b">${E(t.u)}${staffTagHtml(t.staffBadge)}</td><td><small>${dt(t.lr)}<br>por ${E(t.lu)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`).join("")||`<tr><td colspan="4">${isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero."}</td></tr>`}</table>`+
       pagination+
       (isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:"");
     m.querySelectorAll("[data-board-topic-page]").forEach(button=>button.addEventListener("click",()=>{
@@ -2067,10 +2067,10 @@ async function setup(m){
       '<table><tr><th>MI CUENTA · '+(isOwner()?"OWNER":"SESIÓN ACTIVA")+'</th></tr><tr><td>'+
       '<p><b>Sesión iniciada correctamente.</b><br>Cuenta: '+E(user.email||username)+'</p>'+
       '<p>Estado del correo: '+verification+'</p>'+
-      '<p><a class="bt" href="'+E(profileHref)+'"> Editar mi perfil y foto</a> <a class="bt" href="/">Volver al foro y chat</a></p>'+
+      '<p><a class="bt" href="'+E(profileHref)+'"> Editar mi perfil y foto</a> <a class="bt" href="/">Volver al foro</a></p>'+
       '</td></tr></table>'+
       '<table><tr><th>SUBIR ARCHIVOS</th></tr><tr><td>'+
-      '<p>Elige un archivo de tu PC. Catbox subirá el archivo y abrirá otra pestaña con el enlace directo. También puedes abrir el mirror alternativo si Catbox está caído. Copia ese enlace para pegarlo en el chat o en el editor de tu foto de perfil. Máximo 200 MB por archivo.</p>'+
+      '<p>Elige un archivo de tu PC. Catbox subirá el archivo y abrirá otra pestaña con el enlace directo. También puedes abrir el mirror alternativo si Catbox está caído. Copia ese enlace para pegarlo en el editor de tu foto de perfil. Máximo 200 MB por archivo.</p>'+
       '<form class="catboxUploadPanel" id="setupCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank">'+
       '<input type="hidden" name="reqtype" value="fileupload">'+
       '<label for="setupCatboxFile">Seleccionar archivo:</label>'+
@@ -2085,7 +2085,7 @@ async function setup(m){
   m.innerHTML='<table><tr><th>Configuración de MantiPobres</th></tr><tr><td><div class="notice"><b>'+
     (firebaseReady?"Firebase conectado":"Firebase pendiente de configurar")+'</b><br>'+
     (firebaseReady?"La aplicación está conectada. Inicia sesión para editar tu perfil y subir archivos.":"Revisa que Authentication tenga habilitados Email/Password y Anonymous y que Firestore esté creado con las reglas del repositorio.")+
-    '</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los visitantes pueden leer todos los foros, temas, comentarios, enlaces y adjuntos públicos sin iniciar sesión. Para publicar, comentar o valorar necesitas una cuenta registrada y correo verificado. El chat online y los perfiles siguen siendo exclusivos de cuentas registradas.</li><li>El propietario se detecta automáticamente por el UID de Firebase configurado en <code>OWNER_UID</code>. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Sesión actual:</b> '+
+    '</div><ol><li>El registro utiliza un correo electrónico real y envía un enlace de verificación.</li><li>Para publicar temas y respuestas, debes verificar el correo.</li><li>En Entrar puedes solicitar un enlace para recuperar tu contraseña.</li><li>Los visitantes pueden leer todos los foros, temas y comentarios públicos sin iniciar sesión. Para publicar, comentar o valorar necesitas una cuenta registrada y correo verificado. Los perfiles siguen siendo exclusivos de cuentas registradas.</li><li>El propietario se detecta automáticamente por el UID de Firebase configurado en <code>OWNER_UID</code>. Los tokens nunca conceden el rol Owner.</li></ol><p><b>Sesión actual:</b> '+
     (owner?"<strong>OWNER detectado correctamente.</strong>":"Sesión de visitante: lectura pública. Pulsa Entrar para participar.")+
     '</p><p><b>Perfiles y archivos:</b> al iniciar sesión podrás cambiar tu foto y subir archivos desde el foro mediante Catbox. Firebase Storage permanece desactivado.</p></td></tr></table>';
 }
@@ -2639,7 +2639,7 @@ function updateAdminUI(){
 // Cabecera, reloj y routing
 $("#ban").textContent=`+${"-".repeat(46)}+\n| ${NAME.padEnd(44)} |\n| ${"BBS/USENET REVIVAL  *  CARRIER 56000  *  8N1".padEnd(44)} |\n+${"-".repeat(46)}+`;
 $("#nl").textContent=NAME;const ck=()=>{$("#clk").textContent=new Date().toLocaleString("es-UY");refreshModerationAccess();};ck();setInterval(ck,1000);
-$("#ft").innerHTML=(configured?"Modo: ONLINE (Firebase)":"Modo: LOCAL (demo, solo este navegador)")+` · <a href="/setup">Configuración</a><br>Mejor visto con Netscape 4.7 / IE 6 a 800x600<br>MantiPobres · BBS/USENET Revival`;
+$("#ft").innerHTML=(configured?"Modo: ONLINE (Firebase)":"Modo: LOCAL (demo, solo este navegador)")+` · <a href="/setup">Configuración</a><br>Diseño adaptable para PC, tablets y teléfonos<br>MantiPobres · BBS/USENET Revival`;
 restoreLastRoute();
 addEventListener("hashchange",go);
 if(configured){await startFirebase();}else{setNetStatus("DEMO LOCAL",false);$("#chatCatbox").disabled=true;subscribeChat();}
