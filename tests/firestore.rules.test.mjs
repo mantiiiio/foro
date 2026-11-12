@@ -140,6 +140,38 @@ test("una cuenta sin verificar puede leer el foro, pero no crear temas ni respue
   }));
 });
 
+test("el OWNER puede publicar el tema, primer mensaje y enlace MediaFire en un lote aunque su correo no esté verificado", async () => {
+  await seed({
+    [`users/${OWNER_UID}`]: { u: "propietario", ts: 1, rulesAcceptedAt: 1 }
+  });
+
+  const owner = account(OWNER_UID, { verified: false });
+  const topicRef = doc(owner, "topics", "owner-mediafire-topic");
+  const postRef = doc(owner, "posts", "owner-mediafire-post");
+  const mediafireUrl = "https://www.mediafire.com/file/9zswoifkqd0pe0o/Parche_WinRAR.zip/file";
+  const batch = writeBatch(owner);
+
+  batch.set(doc(owner, "userRateLimits", OWNER_UID), {
+    lastPostAt: serverTimestamp(),
+    lastPostId: postRef.id
+  });
+  batch.set(topicRef, {
+    b: "gen", t: "Parche WinRAR", u: "propietario", uid: OWNER_UID,
+    ts: 2, lr: 2, lu: "propietario", n: 0,
+    staffBadge: true, lastStaffBadge: true,
+    gallery: [{ type: "link", url: mediafireUrl, caption: "Parche WinRAR" }],
+    moderationHidden: false, moderationHiddenUntil: null
+  });
+  batch.set(postRef, {
+    tp: topicRef.id, u: "propietario", uid: OWNER_UID,
+    x: "Enlace de descarga: " + mediafireUrl,
+    ts: 2, staffBadge: true,
+    moderationHidden: false, moderationHiddenUntil: null
+  });
+
+  await assertSucceeds(batch.commit());
+});
+
 test("un moderador puede editar el texto, pero no apropiarse del UID de una respuesta", async () => {
   await seed({
     "staff/mod-1": { role: "moderator" },

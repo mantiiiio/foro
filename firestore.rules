@@ -27,6 +27,10 @@ service cloud.firestore {
     function verifiedMember() {
       return registered() && request.auth.token.email_verified == true;
     }
+    // El OWNER puede publicar aunque Firebase todavía marque su correo como no verificado.
+    function canPublish() {
+      return isOwner() || verifiedMember();
+    }
     // Lista exacta de dominios permitidos para nuevas cuentas.
     function allowedRegistrationEmail() {
       return signedIn()
@@ -424,7 +428,7 @@ service cloud.firestore {
 
     match /topics/{topicId} {
       allow read: if canReadCommunity() || (publicReadOnlyVisitor() && isPubliclyVisibleContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
-      allow create: if verifiedMember()
+      allow create: if canPublish()
         && canParticipate()
         && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n','staffBadge','lastStaffBadge','gallery','moderationHidden','moderationHiddenUntil'])
         && request.resource.data.uid == request.auth.uid
@@ -525,7 +529,7 @@ service cloud.firestore {
 
     match /posts/{postId} {
       allow read: if canReadCommunity() || (publicReadOnlyVisitor() && isPubliclyVisibleContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
-      allow create: if verifiedMember()
+      allow create: if canPublish()
         && canParticipate()
         && hasFreshPostRateLimit(request.auth.uid, postId)
         && request.resource.data.keys().hasOnly(['tp','u','uid','x','ts','staffBadge','moderationHidden','moderationHiddenUntil'])
