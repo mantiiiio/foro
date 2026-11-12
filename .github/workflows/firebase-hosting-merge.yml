@@ -80,10 +80,7 @@ jobs:
 
       - name: Verify public sitemap and robots after deployment
         run: |
-          curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \\
-            -D /tmp/mantipobres-version-headers.txt \\
-            "https://mantipobres.web.app/build-version.json?verify=$GITHUB_SHA" \\
-            -o /tmp/mantipobres-version.json
+          curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error -D /tmp/mantipobres-version-headers.txt "https://mantipobres.web.app/build-version.json?verify=$GITHUB_SHA" -o /tmp/mantipobres-version.json
           grep -Eiq '^cache-control:.*no-store' /tmp/mantipobres-version-headers.txt
           python3 - <<'PY'
           import json, os
