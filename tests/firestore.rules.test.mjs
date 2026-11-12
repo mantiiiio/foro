@@ -478,7 +478,13 @@ test("solo el creador del tema o el staff puede activar o quitar el bloqueo de m
   const bob = account("bob");
   const moderator = account("mod-1");
   await assertSucceeds(updateDoc(doc(alice, "topics", "creator-topic"), { maintenanceLocked: true }));
-  await assertSucceeds(updateDoc(doc(alice, "topics", "legacy-topic"), { maintenanceLocked: true }));
+  const legacyRef = doc(alice, "topics", "legacy-topic");
+  await assertSucceeds(updateDoc(legacyRef, { maintenanceLocked: true }));
+  assert.equal((await getDoc(legacyRef)).data().maintenanceLocked, true);
+  await assertSucceeds(updateDoc(legacyRef, { maintenanceLocked: false }));
+  assert.equal((await getDoc(legacyRef)).data().maintenanceLocked, false);
+  await assertSucceeds(updateDoc(legacyRef, { maintenanceLocked: true }));
+  assert.equal((await getDoc(legacyRef)).data().maintenanceLocked, true);
   await assertFails(updateDoc(doc(bob, "topics", "creator-topic"), { maintenanceLocked: false }));
   await assertSucceeds(updateDoc(doc(moderator, "topics", "creator-topic"), { maintenanceLocked: false }));
   await assertFails(updateDoc(doc(alice, "topics", "creator-topic"), { maintenanceLocked: true, t: "Cambio no permitido" }));

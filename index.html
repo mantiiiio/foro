@@ -1024,7 +1024,7 @@ const D = {
   async topics(){try{const s=await getDocs(query(collection(db,"topics"),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas (topics): "+(error.code||error.message||"error desconocido"));}},
   async topicsByBoard(boardId){try{const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas de la categoría "+boardId+": "+(error.code||error.message||"error desconocido"));}},
   async posts(t){try{const s=await getDocs(query(collection(db,"posts"),where("tp","==",t),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(a.ts||0)-(b.ts||0));}catch(error){throw new Error("No se pudieron leer las publicaciones del tema: "+(error.code||error.message||"error desconocido"));}},
-  async topic(t){try{const s=await getDoc(doc(db,"topics",t));if(!s.exists())return null;const item={id:s.id,...s.data()};return isModerationContentHidden(item)?null:item;}catch(error){throw new Error("No se pudo leer el tema: "+(error.code||error.message||"error desconocido"));}},
+  async topic(t){try{const s=await getDocFromServer(doc(db,"topics",t));if(!s.exists())return null;const item={id:s.id,...s.data()};return isModerationContentHidden(item)?null:item;}catch(error){throw new Error("No se pudo leer el tema desde Firebase: "+(error.code||error.message||"error desconocido"));}},
   async ratings(t){try{const s=await getDocs(collection(db,"topics",t,"ratings"));return uniqueTopicRatings(s.docs.map(d=>({id:d.id,...d.data(),uid:d.data().uid||d.id})));}catch(error){console.warn("No se pudieron cargar las valoraciones; se mostrarán sin votos.",error);return []; }},
   async rateTopic(t,stars){
     requireRegisteredMember("valorar este tema");await assertCurrentUserNotBanned();
@@ -1058,9 +1058,15 @@ const D = {
   },
   async setTopicMaintenance(id,locked){
     await assertCurrentUserNotBanned();
-    const topic=await this.topic(id);
-    if(!topic||(!isStaff()&&auth?.currentUser?.uid!==topic.uid))throw new Error("Solo el creador del tema o el staff puede cambiar el mantenimiento.");
-    await updateDoc(doc(db,"topics",id),{maintenanceLocked:!!locked});
+    const topicRef=doc(db,"topics",id);
+    const before=await getDocFromServer(topicRef);
+    if(!before.exists())throw new Error("El tema ya no existe en Firebase.");
+    if(!isStaff()&&auth?.currentUser?.uid!==before.data().uid)throw new Error("Solo el creador del tema o el staff puede cambiar el mantenimiento.");
+    const target=!!locked;
+    await updateDoc(topicRef,{maintenanceLocked:target});
+    const confirmed=await getDocFromServer(topicRef);
+    if(!confirmed.exists()||confirmed.data().maintenanceLocked!==target)throw new Error("Firebase no confirmó el cambio de mantenimiento. Recarga el tema e inténtalo de nuevo.");
+    return confirmed.data();
   },
   async reply(t,x){
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(db,"topics",t),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
@@ -1539,7 +1545,8 @@ async function thr(m,id){
   $("#toggleTopicMaintenance")?.addEventListener("click",async event=>{
     event.preventDefault();
     const button=$("#toggleTopicMaintenance");button.textContent="[guardando…]";
-    try{await Store.setTopicMaintenance(id,!t.maintenanceLocked);await refreshRouteContent();}
+    const nextState=!t.maintenanceLocked;
+    try{await Store.setTopicMaintenance(id,nextState);t.maintenanceLocked=nextState;await refreshRouteContent();}
     catch(error){alert(errText(error));button.textContent=t.maintenanceLocked?'[quitar mantenimiento]':'[bloquear mantenimiento]';}
   });
   $("#deleteWholeTopic")?.addEventListener("click",async event=>{
@@ -2455,7 +2462,7 @@ let publicVisibilityMigrationPromise=null;
 async function migratePublicVisibilityAsOwner(){
   const user=auth?.currentUser;
   if(!db||!user||user.isAnonymous||!isOwner())return;
-  const storageKey="mantipobres_public_visibility_migrated_v1:"+user.uid;
+  const storageKey="mantipobres_public_visibility_migrated_v2:"+user.uid;
   try{if(localStorage.getItem(storageKey)==="done")return;}catch{}
   if(publicVisibilityMigrationPromise)return publicVisibilityMigrationPromise;
   publicVisibilityMigrationPromise=(async()=>{
@@ -2473,6 +2480,7 @@ async function migratePublicVisibilityAsOwner(){
         const data=item.data(),patch={};
         if(!Object.prototype.hasOwnProperty.call(data,"moderationHidden"))patch.moderationHidden=false;
         if(!Object.prototype.hasOwnProperty.call(data,"moderationHiddenUntil"))patch.moderationHiddenUntil=null;
+        if(collectionName==="topics"&&!Object.prototype.hasOwnProperty.call(data,"maintenanceLocked"))patch.maintenanceLocked=false;
         if(Object.keys(patch).length){
           batch.update(item.ref,patch);
           writes++;updated++;
