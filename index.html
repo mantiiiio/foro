@@ -754,7 +754,7 @@ let app=null, auth=null, db=null, storage=null, firebaseReady=false, authReady=f
 const configured = FB.apiKey && !FB.apiKey.startsWith("PEGA_") && FB.projectId && FB.projectId !== "TU-PROYECTO" && FB.appId && !FB.appId.startsWith("PEGA_");
 
 function setNetStatus(text, ok=false){const n=$("#netState");n.textContent=text;n.style.color=ok?"#0f0":"#ff8a8a";}
-function safeLocal(){try{const data=JSON.parse(localStorage.getItem("mantipobres_demo") || '{"u":{},"t":[],"p":[],"m":""}');if(data&&typeof data==="object")delete data.chat;return data;}catch{return {u:{},t:[],p:[],m:""};}}
+function safeLocal(){try{const data=JSON.parse(localStorage.getItem("mantipobres_demo") || '{"u":{},"t":[],"p":[],"m":""}');if(data&&typeof data==="object"&&Object.prototype.hasOwnProperty.call(data,"chat")){delete data.chat;try{localStorage.setItem("mantipobres_demo",JSON.stringify(data));}catch{}}return data;}catch{return {u:{},t:[],p:[],m:""};}}
 let demo = safeLocal();
 function uniqueTopicRatings(items){
   const unique=new Map();
@@ -2143,7 +2143,7 @@ async function startFirebase(){
         await loadCurrentStaffRole(user);
         watchCurrentModeration(user);
         if(!resolved){resolved=true;resolve();}
-        if(firebaseReady){renderAccountNotice();renderModerationNotice();if(isOwner())D.syncModerationVisibility().then(()=>migratePublicVisibilityAsOwner()).catch(error=>console.error("No se pudo completar la migración pública de MantiPobres:",error));go();}
+        if(firebaseReady){renderAccountNotice();renderModerationNotice();if(isOwner())purgeLegacyChatAsOwner().catch(error=>console.error("No se pudo borrar el chat antiguo de Firestore:",error));if(isOwner())D.syncModerationVisibility().then(()=>migratePublicVisibilityAsOwner()).catch(error=>console.error("No se pudo completar la migración pública de MantiPobres:",error));go();}
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
