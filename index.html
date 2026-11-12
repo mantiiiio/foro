@@ -2236,9 +2236,14 @@ async function purgeLegacyChatAsOwner(){
       if(++rounds>1000)throw new Error("La limpieza del chat superó el límite de seguridad.");
       const snapshot=await getDocs(query(collection(db,"chatMessages"),limit(400)));
       if(snapshot.empty)break;
-      const batch=writeBatch(db);
-      snapshot.docs.forEach(item=>batch.delete(item.ref));
+      const batch=writeBatch(db),storagePaths=[];
+      snapshot.docs.forEach(item=>{
+        const mediaPath=item.data()?.media?.path;
+        if(storage&&typeof mediaPath==="string"&&mediaPath)storagePaths.push(mediaPath);
+        batch.delete(item.ref);
+      });
       await batch.commit();
+      if(storagePaths.length)await Promise.all(storagePaths.map(async path=>{try{await deleteObject(storageRef(storage,path));}catch(error){console.warn("No se pudo borrar un archivo antiguo del chat:",error);}}));
       deleted+=snapshot.size;
     }
     try{localStorage.setItem(storageKey,"done");}catch{}
