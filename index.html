@@ -651,7 +651,7 @@ function renderMarkdownList(entries,options){
   const root={type:first.type,items:[]};
   const stack=[{indent:first.indent,node:root,last:null}];
   for(const entry of entries){
-    while(stack.length>1&&entry.indent<=stack[stack.length-1].indent)stack.pop();
+    while(stack.length>1&&entry.indent<stack[stack.length-1].indent)stack.pop();
     let current=stack[stack.length-1];
     if(entry.indent>current.indent&&current.last){
       const child={type:entry.type,items:[]};
