@@ -14,31 +14,9 @@
 <meta property="og:url" content="https://mantipobres.web.app/">
 <meta name="twitter:card" content="summary">
 <title>MantiPobres</title>
-<style>
-:root{color-scheme:light;--blue:#006699;--blue2:#004d75;--orange:#ffa34f;--line:#98aab1;--paper:#efefef;--soft:#dee3e7;--green:#078d12;--red:#b30f06}
-*{box-sizing:border-box}body{background:#d5dbde repeating-linear-gradient(45deg,transparent 0 6px,rgba(255,255,255,.4) 6px 7px);color:#000;font:12px Verdana,Arial,sans-serif;margin:8px}
-a{color:#006699}a:hover{color:#dd6900}#w{max-width:920px;margin:auto;background:#fff;padding:6px;border:1px solid var(--line);box-shadow:4px 4px 0 #aab6bb}
-#hd{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;background:linear-gradient(#0b5a8a,#003552);border:2px solid var(--line);border-bottom:3px solid var(--orange)}
-#nm{margin:0;font:italic bold 40px Impact,"Arial Black",sans-serif;letter-spacing:1px;color:#fff;text-shadow:2px 2px 0 #ff8a00,4px 4px 0 #00263d}#nm a{color:#fff;text-decoration:none}#nm a:hover{color:#ffd9a0}#lg i{color:#bfe0f5;font-size:11px}
-#ban{background:#000;color:#0f0;font:11px/12px "Courier New",monospace;margin:0;padding:8px;border:2px solid var(--blue);overflow:auto;text-shadow:0 0 6px #0f0;background-image:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,255,0,.07) 2px 3px)}#ban:after{content:"_";animation:k 1s steps(1) infinite}@keyframes k{50%{opacity:0}}
-#st{background:#000;color:#0f0;font:11px "Courier New",monospace;padding:3px 8px;border:2px solid var(--line);border-top:0;text-shadow:0 0 5px #0f0}
-#nav{background:linear-gradient(#f4f7f8,#cdd8dd);border:1px solid var(--blue);padding:6px;margin-bottom:8px;font-size:12px}#nav a{font-weight:bold;margin:0 10px 0 2px;white-space:nowrap}
-#tk{display:block;background:#fff8c6;border:1px solid #c9b64a;color:#700;font-weight:bold;padding:3px;margin-bottom:8px}
-#ann{margin:0 0 8px;border:2px solid var(--red);background:#fffbe6;box-shadow:3px 3px 0 #d9c98a}#ann h3{margin:0;padding:4px 8px;font-size:12px;color:#fff;background:linear-gradient(#e8402f,#a30f06);text-shadow:1px 1px #500}.an{padding:6px 10px;border-top:1px dashed #d4b95e}#ann h3+.an{border:0}
-.tg{background:var(--blue);color:#fff;font:bold 9px Verdana;padding:1px 5px;border-radius:2px}.nw{color:#f00;font-weight:bold;animation:k 1s steps(1) infinite}
-table{width:100%;border-collapse:separate;border-spacing:1px;background:var(--blue);margin-bottom:6px}th{background:linear-gradient(#2d86b8,#006699 55%,#004d75);color:var(--orange);padding:5px;text-align:left;border-top:1px solid #7fbadf;text-shadow:1px 1px #00304a}td{padding:6px;background:#efefef}td.b{background:#dee3e7}.c{text-align:center}td.cat{background:linear-gradient(#6c9dbd,#3b6f93);color:#fff;font-weight:bold;text-shadow:1px 1px #123}tr:nth-child(even)>td:not(.b):not(.cat){background:#e6ebee}tr:hover>td:not(.b):not(.cat){background:#fff3c4}td.i{font-size:20px}
-.h{font:10px "Courier New",monospace;color:#555;background:#fafaea;border:1px solid #d8d8b8;padding:4px;margin-bottom:6px}.p{font:12px/1.5 "Courier New",monospace;word-break:break-word;overflow-wrap:anywhere}.q{color:#070}
-input,textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;padding:4px}input:focus,textarea:focus{background:#fffde8;outline:1px solid var(--orange)}button,.bt{font:bold 11px Verdana;background:linear-gradient(#fff,#d8e0e4);border:2px outset #fff;padding:4px 9px;color:#000;text-decoration:none;cursor:pointer}button:hover,.bt:hover{background:#fff2cc}button:disabled{opacity:.5;cursor:not-allowed}.err{color:#c00;font-weight:bold}.ok{color:#087b16;font-weight:bold}pre.s{white-space:pre-wrap;font:11px "Courier New",monospace;margin:0}#ft{text-align:center;color:#555;margin-top:10px;font-size:10px;line-height:1.5}
-.sd{position:absolute;top:16px;width:172px}.sd#sl{left:calc(50% - 651px)}.sd#sr{left:calc(50% + 479px);width:250px}.ad{background:#fff;border:2px solid var(--blue);margin-bottom:10px;box-shadow:3px 3px 0 #aab6bb;font-size:11px}.ad h4{margin:0;padding:3px 6px;font-size:11px;color:var(--orange);background:linear-gradient(#2d86b8,#006699 55%,#004d75);text-shadow:1px 1px #00304a}.ad img,.ph{display:block;width:100%;box-sizing:border-box}.ph{display:flex;align-items:center;justify-content:center;text-align:center;background:repeating-linear-gradient(45deg,#e7edf0 0 8px,#d3dce1 8px 16px);color:#678;font:bold 10px Verdana}.tx{padding:5px 6px;line-height:1.35}.ad.s{text-align:center;padding:3px;font-weight:bold;background:#fff8c6;border-color:#c9b64a}
-/* Chat retro */
-#chatBox{background:#f4f6f7;border:2px solid var(--blue);box-shadow:3px 3px 0 #aab6bb;margin-bottom:10px;font-size:11px}#chatHead{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:5px 6px;color:var(--orange);background:linear-gradient(#2d86b8,#006699 55%,#004d75);font-weight:bold}#chatHead button{padding:2px 5px;font-size:10px}.chatHeadActions{display:flex;align-items:center;gap:4px}#chatShortcuts{width:23px;height:22px;padding:0;font:bold 13px Georgia,serif;border:2px outset #fff;border-radius:2px;color:#003b59;background:linear-gradient(#fff,#d8e0e4)}#chatShortcuts:focus-visible,#chatExpand:focus-visible{outline:2px solid #ffb44f;outline-offset:2px}#chatState{padding:3px 6px;background:#e5edf0;border-bottom:1px solid #b7c9d1;color:#345;font:10px "Courier New",monospace}#chatMessages{height:290px;overflow-y:auto;padding:5px;background:#fff;border-bottom:1px solid #9bb2bd;overscroll-behavior:contain}.cm{display:grid;grid-template-columns:27px 1fr;gap:5px;padding:5px 1px;border-bottom:1px dotted #b9c8ce}.cm:last-child{border-bottom:0}.cm .ava{width:25px;height:25px}.cmhead{font:10px "Courier New",monospace;color:#345;margin-bottom:3px;overflow-wrap:anywhere}.cmhead b{color:#005b86}.cmtxt{font:11px/1.35 "Courier New",monospace;white-space:pre-wrap;overflow-wrap:anywhere}.cmmedia{display:block;max-width:100%;max-height:180px;margin-top:5px;border:1px solid #9bb2bd;background:#eee}.cmvideo{width:100%;max-width:420px;max-height:240px;margin-top:5px}.cmAudio{display:block;width:min(100%,420px);margin-top:6px}.cmEmbed{width:min(100%,420px);margin:7px 0;padding:5px;border:1px solid #b7c9d1;background:#f4f7f8}.cmEmbed iframe{display:block;width:100%;border:0;background:#111}.cmEmbed figcaption{font:10px 'Courier New',monospace;margin-top:4px}.cmLinkCard{display:flex;flex-direction:column;align-items:flex-start;gap:3px;max-width:420px;margin:6px 0;padding:7px;border:1px solid #b7c9d1;background:#f4f7f8;font:10px 'Courier New',monospace;overflow-wrap:anywhere}.cmLinkCard b{color:#005b86}.cmLinkCard small{color:#678}.cmExternalLink{font:10px 'Courier New',monospace;margin:3px 0}.cmImageFailed{display:none}.deletedMessage{display:inline-block;color:#785b5b;font-style:italic;background:#f3eeee;border:1px dashed #b99;padding:3px 6px}.topicQuote{margin:7px 0;padding:7px 9px;border-left:3px solid #9bb2bd;background:#f0f4f6;color:#345}.topicQuote b{display:block;margin-bottom:4px}.topicQuote div{white-space:pre-wrap;overflow-wrap:anywhere}.topicRating{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:9px;border:1px solid #9bb2bd;background:#f4f7f8;padding:9px;margin:8px 0}.topicRating b{color:#005b86}.ratingAverage{font-size:18px;font-weight:bold;color:#704500}.ratingControls{display:flex;align-items:center;gap:3px;flex-wrap:wrap}.ratingStar{font-size:19px;padding:0 3px;color:#9a6a00;border:0;background:transparent;cursor:pointer}.ratingStar.selected{color:#e39a00}.ratingStar:disabled{opacity:.55}.commentForm{border:1px solid #9bb2bd;background:#f4f7f8;padding:9px;margin-top:9px}.commentForm textarea{margin:5px 0}.cmtools{font-size:9px;margin-top:3px}.cmtools button{font-size:9px;padding:1px 4px}.chatEmpty{color:#678;text-align:center;font:11px "Courier New",monospace;padding:18px 4px}.chatForm{padding:5px;background:#e8eef1}.chatForm textarea{width:100%;height:54px;resize:vertical;font:11px "Courier New",monospace}.chatActions{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:4px}.chatActions button{padding:3px 6px;font-size:10px}.chatHint{font-size:9px;color:#567;margin-top:4px;line-height:1.3}.chatAdmin{padding:5px;background:#fff5d8;border-top:1px dashed #c9b64a;font-size:10px}.chatAdmin summary{cursor:pointer;font-weight:bold;color:#704500}.chat-expanded{position:fixed!important;z-index:99999!important;inset:4vh 4vw!important;width:auto!important;max-width:none!important;margin:0!important;box-shadow:0 0 0 100vmax rgba(0,0,0,.72)!important;display:flex;flex-direction:column}.chat-expanded #chatMessages{height:auto;flex:1;min-height:120px}.chat-expanded .cmmedia,.chat-expanded .cmvideo{max-height:36vh} .chat-expanded .chatForm textarea{height:70px}
-.profileAvatarBox{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.profileAvatarBox .profileAvatar{width:88px;height:88px;object-fit:cover;border:2px solid var(--blue);background:#fff}.profilePhotoPanel{border:1px solid #9bb2bd;background:#f4f7f8;padding:9px;margin-top:8px}.profilePhotoPanel p{margin:5px 0;line-height:1.45}.profilePhotoActions{display:flex;gap:5px;flex-wrap:wrap}.profilePhotoStatus{font:10px 'Courier New',monospace;margin-top:5px;color:#345}.catboxUploadPanel{border:1px dashed #9bb2bd;background:#fff;padding:8px;margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.catboxUploadPanel label{font-weight:bold}.catboxUploadPanel input[type=file]{max-width:100%}.catboxUploadPanel[hidden]{display:none!important}
-#chatShortcutDialog[hidden]{display:none!important}#chatShortcutDialog{position:fixed;z-index:100001;inset:0;background:rgba(0,20,32,.72);display:flex;align-items:center;justify-content:center;padding:14px}#chatShortcutPanel{width:min(440px,100%);max-height:86vh;overflow:auto;background:#f4f6f7;border:3px ridge #98aab1;box-shadow:5px 5px 0 rgba(0,0,0,.4);color:#111;padding:0}#chatShortcutTitle{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;color:#ffa34f;background:linear-gradient(#2d86b8,#006699 55%,#004d75);font-weight:bold}#chatShortcutTitle button{padding:1px 7px;font-size:16px}#chatShortcutPanel .shortcutBody{padding:9px}#chatShortcutPanel table{margin:0 0 8px}#chatShortcutPanel td:first-child{white-space:nowrap;width:42%}#chatShortcutPanel kbd{display:inline-block;padding:2px 5px;background:#fff;border:1px solid #8299a3;border-bottom-width:2px;border-radius:2px;font:bold 11px 'Courier New',monospace}#chatShortcutPanel p{line-height:1.45;margin:7px 0}
-#chatFile{display:none}.notice{border:1px solid #c9b64a;background:#fff8c6;padding:7px;margin:7px 0;color:#573d00}.accountNotice{border:1px solid #c99b35;background:#fff4cf;color:#593b00;padding:7px;margin:6px 0;font-size:11px;line-height:1.5}.accountNotice button{margin:3px 3px 0 0;padding:3px 7px}.accountNotice[hidden]{display:none!important}.setupgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.setupgrid>div{border:1px solid #9bb2bd;background:#f4f7f8;padding:8px}
-@media(max-width:1330px){.sd{position:static;width:auto;max-width:934px;margin:8px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px}.sd#sl,.sd#sr{left:auto;width:auto}.sd .ad{width:172px}#chatBox{width:min(100%,420px)}}
-@media(max-width:600px){body{margin:4px}#w{padding:4px}#nm{font-size:32px}#hd{padding:8px}#ban{font-size:9px}.setupgrid{grid-template-columns:1fr}table{font-size:11px}td,th{padding:4px}#nav a{margin-right:6px}.chat-expanded{inset:2vh 2vw!important}}
-
-/* Diseño adaptable: el foro ocupa el espacio disponible sin depender del zoom del navegador. */
+<style>:root{color-scheme:light;--blue:#006699;--blue2:#004d75;--orange:#ffa34f;--line:#98aab1;--paper:#efefef;--soft:#dee3e7;--green:#078d12;--red:#b30f06}*{box-sizing:border-box}body{background:#d5dbde repeating-linear-gradient(45deg,transparent 0 6px,rgba(255,255,255,.4) 6px 7px);color:#000;font:12px Verdana,Arial,sans-serif;margin:8px}a{color:#006699}a:hover{color:#dd6900}#w{max-width:920px;margin:auto;background:#fff;padding:6px;border:1px solid var(--line);box-shadow:4px 4px 0 #aab6bb}#hd{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;background:linear-gradient(#0b5a8a,#003552);border:2px solid var(--line);border-bottom:3px solid var(--orange)}#nm{margin:0;font:italic bold 40px Impact,"Arial Black",sans-serif;letter-spacing:1px;color:#fff;text-shadow:2px 2px 0 #ff8a00,4px 4px 0 #00263d}#nm a{color:#fff;text-decoration:none}#nm a:hover{color:#ffd9a0}#lg i{color:#bfe0f5;font-size:11px}#ban{background:#000;color:#0f0;font:11px/12px "Courier New",monospace;margin:0;padding:8px;border:2px solid var(--blue);overflow:auto;text-shadow:0 0 6px #0f0;background-image:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,255,0,.07) 2px 3px)}#ban:after{content:"_";animation:k 1s steps(1) infinite}@keyframes k{50%{opacity:0}}#st{background:#000;color:#0f0;font:11px "Courier New",monospace;padding:3px 8px;border:2px solid var(--line);border-top:0;text-shadow:0 0 5px #0f0}#nav{background:linear-gradient(#f4f7f8,#cdd8dd);border:1px solid var(--blue);padding:6px;margin-bottom:8px;font-size:12px}#nav a{font-weight:bold;margin:0 10px 0 2px;white-space:nowrap}#tk{display:block;background:#fff8c6;border:1px solid #c9b64a;color:#700;font-weight:bold;padding:3px;margin-bottom:8px}#ann{margin:0 0 8px;border:2px solid var(--red);background:#fffbe6;box-shadow:3px 3px 0 #d9c98a}#ann h3{margin:0;padding:4px 8px;font-size:12px;color:#fff;background:linear-gradient(#e8402f,#a30f06);text-shadow:1px 1px #500}.an{padding:6px 10px;border-top:1px dashed #d4b95e}#ann h3+.an{border:0}.tg{background:var(--blue);color:#fff;font:bold 9px Verdana;padding:1px 5px;border-radius:2px}.nw{color:#f00;font-weight:bold;animation:k 1s steps(1) infinite}table{width:100%;border-collapse:separate;border-spacing:1px;background:var(--blue);margin-bottom:6px}th{background:linear-gradient(#2d86b8,#006699 55%,#004d75);color:var(--orange);padding:5px;text-align:left;border-top:1px solid #7fbadf;text-shadow:1px 1px #00304a}td{padding:6px;background:#efefef}td.b{background:#dee3e7}.c{text-align:center}td.cat{background:linear-gradient(#6c9dbd,#3b6f93);color:#fff;font-weight:bold;text-shadow:1px 1px #123}tr:nth-child(even)>td:not(.b):not(.cat){background:#e6ebee}tr:hover>td:not(.b):not(.cat){background:#fff3c4}td.i{font-size:20px}.h{font:10px "Courier New",monospace;color:#555;background:#fafaea;border:1px solid #d8d8b8;padding:4px;margin-bottom:6px}.p{font:12px/1.5 "Courier New",monospace;word-break:break-word;overflow-wrap:anywhere}.q{color:#070}input, textarea{font:12px Verdana;border:1px solid var(--blue);max-width:100%;padding:4px}input:focus, textarea:focus{background:#fffde8;outline:1px solid var(--orange)}button, .bt{font:bold 11px Verdana;background:linear-gradient(#fff,#d8e0e4);border:2px outset #fff;padding:4px 9px;color:#000;text-decoration:none;cursor:pointer}button:hover, .bt:hover{background:#fff2cc}button:disabled{opacity:.5;cursor:not-allowed}.err{color:#c00;font-weight:bold}.ok{color:#087b16;font-weight:bold}pre.s{white-space:pre-wrap;font:11px "Courier New",monospace;margin:0}#ft{text-align:center;color:#555;margin-top:10px;font-size:10px;line-height:1.5}.sd{position:absolute;top:16px;width:172px}.sd#sl{left:calc(50% - 651px)}.ad{background:#fff;border:2px solid var(--blue);margin-bottom:10px;box-shadow:3px 3px 0 #aab6bb;font-size:11px}.ad h4{margin:0;padding:3px 6px;font-size:11px;color:var(--orange);background:linear-gradient(#2d86b8,#006699 55%,#004d75);text-shadow:1px 1px #00304a}.ad img, .ph{display:block;width:100%;box-sizing:border-box}.ph{display:flex;align-items:center;justify-content:center;text-align:center;background:repeating-linear-gradient(45deg,#e7edf0 0 8px,#d3dce1 8px 16px);color:#678;font:bold 10px Verdana}.tx{padding:5px 6px;line-height:1.35}.ad.s{text-align:center;padding:3px;font-weight:bold;background:#fff8c6;border-color:#c9b64a}.cmmedia{display:block;max-width:100%;max-height:180px;margin-top:5px;border:1px solid #9bb2bd;background:#eee}.cmvideo{width:100%;max-width:420px;max-height:240px;margin-top:5px}.cmAudio{display:block;width:min(100%,420px);margin-top:6px}.cmEmbed{width:min(100%,420px);margin:7px 0;padding:5px;border:1px solid #b7c9d1;background:#f4f7f8}.cmEmbed iframe{display:block;width:100%;border:0;background:#111}.cmEmbed figcaption{font:10px 'Courier New',monospace;margin-top:4px}.cmLinkCard{display:flex;flex-direction:column;align-items:flex-start;gap:3px;max-width:420px;margin:6px 0;padding:7px;border:1px solid #b7c9d1;background:#f4f7f8;font:10px 'Courier New',monospace;overflow-wrap:anywhere}.cmLinkCard b{color:#005b86}.cmLinkCard small{color:#678}.cmExternalLink{font:10px 'Courier New',monospace;margin:3px 0}.cmImageFailed{display:none}.deletedMessage{display:inline-block;color:#785b5b;font-style:italic;background:#f3eeee;border:1px dashed #b99;padding:3px 6px}.topicQuote{margin:7px 0;padding:7px 9px;border-left:3px solid #9bb2bd;background:#f0f4f6;color:#345}.topicQuote b{display:block;margin-bottom:4px}.topicQuote div{white-space:pre-wrap;overflow-wrap:anywhere}.topicRating{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:9px;border:1px solid #9bb2bd;background:#f4f7f8;padding:9px;margin:8px 0}.topicRating b{color:#005b86}.ratingAverage{font-size:18px;font-weight:bold;color:#704500}.ratingControls{display:flex;align-items:center;gap:3px;flex-wrap:wrap}.ratingStar{font-size:19px;padding:0 3px;color:#9a6a00;border:0;background:transparent;cursor:pointer}.ratingStar.selected{color:#e39a00}.ratingStar:disabled{opacity:.55}.commentForm{border:1px solid #9bb2bd;background:#f4f7f8;padding:9px;margin-top:9px}.commentForm textarea{margin:5px 0}.profileAvatarBox{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.profileAvatarBox .profileAvatar{width:88px;height:88px;object-fit:cover;border:2px solid var(--blue);background:#fff}.profilePhotoPanel{border:1px solid #9bb2bd;background:#f4f7f8;padding:9px;margin-top:8px}.profilePhotoPanel p{margin:5px 0;line-height:1.45}.profilePhotoActions{display:flex;gap:5px;flex-wrap:wrap}.profilePhotoStatus{font:10px 'Courier New',monospace;margin-top:5px;color:#345}.notice{border:1px solid #c9b64a;background:#fff8c6;padding:7px;margin:7px 0;color:#573d00}.accountNotice{border:1px solid #c99b35;background:#fff4cf;color:#593b00;padding:7px;margin:6px 0;font-size:11px;line-height:1.5}.accountNotice button{margin:3px 3px 0 0;padding:3px 7px}.accountNotice[hidden]{display:none!important}.setupgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.setupgrid>div{border:1px solid #9bb2bd;background:#f4f7f8;padding:8px}
+@media(max-width:1330px){.sd{position:static;width:auto;max-width:934px;margin:8px auto 0;display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px}.sd#sl{left:auto;width:auto}.sd .ad{width:172px}}
+@media(max-width:600px){body{margin:4px}#w{padding:4px}#nm{font-size:32px}#hd{padding:8px}#ban{font-size:9px}.setupgrid{grid-template-columns:1fr}table{font-size:11px}td, th{padding:4px}#nav a{margin-right:6px}}/* Diseño adaptable: el foro ocupa el espacio disponible sin depender del zoom del navegador. */
 body{
   display:grid;
   grid-template-columns:minmax(0,1fr);
@@ -47,16 +25,14 @@ body{
   width:calc(100% - 16px);
   max-width:1400px;
   margin:8px auto;
-}
-#w{
+}#w{
   grid-column:1;
   width:100%;
   max-width:920px;
   min-width:0;
   margin:0;
   justify-self:center;
-}
-.sd{
+}.sd{
   position:static;
   inset:auto;
   display:block;
@@ -64,76 +40,22 @@ body{
   max-width:none;
   min-width:0;
   margin:0;
-}
-.sd#sl{display:none}
-.sd#sr{
-  grid-column:1;
-  width:100%;
-  max-width:920px;
-  justify-self:center;
-}
-#chatBox{width:100%;margin:0}
-#chatMessages{height:clamp(190px,38vh,360px)}.cmprofile{color:#005b86;text-decoration:underline;cursor:pointer}.moderationPanel{margin:9px 0;padding:9px;border:1px solid #b77;background:#fff4f0;color:#512d26}.moderationPanel h3{margin:0 0 7px;color:#8a2e22}.moderationPanel .modActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px}.moderationPanel input,.moderationPanel select{max-width:100%}.moderationHistory{font-size:10px;margin:5px 0;padding-left:20px}.moderationNotice{border:1px solid #b77;background:#fff0ed;color:#702a20;padding:8px;margin:6px 0;font-size:11px;line-height:1.5}.moderationNotice[hidden]{display:none!important}.moderationNotice strong{color:#8a1c12}
-#m{min-width:0;overflow-x:auto}
-#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
-#nav a{margin:0;white-space:normal}
-#hd>#lg{min-width:0;flex:1 1 260px}
-#ban{max-width:100%;flex:0 1 auto}
-table{max-width:100%;table-layout:auto}
-td,th{overflow-wrap:anywhere}
-input,textarea,select{max-width:100%}
-#m img,#m video,#m iframe,#chatMessages img,#chatMessages video,#chatMessages iframe{max-width:100%}
+}.sd#sl{display:none}.moderationPanel{margin:9px 0;padding:9px;border:1px solid #b77;background:#fff4f0;color:#512d26}.moderationPanel h3{margin:0 0 7px;color:#8a2e22}.moderationPanel .modActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px}.moderationPanel input, .moderationPanel select{max-width:100%}.moderationHistory{font-size:10px;margin:5px 0;padding-left:20px}.moderationNotice{border:1px solid #b77;background:#fff0ed;color:#702a20;padding:8px;margin:6px 0;font-size:11px;line-height:1.5}.moderationNotice[hidden]{display:none!important}.moderationNotice strong{color:#8a1c12}#m{min-width:0;overflow-x:auto}#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}#nav a{margin:0;white-space:normal}#hd>#lg{min-width:0;flex:1 1 260px}#ban{max-width:100%;flex:0 1 auto}table{max-width:100%;table-layout:auto}td, th{overflow-wrap:anywhere}input, textarea, select{max-width:100%}#m img, #m video, #m iframe{max-width:100%}
 
-@media(min-width:1024px){
-  body{grid-template-columns:minmax(0,1fr) 250px}
-  #w{grid-column:1}
-  .sd#sr{
-    grid-column:2;
-    width:250px;
-    max-width:250px;
-    justify-self:stretch;
-  }
+@media(min-width:1024px){body{grid-template-columns:minmax(0,1fr) 250px}#w{grid-column:1}
 }
-@media(min-width:1440px){
-  body{grid-template-columns:172px minmax(0,1fr) 250px}
-  .sd#sl{
+@media(min-width:1440px){body{grid-template-columns:172px minmax(0,1fr) 250px}.sd#sl{
     display:block;
     grid-column:1;
     width:172px;
-  }
-  #w{grid-column:2}
-  .sd#sr{grid-column:3}
+  }#w{grid-column:2}
 }
-@media(max-width:1023px){
-  body{grid-template-columns:minmax(0,1fr)}
-  #w{width:100%;max-width:920px}
-  .sd#sr{grid-column:1;width:100%;max-width:920px}
-  #chatBox{width:100%}
-  #chatMessages{height:clamp(170px,32vh,300px)}
+@media(max-width:1023px){body{grid-template-columns:minmax(0,1fr)}#w{width:100%;max-width:920px}
 }
-@media(max-width:700px){
-  body{width:calc(100% - 8px);margin:4px auto;gap:8px}
-  #w{padding:4px}
-  #hd{padding:8px;gap:6px}
-  #nm{font-size:clamp(25px,8vw,34px)}
-  #lg i{font-size:10px}
-  #ban{font-size:8px;line-height:9px;padding:5px;max-width:100%;overflow-x:auto}
-  #nav{gap:7px 10px;font-size:11px}
-  #m table{font-size:10px}
-  #m td,#m th{padding:4px}
-  .topicRating{align-items:flex-start}
-  .chat-expanded{inset:2vh 2vw!important}
+@media(max-width:700px){body{width:calc(100% - 8px);margin:4px auto;gap:8px}#w{padding:4px}#hd{padding:8px;gap:6px}#nm{font-size:clamp(25px,8vw,34px)}#lg i{font-size:10px}#ban{font-size:8px;line-height:9px;padding:5px;max-width:100%;overflow-x:auto}#nav{gap:7px 10px;font-size:11px}#m table{font-size:10px}#m td, #m th{padding:4px}.topicRating{align-items:flex-start}
 }
-@media(max-width:420px){
-  #hd{display:block}
-  #ban{margin-top:7px}
-  #nm{font-size:28px}
-  #chatHead{flex-wrap:wrap}
-  .chatActions button{flex:1 1 auto}
-}
-
-
-/* Diseño estable al cambiar el zoom: una columna o dos, sin tercera columna lateral. */
+@media(max-width:420px){#hd{display:block}#ban{margin-top:7px}#nm{font-size:28px}
+}/* Diseño estable al cambiar el zoom: una columna o dos, sin tercera columna lateral. */
 body{
   display:grid;
   grid-template-columns:minmax(0,1fr);
@@ -143,67 +65,28 @@ body{
   width:calc(100% - 16px);
   max-width:920px;
   margin:8px auto;
-}
-#w{
+}#w{
   grid-column:1;
   width:100%;
   max-width:920px;
   min-width:0;
   margin:0;
   justify-self:center;
-}
-#sl{display:none!important}
-.sd{
+}#sl{display:none!important}.sd{
   position:static!important;
   inset:auto!important;
   width:100%;
   max-width:920px;
   min-width:0;
   margin:0;
-}
-.sd#sr{
-  grid-column:1;
-  width:100%;
-  max-width:920px;
-  justify-self:center;
-}
-#chatBox{width:100%}
-#m{min-width:0;overflow-x:auto}
-#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
-#nav a{margin:0;white-space:normal}
-#hd>#lg{min-width:0;flex:1 1 260px}
-#ban{max-width:100%;flex:0 1 auto}
-table{max-width:100%;table-layout:auto}
-td,th{overflow-wrap:anywhere}
-input,textarea,select{max-width:100%}
-#m img,#m video,#m iframe,#chatMessages img,#chatMessages video,#chatMessages iframe{max-width:100%}
-@media(min-width:1200px){
-  body{
+}#m{min-width:0;overflow-x:auto}#nav{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}#nav a{margin:0;white-space:normal}#hd>#lg{min-width:0;flex:1 1 260px}#ban{max-width:100%;flex:0 1 auto}table{max-width:100%;table-layout:auto}td, th{overflow-wrap:anywhere}input, textarea, select{max-width:100%}#m img, #m video, #m iframe{max-width:100%}
+@media(min-width:1200px){body{
     grid-template-columns:minmax(0,920px) 250px;
     max-width:1182px;
-  }
-  #w{grid-column:1}
-  .sd#sr{
-    grid-column:2;
-    width:250px;
-    max-width:250px;
-    justify-self:stretch;
-  }
+  }#w{grid-column:1}
 }
-@media(max-width:700px){
-  body{width:calc(100% - 8px);margin:4px auto;gap:8px}
-  #w{padding:4px}
-  #hd{padding:8px;gap:6px}
-  #nm{font-size:clamp(25px,8vw,34px)}
-  #lg i{font-size:10px}
-  #ban{font-size:8px;line-height:9px;padding:5px;max-width:100%;overflow-x:auto}
-  #nav{gap:7px 10px;font-size:11px}
-  #m table{font-size:10px}
-  #m td,#m th{padding:4px}
-  .topicRating{align-items:flex-start}
-  .chat-expanded{inset:2vh 2vw!important}
-}
-.banAccessPanel{
+@media(max-width:700px){body{width:calc(100% - 8px);margin:4px auto;gap:8px}#w{padding:4px}#hd{padding:8px;gap:6px}#nm{font-size:clamp(25px,8vw,34px)}#lg i{font-size:10px}#ban{font-size:8px;line-height:9px;padding:5px;max-width:100%;overflow-x:auto}#nav{gap:7px 10px;font-size:11px}#m table{font-size:10px}#m td, #m th{padding:4px}.topicRating{align-items:flex-start}
+}.banAccessPanel{
   margin:10px 0;
   padding:clamp(12px,3vw,22px);
   border:2px solid #a32a20;
@@ -211,88 +94,34 @@ input,textarea,select{max-width:100%}
   box-shadow:4px 4px 0 #c3aaa5;
   color:#321b18;
   line-height:1.55;
-}
-.banAccessPanel h2{margin:0 0 10px;color:#8a1c12;font-size:clamp(17px,3vw,22px)}
-.banAccessPanel .banMeta{margin:8px 0;padding:8px;background:#fff;border:1px solid #d2aaa4}
-.banAccessPanel .banActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.banAccessPanel .banActions a{display:inline-block;padding:6px 10px;border:2px outset #fff;background:linear-gradient(#fff,#d8e0e4);font-weight:bold;text-decoration:none}
-.moderationLoading{margin:12px 0;padding:14px;border:1px solid #9bb2bd;background:#f4f7f8;color:#345}
-
-
-.banAccessPanel{
+}.banAccessPanel h2{margin:0 0 10px;color:#8a1c12;font-size:clamp(17px,3vw,22px)}.banAccessPanel .banMeta{margin:8px 0;padding:8px;background:#fff;border:1px solid #d2aaa4}.banAccessPanel .banActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.banAccessPanel .banActions a{display:inline-block;padding:6px 10px;border:2px outset #fff;background:linear-gradient(#fff,#d8e0e4);font-weight:bold;text-decoration:none}.moderationLoading{margin:12px 0;padding:14px;border:1px solid #9bb2bd;background:#f4f7f8;color:#345}.banAccessPanel{
   border:3px solid #a40000!important;background:#fff0f0!important;color:#4b0000!important;
   box-shadow:5px 5px 0 #c58d8d!important;padding:clamp(14px,4vw,28px)!important;
   margin:clamp(8px,3vh,28px) auto!important;max-width:760px;
   font-size:clamp(13px,2vw,16px);line-height:1.6;
-}
-.banAccessPanel h2{
+}.banAccessPanel h2{
   background:#a40000;color:#fff!important;
   margin:calc(clamp(14px,4vw,28px) * -1) calc(clamp(14px,4vw,28px) * -1) 16px!important;
   padding:13px!important;font-size:clamp(18px,4vw,25px)!important;
-}
-.banAccessPanel .banMeta{background:#fff!important;border:1px solid #c77!important;padding:10px!important;margin:10px 0!important}
-.banAccessPanel .moderationHistory{margin-top:8px!important}
-.banAccessPanel .moderationHistory li{margin:5px 0}
-.banAccessPanel .banActions a{background:#a40000!important;color:#fff!important;border:2px solid #780000!important;padding:8px 13px!important}
-
-
-/* Editor de galería disponible únicamente al crear un tema. */
-.topicGalleryComposer{border:1px solid #9bb2bd;background:#f4f7f8;margin:8px 0;padding:7px}
-.topicGalleryBar{display:flex;gap:6px;align-items:center}
-.topicGalleryBar button:first-child{flex:1;text-align:left;font-weight:bold}
-.topicGalleryHelp{margin:7px 0;padding:8px;border:1px dashed #b18b42;background:#fff8dc;color:#59451c;line-height:1.5}
-#topicGalleryItems{display:grid;gap:7px;margin:8px 0}
-.topicGalleryRow{display:grid;grid-template-columns:minmax(110px,145px) minmax(130px,1fr) minmax(120px,.8fr) auto;gap:6px;align-items:end;padding:7px;border:1px solid #b8c8ce;background:#fff}
-.topicGalleryField{display:flex;flex-direction:column;gap:3px;min-width:0}
-.topicGalleryField label{font-size:10px;font-weight:bold;color:#345}
-.topicGalleryField input,.topicGalleryField select{width:100%;min-width:0}
-.topicGalleryRemove{color:#a40000}
-.topicGalleryNote{display:block;margin-top:6px;color:#456;line-height:1.4}
-.topicGalleryViewer{margin:10px 0 14px;border:2px solid #006699;background:#f2f6f8;box-shadow:3px 3px 0 #b5c1c6}
-.topicGalleryViewer h3{margin:0;padding:7px 9px;color:#ffbd7b;background:linear-gradient(#2d86b8,#004d75);font-size:12px}
-.topicGalleryStage{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;gap:5px;align-items:center;padding:8px}
-.topicGalleryNav{min-width:34px;min-height:42px;font-size:22px;font-weight:bold}
-.topicGallerySlide{min-width:0;min-height:100px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:7px;padding:7px;background:#fff;border:1px solid #b8c8ce}
-.topicGalleryImageLink{display:block;max-width:100%;text-decoration:none}
-.topicGalleryImage{display:block;max-width:100%;max-height:420px;object-fit:contain;margin:auto;background:#edf1f3}
-.topicGalleryExternalLink{display:flex;flex-direction:column;gap:5px;max-width:100%;overflow-wrap:anywhere;padding:14px 18px;border:1px solid #9bb2bd;background:#f4f7f8;font-weight:bold}
-.topicGalleryExternalLink small{font-weight:normal;overflow-wrap:anywhere}
-.topicGalleryCaption{margin:0;padding:0 8px 4px;font-size:11px;color:#345;overflow-wrap:anywhere}
-.topicGalleryFooter{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 9px;border-top:1px solid #b8c8ce;background:#e5edf0}
-.topicGalleryDots{display:flex;gap:5px;flex-wrap:wrap}
-.topicGalleryDot{min-width:12px;width:12px;height:12px;padding:0;border-radius:50%;border:1px solid #006699;background:#fff}
-.topicGalleryDot[aria-current="true"]{background:#006699}
-@media(max-width:600px){.topicGalleryRow{grid-template-columns:1fr 1fr}.topicGalleryRemove{grid-column:1/-1}.topicGalleryStage{grid-template-columns:30px minmax(0,1fr) 30px;padding:5px}.topicGalleryNav{min-width:28px;padding:2px}.topicGalleryImage{max-height:260px}}
-/* Etiqueta de personal: arcoíris si el navegador admite texto con fondo recortado; rojo como alternativa. */
+}.banAccessPanel .banMeta{background:#fff!important;border:1px solid #c77!important;padding:10px!important;margin:10px 0!important}.banAccessPanel .moderationHistory{margin-top:8px!important}.banAccessPanel .moderationHistory li{margin:5px 0}.banAccessPanel .banActions a{background:#a40000!important;color:#fff!important;border:2px solid #780000!important;padding:8px 13px!important}/* Editor de galería disponible únicamente al crear un tema. */
+.topicGalleryComposer{border:1px solid #9bb2bd;background:#f4f7f8;margin:8px 0;padding:7px}.topicGalleryBar{display:flex;gap:6px;align-items:center}.topicGalleryBar button:first-child{flex:1;text-align:left;font-weight:bold}.topicGalleryHelp{margin:7px 0;padding:8px;border:1px dashed #b18b42;background:#fff8dc;color:#59451c;line-height:1.5}#topicGalleryItems{display:grid;gap:7px;margin:8px 0}.topicGalleryRow{display:grid;grid-template-columns:minmax(110px,145px) minmax(130px,1fr) minmax(120px,.8fr) auto;gap:6px;align-items:end;padding:7px;border:1px solid #b8c8ce;background:#fff}.topicGalleryField{display:flex;flex-direction:column;gap:3px;min-width:0}.topicGalleryField label{font-size:10px;font-weight:bold;color:#345}.topicGalleryField input, .topicGalleryField select{width:100%;min-width:0}.topicGalleryRemove{color:#a40000}.topicGalleryNote{display:block;margin-top:6px;color:#456;line-height:1.4}.topicGalleryViewer{margin:10px 0 14px;border:2px solid #006699;background:#f2f6f8;box-shadow:3px 3px 0 #b5c1c6}.topicGalleryViewer h3{margin:0;padding:7px 9px;color:#ffbd7b;background:linear-gradient(#2d86b8,#004d75);font-size:12px}.topicGalleryStage{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;gap:5px;align-items:center;padding:8px}.topicGalleryNav{min-width:34px;min-height:42px;font-size:22px;font-weight:bold}.topicGallerySlide{min-width:0;min-height:100px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:7px;padding:7px;background:#fff;border:1px solid #b8c8ce}.topicGalleryImageLink{display:block;max-width:100%;text-decoration:none}.topicGalleryImage{display:block;max-width:100%;max-height:420px;object-fit:contain;margin:auto;background:#edf1f3}.topicGalleryExternalLink{display:flex;flex-direction:column;gap:5px;max-width:100%;overflow-wrap:anywhere;padding:14px 18px;border:1px solid #9bb2bd;background:#f4f7f8;font-weight:bold}.topicGalleryExternalLink small{font-weight:normal;overflow-wrap:anywhere}.topicGalleryCaption{margin:0;padding:0 8px 4px;font-size:11px;color:#345;overflow-wrap:anywhere}.topicGalleryFooter{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 9px;border-top:1px solid #b8c8ce;background:#e5edf0}.topicGalleryDots{display:flex;gap:5px;flex-wrap:wrap}.topicGalleryDot{min-width:12px;width:12px;height:12px;padding:0;border-radius:50%;border:1px solid #006699;background:#fff}.topicGalleryDot[aria-current="true"]{background:#006699}
+@media(max-width:600px){.topicGalleryRow{grid-template-columns:1fr 1fr}.topicGalleryRemove{grid-column:1/-1}.topicGalleryStage{grid-template-columns:30px minmax(0,1fr) 30px;padding:5px}.topicGalleryNav{min-width:28px;padding:2px}.topicGalleryImage{max-height:260px}}/* Etiqueta de personal: arcoíris si el navegador admite texto con fondo recortado; rojo como alternativa. */
 .staffBadge{display:inline-block;margin-left:4px;white-space:nowrap;vertical-align:baseline;font:bold 9px Verdana,Arial,sans-serif;color:#c00000!important}
-@supports ((background-clip:text) or (-webkit-background-clip:text)){
-  .staffBadge{background-image:linear-gradient(90deg,#ff2020 0%,#ff9a00 16%,#e8d400 32%,#20b850 48%,#168de2 64%,#6633cc 80%,#e52c91 100%);background-clip:text;-webkit-background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
-}
-/* El atributo hidden debe prevalecer sobre los display definidos por el diseño. */
-[hidden]{display:none!important}
-
-/* Navegación de páginas dentro de cada foro */
+@supports ((background-clip:text) or (-webkit-background-clip:text)){.staffBadge{background-image:linear-gradient(90deg,#ff2020 0%,#ff9a00 16%,#e8d400 32%,#20b850 48%,#168de2 64%,#6633cc 80%,#e52c91 100%);background-clip:text;-webkit-background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
+}/* El atributo hidden debe prevalecer sobre los display definidos por el diseño. */
+[hidden]{display:none!important}/* Navegación de páginas dentro de cada foro */
 .boardTopicPagination{
   display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;
   margin:6px 0;padding:6px;border:1px solid #9bb2bd;background:#e9eff2;
   color:#345;font:10px "Courier New",monospace;text-align:center;
-}
-.boardTopicPagination button{
+}.boardTopicPagination button{
   display:inline-flex;align-items:center;justify-content:center;
   min-width:32px;min-height:29px;padding:2px 9px;
   color:#003b59;font:bold 19px Georgia,serif;line-height:1;
   border:2px outset #fff;background:linear-gradient(#fff,#d8e0e4);
-}
-.boardTopicPagination button:not(:disabled):hover{background:#fff2cc;color:#8a4300}
-.boardTopicPagination button:disabled{opacity:.4;cursor:not-allowed}
-@media(max-width:420px){
-  .boardTopicPagination{gap:6px;padding:5px}
-  .boardTopicPagination span{flex:1 1 100%;order:2}
-  .boardTopicPagination button:first-child{order:1}
-  .boardTopicPagination button:last-child{order:3}
-}
-
-/* Los enlaces y adjuntos de los temas solo se muestran a cuentas registradas. */
+}.boardTopicPagination button:not(:disabled):hover{background:#fff2cc;color:#8a4300}.boardTopicPagination button:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:420px){.boardTopicPagination{gap:6px;padding:5px}.boardTopicPagination span{flex:1 1 100%;order:2}.boardTopicPagination button:first-child{order:1}.boardTopicPagination button:last-child{order:3}
+}/* Los enlaces y adjuntos de los temas solo se muestran a cuentas registradas. */
 .topicLoginGate{
   display:block;
   width:max-content;
@@ -305,22 +134,16 @@ input,textarea,select{max-width:100%}
   color:#fff;
   font:bold 11px Verdana,Arial,sans-serif;
   text-align:center;
-}
-.topicLoginGate a{color:#fff!important;text-decoration:none!important}
-.topicLoginGate a:hover{color:#fff4d8!important;text-decoration:underline!important}
-
-/* El aviso de inicio de sesión ocupa toda la galería, sin columnas reservadas para flechas ocultas. */
+}.topicLoginGate a{color:#fff!important;text-decoration:none!important}.topicLoginGate a:hover{color:#fff4d8!important;text-decoration:underline!important}/* El aviso de inicio de sesión ocupa toda la galería, sin columnas reservadas para flechas ocultas. */
 .topicGalleryStage.topicGalleryStageLocked{
   grid-template-columns:minmax(0,1fr)!important;
-}
-.topicGalleryStage.topicGalleryStageLocked .topicGallerySlide{
+}.topicGalleryStage.topicGalleryStageLocked .topicGallerySlide{
   grid-column:1;
   width:100%;
   min-width:0;
   min-height:clamp(110px,18vw,170px);
   padding:clamp(10px,3vw,20px);
-}
-.topicGalleryStage.topicGalleryStageLocked .topicLoginGate{
+}.topicGalleryStage.topicGalleryStageLocked .topicLoginGate{
   display:flex;
   align-items:center;
   justify-content:center;
@@ -333,93 +156,16 @@ input,textarea,select{max-width:100%}
   line-height:1.35;
   white-space:normal;
   overflow-wrap:anywhere;
-}
-.topicGalleryStage.topicGalleryStageLocked .topicLoginGate a{
+}.topicGalleryStage.topicGalleryStageLocked .topicLoginGate a{
   display:block;
   max-width:100%;
+}/* Markdown estilo Discord. */
+.mdParagraph{margin:5px 0;line-height:1.55}.mdHeading{margin:8px 0 5px;color:#064b70;line-height:1.25;font-family:Verdana,Arial,sans-serif}h1.mdHeading{font-size:1.45em;border-bottom:1px solid #b7c9d1;padding-bottom:4px}h2.mdHeading{font-size:1.25em;border-bottom:1px solid #d3dfe4;padding-bottom:3px}h3.mdHeading{font-size:1.08em}.mdSubtext{display:block;color:#667984;font-size:.9em;margin:2px 0 6px}.mdQuote{margin:7px 0;padding:7px 10px;border-left:3px solid #718c9b;background:#edf2f5;color:#253b48;line-height:1.5}.mdCodeBlock{max-width:100%;overflow:auto;margin:7px 0;padding:9px 10px;border:1px solid #aabac2;border-radius:3px;background:#e8edf0;color:#17252c;font:12px/1.5 Consolas,"Courier New",monospace;white-space:pre}.mdInlineCode{padding:1px 4px;border:1px solid #d0d9de;border-radius:3px;background:#e8edf0;color:#173b50;font:inherit}.mdSpoiler{background:#30343b;color:#30343b;border-radius:3px;padding:0 3px;cursor:pointer;transition:color .12s}.mdSpoiler:hover, .mdSpoiler:focus{color:#fff;outline:none}.mdRule{border:0;border-top:1px solid #b7c9d1;margin:9px 0}.p ul, .p ol{margin:5px 0 7px;padding-left:24px}.p li{margin:2px 0;line-height:1.45}.p>p:first-child{margin-top:0}.p>p:last-child{margin-bottom:0}/* Diseño de una sola columna, adaptable a móvil y sin paneles laterales reservados. */
+body{display:block!important;width:calc(100% - 12px)!important;max-width:1120px!important;margin:6px auto!important}#w{display:block;width:100%!important;max-width:1120px!important;min-width:0!important;margin:0 auto!important}.sd#sl{display:none!important}#m{min-width:0;max-width:100%;overflow-x:auto;overflow-wrap:anywhere}#m table{max-width:100%}#m img, #m video, #m iframe{max-width:100%;height:auto}#nav{display:flex;align-items:center;flex-wrap:wrap;gap:5px 9px}#nav a{margin:0;white-space:normal}input, textarea, select{max-width:100%;min-width:0}pre, code{max-width:100%}
+@media(max-width:760px){body{width:100%!important;margin:0!important;padding:0!important;background:#d5dbde}#w{width:100%!important;max-width:none!important;margin:0!important;padding:5px!important;border-left:0;border-right:0;box-shadow:none}#hd{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:8px}#hd>#lg{width:100%;min-width:0}#nm{font-size:clamp(27px,8vw,38px);line-height:1.1;overflow-wrap:anywhere}#lg i{font-size:10px}#ban{width:100%;max-width:100%;font-size:clamp(8px,2.4vw,10px);line-height:1.25;overflow-x:auto;padding:6px}#st{font-size:10px;line-height:1.45;overflow-wrap:anywhere}#nav{gap:5px;padding:6px}#nav a{display:inline-flex;align-items:center;min-height:34px;padding:5px 7px;border:1px solid #a9bcc5;background:linear-gradient(#fff,#e4eaed)}#tk{white-space:normal;line-height:1.4}#ann{margin-left:0;margin-right:0}#m{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}#m>table{width:100%;table-layout:auto}#m td, #m th{padding:5px;overflow-wrap:anywhere;word-break:normal}#m table td:first-child{max-width:40vw}#m .p{font-size:13px;line-height:1.55;overflow-wrap:anywhere}#m .h{font-size:9px;line-height:1.4;overflow-wrap:anywhere}#m input[type="text"], #m input[type="email"], #m input[type="password"], #m input[type="url"], #m input[type="number"], #m textarea, #m select{width:100%!important;min-width:0!important;max-width:100%!important;font-size:16px;padding:8px}#m input[type="checkbox"], #m input[type="radio"]{width:auto!important}#m button, #m .bt{min-height:36px;padding:8px 10px;max-width:100%;white-space:normal;text-align:center}#m .commentForm textarea{min-height:120px}#m .topicRating{align-items:flex-start;flex-direction:column}#m .ratingControls{gap:5px}#m .topicGalleryStage{grid-template-columns:30px minmax(0,1fr) 30px}#m .topicGallerySlide{min-width:0;overflow-wrap:anywhere}#m .topicGalleryRow{grid-template-columns:minmax(0,1fr)!important}#m .profileAvatarBox, #m .profilePhotoActions, #m .modActions{align-items:stretch}#m .mdCodeBlock{font-size:11px;max-width:100%;white-space:pre;overflow-x:auto}#m .mdParagraph{overflow-wrap:anywhere}#ft{padding:8px 4px;overflow-wrap:anywhere}
 }
-
-/* Markdown estilo Discord. */
-.mdParagraph{margin:5px 0;line-height:1.55}
-.mdHeading{margin:8px 0 5px;color:#064b70;line-height:1.25;font-family:Verdana,Arial,sans-serif}
-h1.mdHeading{font-size:1.45em;border-bottom:1px solid #b7c9d1;padding-bottom:4px}
-h2.mdHeading{font-size:1.25em;border-bottom:1px solid #d3dfe4;padding-bottom:3px}
-h3.mdHeading{font-size:1.08em}
-.mdSubtext{display:block;color:#667984;font-size:.9em;margin:2px 0 6px}
-.mdQuote{margin:7px 0;padding:7px 10px;border-left:3px solid #718c9b;background:#edf2f5;color:#253b48;line-height:1.5}
-.mdCodeBlock{max-width:100%;overflow:auto;margin:7px 0;padding:9px 10px;border:1px solid #aabac2;border-radius:3px;background:#e8edf0;color:#17252c;font:12px/1.5 Consolas,"Courier New",monospace;white-space:pre}
-.mdInlineCode{padding:1px 4px;border:1px solid #d0d9de;border-radius:3px;background:#e8edf0;color:#173b50;font:inherit}
-.mdSpoiler{background:#30343b;color:#30343b;border-radius:3px;padding:0 3px;cursor:pointer;transition:color .12s}
-.mdSpoiler:hover,.mdSpoiler:focus{color:#fff;outline:none}
-.mdRule{border:0;border-top:1px solid #b7c9d1;margin:9px 0}
-.p ul,.p ol{margin:5px 0 7px;padding-left:24px}
-.p li{margin:2px 0;line-height:1.45}
-.p>p:first-child{margin-top:0}
-.p>p:last-child{margin-bottom:0}
-
-/* El chat deja de aparecer y no se conecta al servidor. */
-#sr,#chatShortcutDialog{display:none!important}
-
-/* Diseño de una sola columna, adaptable a móvil y sin paneles laterales reservados. */
-body{display:block!important;width:calc(100% - 12px)!important;max-width:1120px!important;margin:6px auto!important}
-#w{display:block;width:100%!important;max-width:1120px!important;min-width:0!important;margin:0 auto!important}
-.sd#sl{display:none!important}
-#sr{display:none!important}
-#m{min-width:0;max-width:100%;overflow-x:auto;overflow-wrap:anywhere}
-#m table{max-width:100%}
-#m img,#m video,#m iframe{max-width:100%;height:auto}
-#nav{display:flex;align-items:center;flex-wrap:wrap;gap:5px 9px}
-#nav a{margin:0;white-space:normal}
-input,textarea,select{max-width:100%;min-width:0}
-pre,code{max-width:100%}
-@media(max-width:760px){
-  body{width:100%!important;margin:0!important;padding:0!important;background:#d5dbde}
-  #w{width:100%!important;max-width:none!important;margin:0!important;padding:5px!important;border-left:0;border-right:0;box-shadow:none}
-  #hd{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:8px}
-  #hd>#lg{width:100%;min-width:0}
-  #nm{font-size:clamp(27px,8vw,38px);line-height:1.1;overflow-wrap:anywhere}
-  #lg i{font-size:10px}
-  #ban{width:100%;max-width:100%;font-size:clamp(8px,2.4vw,10px);line-height:1.25;overflow-x:auto;padding:6px}
-  #st{font-size:10px;line-height:1.45;overflow-wrap:anywhere}
-  #nav{gap:5px;padding:6px}
-  #nav a{display:inline-flex;align-items:center;min-height:34px;padding:5px 7px;border:1px solid #a9bcc5;background:linear-gradient(#fff,#e4eaed)}
-  #tk{white-space:normal;line-height:1.4}
-  #ann{margin-left:0;margin-right:0}
-  #m{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  #m>table{width:100%;table-layout:auto}
-  #m td,#m th{padding:5px;overflow-wrap:anywhere;word-break:normal}
-  #m table td:first-child{max-width:40vw}
-  #m .p{font-size:13px;line-height:1.55;overflow-wrap:anywhere}
-  #m .h{font-size:9px;line-height:1.4;overflow-wrap:anywhere}
-  #m input[type="text"],#m input[type="email"],#m input[type="password"],#m input[type="url"],#m input[type="number"],#m textarea,#m select{width:100%!important;min-width:0!important;max-width:100%!important;font-size:16px;padding:8px}
-  #m input[type="checkbox"],#m input[type="radio"]{width:auto!important}
-  #m button,#m .bt{min-height:36px;padding:8px 10px;max-width:100%;white-space:normal;text-align:center}
-  #m .commentForm textarea{min-height:120px}
-  #m .topicRating{align-items:flex-start;flex-direction:column}
-  #m .ratingControls{gap:5px}
-  #m .topicGalleryStage{grid-template-columns:30px minmax(0,1fr) 30px}
-  #m .topicGallerySlide{min-width:0;overflow-wrap:anywhere}
-  #m .topicGalleryRow{grid-template-columns:minmax(0,1fr)!important}
-  #m .profileAvatarBox,#m .profilePhotoActions,#m .modActions{align-items:stretch}
-  #m .catboxUploadPanel{align-items:stretch;flex-direction:column}
-  #m .catboxUploadPanel button{width:100%}
-  #m .mdCodeBlock{font-size:11px;max-width:100%;white-space:pre;overflow-x:auto}
-  #m .mdParagraph{overflow-wrap:anywhere}
-  #ft{padding:8px 4px;overflow-wrap:anywhere}
-}
-@media(max-width:420px){
-  #w{padding:3px!important}
-  #nm{font-size:27px}
-  #m table{font-size:10px}
-  #m td,#m th{padding:4px}
-  #m table td:first-child{max-width:32vw}
-  #m .topicGalleryStage{grid-template-columns:26px minmax(0,1fr) 26px;gap:3px;padding:4px}
-  #m .topicGalleryNav{min-width:24px;padding:2px}
-}
-
-.markdownHelp{display:block;margin:5px 0;color:#526773;font:10px/1.5 Verdana,Arial,sans-serif}
-
-.mdTimestamp{color:#526773;font-weight:600;font-variant-numeric:tabular-nums}
+@media(max-width:420px){#w{padding:3px!important}#nm{font-size:27px}#m table{font-size:10px}#m td, #m th{padding:4px}#m table td:first-child{max-width:32vw}#m .topicGalleryStage{grid-template-columns:26px minmax(0,1fr) 26px;gap:3px;padding:4px}#m .topicGalleryNav{min-width:24px;padding:2px}
+}.markdownHelp{display:block;margin:5px 0;color:#526773;font:10px/1.5 Verdana,Arial,sans-serif}.mdTimestamp{color:#526773;font-weight:600;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -448,55 +194,6 @@ pre,code{max-width:100%}
 <aside class="sd" id="sl">
   <div class="ad"><h4>PROYECTO DESTACADO</h4><div class="ph" style="height:320px">imagen<br>160x320</div><div class="tx"><b>Nuevo proyecto</b><br>Novedades y publicaciones oficiales. <a href="/b/proyecto">Ver más</a></div></div>
 </aside>
-
-<!-- COLUMNA DERECHA: CHAT EN VIVO -->
-<aside class="sd" id="sr">
-  <section id="chatBox" aria-label="Chat en vivo">
-    <div id="chatHead"><span> CHAT EN VIVO</span><div class="chatHeadActions"><button type="button" id="chatShortcuts" title="Ver atajos del chat" aria-label="Ver atajos del chat" aria-haspopup="dialog" aria-controls="chatShortcutDialog">?</button><button type="button" id="chatExpand" title="Ampliar chat" aria-expanded="false">⛶ Ampliar</button></div></div>
-    <div id="chatState">Conectando al servidor...</div>
-    <div id="chatMessages" aria-live="polite"><div class="chatEmpty">Conectando...</div></div>
-    <form class="chatForm" id="chatForm">
-      <textarea id="chatText" maxlength="1500" placeholder="Escribe un mensaje... (Enter para enviar · Shift+Enter para nueva línea)" aria-label="Mensaje de chat"></textarea>
-      <div class="chatActions">
-        <button type="submit" id="chatSend">Enviar</button>
-        <button type="button" id="chatCatbox" title="Seleccionar y subir un archivo desde tu dispositivo"> Adjuntar archivo</button>
-      </div>
-      <div class="chatHint" id="chatHint">Enter: enviar · Shift+Enter: nueva línea · pulsa ? para ver todos los atajos.</div>
-    </form>
-    <form class="catboxUploadPanel" id="chatCatboxForm" action="https://catbox.moe/user/api.php" method="post" enctype="multipart/form-data" target="_blank" hidden>
-      <input type="hidden" name="reqtype" value="fileupload">
-      <label for="chatCatboxFile">Archivo para compartir:</label>
-      <input id="chatCatboxFile" type="file" name="fileToUpload" required>
-      <button type="submit">Subir archivo</button>
-      <button type="button" id="chatCatboxCancel">Cancelar</button>
-      <p class="profilePhotoStatus" id="chatCatboxStatus">Se sube a Catbox. Si está caído, pulsa «Abrir mirror alternativo», sube el archivo allí y pega aquí el enlace que te devuelva.</p>
-    </form>
-    <details class="chatAdmin" id="chatAdmin" hidden>
-      <summary> Panel de administración</summary>
-      <p id="chatAdminInfo">Sesión de administrador verificada.</p>
-      <button type="button" id="chatClear">Marcar mensajes del chat como eliminados</button>
-    </details>
-  </section>
-</aside>
-
-<div id="chatShortcutDialog" hidden>
-  <section id="chatShortcutPanel" role="dialog" aria-modal="true" aria-labelledby="chatShortcutHeading">
-    <div id="chatShortcutTitle"><b id="chatShortcutHeading"> ATAJOS DEL CHAT</b><button type="button" id="chatShortcutClose" aria-label="Cerrar ayuda">×</button></div>
-    <div class="shortcutBody">
-      <table class="shortcutTable"><tr><th>Tecla</th><th>Acción</th></tr>
-        <tr><td><kbd>Enter</kbd></td><td>Enviar el mensaje.</td></tr>
-        <tr><td><kbd>Shift</kbd> + <kbd>Enter</kbd></td><td>Insertar una nueva línea sin enviar.</td></tr>
-        <tr><td><kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>Enter</kbd></td><td>Enviar el mensaje (alternativa).</td></tr>
-        <tr><td><kbd>Alt</kbd> + <kbd>M</kbd></td><td>Ir directamente al cuadro para escribir.</td></tr>
-        <tr><td><kbd>?</kbd></td><td>Abrir esta ventana de ayuda (cuando no estás escribiendo).</td></tr>
-        <tr><td><kbd>Esc</kbd></td><td>Cerrar esta ayuda o salir del chat ampliado.</td></tr>
-      </table>
-      <p><b>Acceso:</b> debes iniciar sesión con una cuenta registrada para ver y usar el chat. Los mensajes, enlaces y archivos no se muestran a visitantes anónimos.  Adjuntar archivo permite subir a Catbox y compartir el enlace dentro del chat. ⛶ Ampliar abre el chat en pantalla grande.</p>
-      <p><small>En móviles, puedes usar los botones de la pantalla. Durante la composición de texto, Enter respeta Shift+Enter y las teclas especiales del teclado.</small></p>
-      <div style="text-align:right"><button type="button" id="chatShortcutDone">Entendido</button></div>
-    </div>
-  </section>
-</div>
 
 <template id="faqt">
   <p><b>¿Cómo me registro?</b><br>Elige un nombre de usuario, introduce un correo de un proveedor permitido, crea una contraseña y acepta las reglas. Si tienes una invitación del staff, puedes pegarla también en el campo opcional. Te enviaremos un enlace para verificar el correo; la invitación se activa al verificarlo.</p>
@@ -856,7 +553,7 @@ function containsDirectedInsult(value){
   const normalized=String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
   return DIRECTED_INSULT_PATTERN.test(normalized);
 }
-function autoModerationReason(text,channel="chat"){
+function autoModerationReason(text,channel="comentario"){
   const content=String(text||"").split("\n").filter(line=>!line.trimStart().startsWith(">")).join("\n").replace(/\u2063MPQ:[A-Za-z0-9_-]+\u2063/g,"").trim();
   if(!content)return "";
   if(/\b(te voy a matar|voy a matarte|te voy a pegar|voy a golpearte|ojala te mueras|ojalá te mueras|i will kill you|i am going to kill you)\b/i.test(content))return "threat";
@@ -870,8 +567,7 @@ function autoModerationReason(text,channel="chat"){
   const state=autoModActivity.get(uid)||[];
   const recent=state.filter(item=>now-item.at<60000);
   if(recent.some(item=>item.channel===channel&&item.text===norm))return "duplicate";
-  if(channel==="chat"&&recent.filter(item=>item.channel==="chat"&&now-item.at<12000).length>=5)return "flood";
-  if(channel!=="chat"&&recent.filter(item=>item.channel===channel&&now-item.at<30000).length>=3)return "flood";
+  if(recent.filter(item=>item.channel===channel&&now-item.at<30000).length>=3)return "flood";
   return "";
 }
 async function assertCurrentUserNotBanned(){
@@ -882,7 +578,7 @@ async function assertCurrentUserNotBanned(){
   if(mod.status==="permanent")throw new Error("Tu cuenta tiene un ban permanente. Motivo: "+(mod.banReason||"incumplimiento de las normas."));
   if(mod.status==="temporary"&&until&&until.getTime()>Date.now())throw new Error("Tu cuenta está suspendida hasta "+dt(until)+". Motivo: "+(mod.banReason||"incumplimiento de las normas."));
 }
-async function autoModerationGate(text,channel="chat"){
+async function autoModerationGate(text,channel="comentario"){
   if(isOwner())return false;
   await assertCurrentUserNotBanned();
   const issue=autoModerationReason(text,channel),uid=auth?.currentUser?.uid||"guest",now=Date.now();
@@ -899,14 +595,9 @@ async function autoModerationGate(text,channel="chat"){
   return true;
 }
 function setSuspendedShell(hidden){
-  ["#hd","#st","#nav","#accountNotice","#moderationNotice","#tk","#ann","#ft","#sl","#sr","#chatBox"].forEach(selector=>{
+  ["#hd","#st","#nav","#accountNotice","#moderationNotice","#tk","#ann","#ft","#sl"].forEach(selector=>{
     const element=$(selector);if(element)element.hidden=hidden;
   });
-  // La ayuda del chat solo se abre mediante el botón ? o su atajo de teclado.
-  // Al ocultar el foro por una suspensión, se cierra; al mostrarlo, permanece cerrada.
-  const shortcuts=$("#chatShortcutDialog");
-  if(hidden&&shortcuts)shortcuts.hidden=true;
-  if(!hidden){const guest=firebaseReady&&!isRegisteredMember();$("#sr").hidden=guest;$("#chatBox").hidden=guest;}
 }
 function getActiveBanDetails(data=currentModerationData){
   if(!auth?.currentUser||isOwner()||!data)return null;
@@ -932,7 +623,7 @@ function moderationAccessState(){
 }
 function renderBannedAccess(m,ban){
   setSuspendedShell(true);
-  stopChatSubscription();
+  
   const history=(ban.warnings||[]).map((item,index)=>
     '<li><b>Aviso '+(index+1)+'/3:</b> '+E(item.reason||"Incumplimiento de las normas.")+
     ' <small>('+E(item.source==="automod"?"AutoModeración":"Staff")+' · '+E(dt(item.at))+')</small></li>'
@@ -950,12 +641,6 @@ function renderBannedAccess(m,ban){
     +'<div class="banActions"><a href="/out">Cerrar sesión</a></div>'
     +'</section>';
 }
-function stopChatSubscription(){
-  if(chatUnsub){chatUnsub();chatUnsub=null;}
-  chatCache=[];
-  const box=$("#chatMessages");
-  if(box)box.innerHTML='<div class="chatEmpty">El chat no está disponible para esta cuenta.</div>';
-}
 function refreshModerationAccess(){
   if(!firebaseReady||moderationAccessState()!=="ready")return;
   const ban=getActiveBanDetails(),banned=!!ban;
@@ -963,16 +648,15 @@ function refreshModerationAccess(){
     lastModerationBanned=true;
     renderModerationNotice();
     setSuspendedShell(true);
-    stopChatSubscription();
-    // Mantiene el aviso visible y cierra el chat incluso si algún evento intenta reabrirlo.
-    if(routeKeyFromLocation()!=="#/out"&&!$("#m .banAccessPanel"))renderBannedAccess($("#m"),ban);
+    
+      if(routeKeyFromLocation()!=="#/out"&&!$("#m .banAccessPanel"))renderBannedAccess($("#m"),ban);
     return;
   }
   if(lastModerationBanned===false)return;
   lastModerationBanned=false;
   renderModerationNotice();
   if(routeKeyFromLocation()!=="#/out")go();
-  subscribeChat();
+  
 }
 
 function renderModerationNotice(){
@@ -1056,7 +740,6 @@ function requireVerifiedMember(action="compartir enlaces o multimedia"){
 }
 function imageKitReady(){return /^https:\/\/\S+$/i.test(IMAGEKIT_AUTH_ENDPOINT) && IMAGEKIT_PUBLIC_KEY.startsWith("public_");}
 const me = () => auth?.currentUser && !auth.currentUser.isAnonymous ? (auth.currentUser.displayName || "Usuario") : "";
-const chatName = () => me() || `Invitado-${(auth?.currentUser?.uid || "0000").slice(0,5).toUpperCase()}`;
 const rank = (n,u,uid) => (uid && ADMINS_UID.includes(uid)) ? "Administrador" : (uid && MODERATORS_UID.includes(uid)) ? "Moderador" : n > 99 ? "Veterano" : n > 24 ? "Habitual" : n > 4 ? "Miembro" : "Novato";
 function safeHttps(value){try{const u=new URL(String(value||""));return u.protocol==="https:"?u.href:"";}catch{return "";}}
 async function hashAccessToken(value){
@@ -1067,50 +750,13 @@ async function hashAccessToken(value){
   return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 
-async function uploadToImageKit(file,folder,statusSelector){
-  requireVerifiedMember("subir archivos");
-  if(!imageKitReady())throw new Error("ImageKit todavía no está configurado. Revisa la sección de archivos del README.");
-  const idToken=await auth.currentUser.getIdToken(true);
-  const authResponse=await fetch(IMAGEKIT_AUTH_ENDPOINT,{
-    method:"POST",
-    headers:{"Authorization":`Bearer ${idToken}`,"Content-Type":"application/json"},
-    body:"{}"
-  });
-  let credentials={};try{credentials=await authResponse.json();}catch{}
-  if(!authResponse.ok||!credentials.token||!credentials.signature||!credentials.expire||!(credentials.publicKey||IMAGEKIT_PUBLIC_KEY)){
-    throw new Error(credentials.error||"No se pudo validar la cuenta para subir el archivo.");
-  }
-  const form=new FormData();
-  form.append("file",file);form.append("fileName",file.name);
-  form.append("publicKey",credentials.publicKey||IMAGEKIT_PUBLIC_KEY);
-  form.append("token",credentials.token);form.append("expire",String(credentials.expire));
-  form.append("signature",credentials.signature);form.append("folder",folder);
-  form.append("useUniqueFileName","true");
-  const status=statusSelector?document.querySelector(statusSelector):null;
-  return await new Promise((resolve,reject)=>{
-    const xhr=new XMLHttpRequest();xhr.open("POST",IMAGEKIT_UPLOAD_URL);
-    xhr.upload.onprogress=e=>{
-      if(!e.lengthComputable)return;
-      const pct=Math.round(e.loaded/e.total*100);
-      if(status)status.textContent=statusSelector==="#chatState"?`SUBIENDO ARCHIVO · ${pct}%`:`Subiendo archivo a ImageKit: ${pct}%`;
-    };
-    xhr.onerror=()=>reject(new Error("No se pudo conectar con ImageKit."));
-    xhr.onload=()=>{
-      let result={};try{result=JSON.parse(xhr.responseText||"{}");}catch{}
-      if(xhr.status>=200&&xhr.status<300&&result.url)resolve(result);
-      else reject(new Error(result.message||result.help||"ImageKit rechazó el archivo. Revisa su formato y tamaño."));
-    };
-    xhr.send(form);
-  });
-}
 function avatar(u,size=40,url=""){const safe=safeHttps(url);if(safe)return `<img class="ava" width="${size}" height="${size}" src="${E(safe)}" alt="Avatar de ${E(u||"usuario")}" loading="lazy" style="width:${size}px;height:${size}px;object-fit:cover;border:1px solid #006699;background:#fff;flex:none">`;let h=7,s="";for(const c of String(u||"?"))h=(h*31+c.charCodeAt(0))|0;for(let i=0;i<25;i++){const x=i%5,y=i/5|0;if((h >>> (y*3+Math.min(x,4-x)))&1)s+=`<rect x="${x*8}" y="${y*8}" width="8" height="8"/>`;}return `<svg class="ava" width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true" style="background:hsl(${(h>>>0)%360},60%,40%);border:1px solid #006699;flex:none"><g fill="#fff">${s}</g></svg>`;}
 
 let app=null, auth=null, db=null, storage=null, firebaseReady=false, authReady=false, currentUser=null;
-let chatUnsub=null, chatCache=[], uploadBusy=false;
 const configured = FB.apiKey && !FB.apiKey.startsWith("PEGA_") && FB.projectId && FB.projectId !== "TU-PROYECTO" && FB.appId && !FB.appId.startsWith("PEGA_");
 
 function setNetStatus(text, ok=false){const n=$("#netState");n.textContent=text;n.style.color=ok?"#0f0":"#ff8a8a";}
-function safeLocal(){try{return JSON.parse(localStorage.getItem("mantipobres_demo") || '{"u":{},"t":[],"p":[],"m":"","chat":[]}')}catch{return {u:{},t:[],p:[],m:"",chat:[]};}}
+function safeLocal(){try{const data=JSON.parse(localStorage.getItem("mantipobres_demo") || '{"u":{},"t":[],"p":[],"m":""}');if(data&&typeof data==="object")delete data.chat;return data;}catch{return {u:{},t:[],p:[],m:""};}}
 let demo = safeLocal();
 function uniqueTopicRatings(items){
   const unique=new Map();
@@ -1171,7 +817,7 @@ const D = {
     await reload(credential.user);
     currentUser = auth.currentUser;
     await loadCurrentStaffRole(currentUser);
-    updateAdminUI();
+    
     if(String(token||"").trim()){
       try{await D.claimStaffInvite(token);}
       catch(e){try{await signOut(auth);await signInAnonymously(auth);}catch{}throw e;}
@@ -1197,7 +843,7 @@ const D = {
       tx.update(inviteRef,{status:"used",claimedBy:user.uid,claimedAt:serverTimestamp()});
       tx.set(staffRef,{role:grantedRole,grantedAt:serverTimestamp(),grantedBy:invite.createdBy,inviteHash:hash});
     });
-    currentStaffRole=grantedRole;updateAdminUI();
+    currentStaffRole=grantedRole;
     return grantedRole;
   },
   async createStaffInvite(role,description){
@@ -1309,7 +955,7 @@ const D = {
   async profByUid(uid){const s=await getDoc(doc(db,"users",uid));return s.exists()?{uid:s.id,...s.data()}:null;},
   async moderation(uid){const s=await getDoc(doc(db,"moderation",uid));return s.exists()?{uid,...s.data()}:{uid,warnings:[],warningCount:0,status:"active",banUntil:null,banReason:""};},
   async moderationMember(uid){const s=await getDoc(doc(db,"staff",uid));return s.exists()?s.data().role:"";},
-  async autoWarn(reason,channel="chat"){
+  async autoWarn(reason,channel="comentario"){
     const uid=auth.currentUser.uid,ref=doc(db,"moderation",uid),allowed=Object.keys(AUTO_MODERATION_REASONS);
     if(!allowed.includes(reason))throw new Error("Motivo automático no válido.");
     let result=null;
@@ -1351,7 +997,7 @@ const D = {
     return result;
   },
   async setModeratedContentVisibility(uid,hidden,until=null){
-    const collections=["topics","posts","chatMessages"],wantedUntil=hidden?(until||null):null;
+    const collections=["topics","posts"],wantedUntil=hidden?(until||null):null;
     for(const collectionName of collections){
       const snapshot=await getDocs(query(collection(db,collectionName),where("uid","==",uid)));
       const changed=snapshot.docs.filter(item=>{
@@ -1489,20 +1135,7 @@ const D = {
     }
     await deleteDoc(topicRef);
   },
-  async chatSend(x,media=null){
-    requireRegisteredMember("usar el chat");await assertCurrentUserNotBanned();
-    if(media||containsExternalLink(x))requireRegisteredMember("compartir enlaces o archivos en el chat");
-    const uid=auth.currentUser.uid,rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(rateRef),last=rateSnap.exists()?rateSnap.data().lastChatAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
-    const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<2000)throw new Error("CHAT_RATE_LIMIT");
-    const p=auth.currentUser.isAnonymous?null:await getDoc(doc(db,"users",uid)),avatarUrl=p?.exists()?p.data().avatarUrl||"":"";
-    const messageRef=doc(collection(db,"chatMessages")),batch=writeBatch(db);
-    batch.set(rateRef,{lastChatAt:serverTimestamp(),lastChatMessageId:messageRef.id},{merge:true});
-    batch.set(messageRef,{uid,u:chatName(),avatarUrl,x,media,ts:Date.now(),staffBadge:hasStaffBadge()});
-    await batch.commit();return {id:messageRef.id};
-  },
-  async chatEdit(id,x){await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>1500)throw new Error("El mensaje supera el máximo de 1500 caracteres.");await updateDoc(doc(db,"chatMessages",id),{x:value});},
-  async chatDelete(id,path){const ref=doc(db,"chatMessages",id),snapshot=await getDoc(ref);if(!snapshot.exists()||snapshot.data().deleted)return;await updateDoc(ref,{x:"",media:null,deleted:true,deletedBy:isAdmin()?"administrador":"usuario",deletedAt:Date.now(),deletedByUid:auth.currentUser.uid});if(path&&storage){try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("No se pudo borrar el archivo asociado",e);}}},
-  async chatClear(){if(!isAdmin())throw new Error("No autorizado.");const s=await getDocs(query(collection(db,"chatMessages"),orderBy("ts","desc"),limit(500))),paths=[],now=Date.now(),uid=auth.currentUser.uid;for(let i=0;i<s.docs.length;i+=400){const batch=writeBatch(db);s.docs.slice(i,i+400).forEach(d=>{const data=d.data();if(data.deleted)return;if(data.media?.path)paths.push(data.media.path);batch.update(d.ref,{x:"",media:null,deleted:true,deletedBy:"administrador",deletedAt:now,deletedByUid:uid});});await batch.commit();}if(storage&&paths.length)await Promise.all(paths.map(async path=>{try{await deleteObject(storageRef(storage,path));}catch(e){console.warn("Adjunto no encontrado o no borrable",e);}}));}
+
 };
 
 // Modo demostración local: los datos quedan solo en este navegador y NO son compartidos.
@@ -1529,10 +1162,6 @@ const Demo = {
   async removeAvatar(){throw new Error("Para cambiar la foto necesitas conectar Firebase y activar Storage.");},
   async del(k,a,b,isOriginal=false){if(k==="t")return this.deleteTopic(a);const post=demo.p.find(p=>p.id===a);if(post&&!post.deleted){post.deletedQuoteHash=quoteFingerprint(post.u||"",post.x||"");post.x="";post.deleted=true;post.deletedBy="usuario";if(!isOriginal){const t=demo.t.find(x=>x.id===b);if(t)t.n=Math.max(0,t.n-1);}}saveDemo();},
   async deleteTopic(id){const topic=demo.t.find(x=>x.id===id);if(!topic)return;if(!hasStaffBadge()&&topic.u!==demo.m)throw new Error("Solo puedes eliminar tus propios temas.");demo.t=demo.t.filter(x=>x.id!==id);demo.p=demo.p.filter(x=>x.tp!==id);saveDemo();},
-  async chatSend(x,media=null){demo.chat.push({id:String(Date.now()),uid:demo.m||"anon",u:demo.m||"Invitado-DEMO",staffBadge:false,x,media,ts:Date.now()});demo.chat=demo.chat.slice(-60);saveDemo();renderChat(demo.chat);},
-  async chatEdit(id,x){const message=demo.chat.find(m=>m.id===id);if(!message||message.uid!==demo.m)throw new Error("Solo puedes editar tus propios mensajes.");message.x=String(x||"").trim();saveDemo();renderChat(demo.chat);},
-  async chatDelete(id){const message=demo.chat.find(x=>x.id===id);if(message&&!message.deleted){message.x="";message.media=null;message.deleted=true;message.deletedBy="usuario";}saveDemo();renderChat(demo.chat);},
-  async chatClear(){demo.chat.forEach(m=>{if(!m.deleted){m.x="";m.media=null;m.deleted=true;m.deletedBy="administrador";}});saveDemo();renderChat(demo.chat);},
   async moderation(uid){return demo.moderation?.[uid]||{uid,warnings:[],warningCount:0,status:"active"};},
   async autoWarn(reason,channel){demo.moderation=demo.moderation||{};const uid=demo.m||"guest",data=demo.moderation[uid]||{warnings:[],status:"active"};data.warnings.push({reason:AUTO_MODERATION_REASONS[reason],source:"automod",at:Date.now()});data.warnings=data.warnings.slice(0,3);data.warningCount=data.warnings.length;if(data.warningCount>=3){data.status="permanent";data.banReason="Tres avisos automáticos";}demo.moderation[uid]=data;saveDemo();return data;},
   async warnUser(uid,reason){if(!isStaff())throw new Error("No autorizado.");demo.moderation=demo.moderation||{};const data=demo.moderation[uid]||{warnings:[],status:"active"};data.warnings.push({reason,source:"staff",at:Date.now()});data.warnings=data.warnings.slice(0,3);data.warningCount=data.warnings.length;if(data.warningCount>=3){data.status="permanent";data.banReason="Tercer aviso: ban permanente";}demo.moderation[uid]=data;saveDemo();return data;},
@@ -2270,9 +1899,9 @@ async function go(){
   }
   const activeBan=getActiveBanDetails();
   if(activeBan){
-    stopChatSubscription();
+    
     if(r!=="out"){renderBannedAccess(m,activeBan);return;}
-    $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=true;$("#ann").hidden=true;
+    $("#tk").hidden=true;$("#ann").hidden=true;
     $("#moderationNotice").hidden=true;
     $("#nav").innerHTML='<b> CUENTA RESTRINGIDA</b>';
   }else{
@@ -2282,9 +1911,9 @@ async function go(){
   }
   const publicRoutes=new Set(["","b","t","login","reg","faq","setup","out"]);
   if(firebaseReady&&!isRegisteredMember()&&!publicRoutes.has(r)){
-    stopChatSubscription();
-    $("#sr").hidden=true;$("#chatBox").hidden=true;$("#tk").hidden=false;
-    $("#chatShortcutDialog").hidden=true;
+    
+    $("#tk").hidden=false;
+    
     $("#accountNotice").hidden=true;$("#moderationNotice").hidden=true;$("#ann").hidden=true;
     $("#nav").innerHTML=' <a href="/">Inicio</a>  <a href="/faq">Ayuda</a>  <a href="/login">Entrar</a>  <a href="/reg">Registrarse</a>';
     m.innerHTML='<section class="notice"><h2> Inicia sesión para acceder al foro</h2><p>Los foros, temas, comentarios y adjuntos públicos se pueden leer sin iniciar sesión. Para publicar, comentar y valorar necesitas una cuenta verificada.</p><p><a class="bt" href="/login">Entrar a mi cuenta</a> <a class="bt" href="/reg">Crear una cuenta gratis</a></p></section>';
@@ -2317,7 +1946,7 @@ async function go(){
     if(renderId!==routeRenderId)return;
     console.error("Error al cargar la ruta "+routeKey,z);
     if(firebaseReady&&isRegisteredMember()&&(z?.code==="permission-denied"||z?.code==="firestore/permission-denied")){
-      stopChatSubscription();
+      
       setSuspendedShell(true);
       m.innerHTML='<div class="moderationLoading"><b>Verificando el acceso de tu cuenta...</b><p>Por seguridad, los foros, enlaces y archivos quedan ocultos mientras se comprueba la moderación.</p></div>';
       refreshOwnModerationFromServer();
@@ -2498,64 +2127,6 @@ function renderTopicExternalMediaPreview(text){
   return isAnonymousForumVisitor()?"":externalMediaPreview(text);
 }
 
-function renderChat(items){
-  const box=$("#chatMessages");if(!box)return;
-  const nearBottom=box.scrollHeight-box.scrollTop-box.clientHeight<70;
-  if(!items.length){box.innerHTML='<div class="chatEmpty">Todavía no hay mensajes.<br>¡Rompe el hielo!</div>';return;}
-  box.innerHTML=items.map(m=>{
-    const media=!m.deleted&&m.media? (String(m.media.type||"").startsWith("image/")?`<a href="${E(m.media.url)}" target="_blank" rel="noopener"><img class="cmmedia" src="${E(m.media.url)}" alt="Archivo adjunto" loading="lazy"></a>`:String(m.media.type||"").startsWith("video/")?`<video class="cmvideo" controls preload="metadata"><source src="${E(m.media.url)}" type="${E(m.media.type)}"></video>`:`<a href="${E(m.media.url)}" target="_blank" rel="noopener">Ver archivo adjunto</a>`):(!m.deleted?externalMediaPreview(m.x||""):"");
-    const ownMessage=configured?!!auth?.currentUser&&m.uid===auth.currentUser.uid:!!Store.me()&&m.uid===Store.me();
-    const canEdit=!m.deleted&&ownMessage,canDelete=!m.deleted&&(isAdmin()||ownMessage);
-    const messageText=m.deleted?deletedMessageText(m):(m.x||"");
-    const profileName=String(m.u||"Invitado"),profileLink=!profileName.startsWith("Invitado-")?`<a class="cmprofile" href="/u/${encodeURIComponent(profileName)}">${E(profileName)}</a>`:`<b>${E(profileName)}</b>`;
-    return `<article class="cm">${avatar(m.u||"?",25,m.avatarUrl||"")}<div><div class="cmhead">${profileLink}${staffTagHtml(m.staffBadge)} · ${dt(m.ts)}</div><div class="cmtxt">${m.deleted?'<span class="deletedMessage">'+E(messageText)+'</span>':fmt(messageText)}</div>${media}${canEdit||canDelete?`<div class="cmtools">${canEdit?`<button type="button" data-chat-edit="${E(m.id)}">[editar]</button>`:""}${canDelete?`<button type="button" data-chat-del="${E(m.id)}">[borrar]</button>`:""}</div>`:""}</div></article>`;
-  }).join("");
-  bindExternalMediaFallback(box);
-  box.querySelectorAll("[data-chat-edit]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatEdit);if(!item)return;const edited=prompt("Edita tu mensaje del chat:",item.x||"");if(edited===null)return;if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}btn.disabled=true;try{if(await autoModerationGate(edited,"chat")){btn.disabled=false;return;}await Store.chatEdit(item.id,edited);}catch(z){alert(errText(z));btn.disabled=false;}}));
-  box.querySelectorAll("[data-chat-del]").forEach(btn=>btn.addEventListener("click",async()=>{const item=items.find(x=>x.id===btn.dataset.chatDel);if(!item||!confirm("¿Borrar este mensaje del chat?"))return;try{await Store.chatDelete(item.id,item.media?.path||null);}catch(z){alert(errText(z));}}));
-  if(nearBottom)box.scrollTop=box.scrollHeight;
-}
-function subscribeChat(){
-  stopChatSubscription();
-  chatCache=[];
-  return;
-}
-
-async function uploadChatFile(file){
-  requireVerifiedMember("subir archivos al chat");await assertCurrentUserNotBanned();
-  const isImage=["image/jpeg","image/png","image/gif","image/webp"].includes(file.type);
-  const isVideo=["video/mp4","video/webm"].includes(file.type);
-  const isDocument=["application/pdf","text/plain","text/csv","application/zip","application/x-zip-compressed"].includes(file.type);
-  if(!isImage&&!isVideo&&!isDocument)throw new Error("Formato no permitido. Usa JPG, PNG, GIF, WEBP, MP4, WEBM, PDF, TXT, CSV o ZIP.");
-  const max=isImage?MAX_IMAGE_BYTES:isVideo?MAX_VIDEO_BYTES:MAX_DOCUMENT_BYTES;
-  if(file.size>max)throw new Error(`Archivo demasiado grande. Máximo: ${isImage?"8 MB":isVideo?"25 MB":"10 MB"}.`);
-  if(imageKitReady()){
-    const uploaded=await uploadToImageKit(file,`/chat/${auth.currentUser.uid}`,"#chatState");
-    const url=safeHttps(uploaded.url);if(!url)throw new Error("ImageKit devolvió una dirección no válida.");
-    return {url,path:"",type:file.type,name:file.name,size:file.size};
-  }
-  if(!STORAGE_ENABLED||!storage)throw new Error("La subida de archivos todavía no está conectada. Configura ImageKit siguiendo README.md. Puedes compartir enlaces HTTPS mientras tanto.");
-  if(isDocument)throw new Error("Firebase Storage está limitado aquí a imágenes y vídeos; configura ImageKit para documentos.");
-  const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-90),path=`chat/${auth.currentUser.uid}/${Date.now()}_${clean}`,r=storageRef(storage,path);
-  const task=uploadBytesResumable(r,file,{contentType:file.type});
-  await new Promise((resolve,reject)=>task.on("state_changed",s=>{$("#chatState").textContent=`SUBIENDO ADJUNTO · ${Math.round(s.bytesTransferred/s.totalBytes*100)}%`;},reject,resolve));
-  return {url:await getDownloadURL(r),path,type:file.type,name:file.name,size:file.size};
-}
-
-// Eventos de chat y atajos de teclado
-let chatSending=false;
-$("#chatForm").addEventListener("submit",async e=>{
-  e.preventDefault();const x=$("#chatText").value.trim();if(!x||uploadBusy||chatSending)return;
-  if(!isRegisteredMember()){alert("Inicia sesión con una cuenta registrada para usar el chat.");return;}
-  chatSending=true;$("#chatSend").disabled=true;
-  try{if(await autoModerationGate(x,"chat"))return;await Store.chatSend(x,null);$("#chatText").value="";}catch(z){alert(errText(z));}
-  finally{chatSending=false;$("#chatSend").disabled=false;}
-});
-
-const shortcutDialog=$("#chatShortcutDialog");
-function openChatShortcuts(){}
-function closeChatShortcuts(){}
-
 // Inicio Firebase y sesión de invitado
 async function startFirebase(){
   try{
@@ -2574,17 +2145,17 @@ async function startFirebase(){
         await loadCurrentStaffRole(user);
         watchCurrentModeration(user);
         if(!resolved){resolved=true;resolve();}
-        if(firebaseReady){updateAdminUI();renderAccountNotice();renderModerationNotice();subscribeChat();if(isOwner())D.syncModerationVisibility().then(()=>migratePublicVisibilityAsOwner()).catch(error=>console.error("No se pudo completar la migración pública de MantiPobres:",error));go();}
+        if(firebaseReady){renderAccountNotice();renderModerationNotice();if(isOwner())D.syncModerationVisibility().then(()=>migratePublicVisibilityAsOwner()).catch(error=>console.error("No se pudo completar la migración pública de MantiPobres:",error));go();}
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
-    $("#chatHint").textContent="Foros y temas públicos en modo lectura. Para publicar temas y respuestas necesitas una cuenta registrada con correo verificado. El chat online es exclusivo para miembros. Enter envía · Shift+Enter nueva línea · ? atajos."; 
+    if(isOwner())purgeLegacyChatAsOwner().catch(error=>console.error("No se pudo borrar el chat antiguo de Firestore:",error));
     if(isOwner())D.syncModerationVisibility().then(()=>migratePublicVisibilityAsOwner()).catch(error=>console.error("No se pudo completar la migración pública de MantiPobres:",error));else if(isStaff())D.syncModerationVisibility().catch(error=>console.error("No se pudo sincronizar la visibilidad del contenido moderado:",error));
-    subscribeChat();updateAdminUI();renderAccountNotice();watchCurrentModeration(auth.currentUser);renderModerationNotice();
-  }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);$("#chatState").textContent="No se pudo conectar a Firebase.";$("#chatHint").textContent=errText(e)+" · Enter envía · Shift+Enter nueva línea · ? atajos.";}
+    renderAccountNotice();watchCurrentModeration(auth.currentUser);renderModerationNotice();
+  }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);}
 }
 addEventListener("online",()=>{
-  // Revalida el estado de moderación antes de volver a abrir el chat.
+  // Revalida el estado de moderación al recuperar la conexión.
   if(firebaseReady)refreshOwnModerationFromServer();
 });
 document.addEventListener("visibilitychange",()=>{
@@ -2603,7 +2174,7 @@ function failClosedModerationAccess(uid,error){
   if(uid!==(auth?.currentUser?.uid||""))return;
   console.error("No se pudo verificar la moderación de la cuenta:",error);
   moderationLoadErrorUid=uid;moderationLoadedUid="";
-  stopChatSubscription();
+  
   setSuspendedShell(true);
   if(routeKeyFromLocation()!=="#/out"&&$("#m")){
     $("#m").innerHTML='<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, los foros, enlaces y archivos permanecen ocultos. Comprueba tu conexión y recarga la página.</p><button type="button" onclick="location.reload()">Recargar</button></div>';
@@ -2654,6 +2225,31 @@ async function migratePublicVisibilityAsOwner(){
   })().finally(()=>{publicVisibilityMigrationPromise=null;});
   return publicVisibilityMigrationPromise;
 }
+let legacyChatPurgePromise=null;
+async function purgeLegacyChatAsOwner(){
+  const user=auth?.currentUser;
+  if(!db||!user||user.isAnonymous||!isOwner())return;
+  const storageKey="mantipobres_chat_removed_v1:"+user.uid;
+  try{if(localStorage.getItem(storageKey)==="done")return;}catch{}
+  if(legacyChatPurgePromise)return legacyChatPurgePromise;
+  legacyChatPurgePromise=(async()=>{
+    let deleted=0,rounds=0;
+    while(true){
+      if(++rounds>1000)throw new Error("La limpieza del chat superó el límite de seguridad.");
+      const snapshot=await getDocs(query(collection(db,"chatMessages"),limit(400)));
+      if(snapshot.empty)break;
+      const batch=writeBatch(db);
+      snapshot.docs.forEach(item=>batch.delete(item.ref));
+      await batch.commit();
+      deleted+=snapshot.size;
+    }
+    try{localStorage.setItem(storageKey,"done");}catch{}
+    console.info("MantiPobres: chat online eliminado. Registros antiguos borrados:",deleted);
+    setNetStatus("ONLINE · CHAT ELIMINADO",true);
+    return deleted;
+  })().finally(()=>{legacyChatPurgePromise=null;});
+  return legacyChatPurgePromise;
+}
 function watchCurrentModeration(user){
   const uid=user?.uid||"";
   if(moderationUid===uid&&moderationUnsub)return;
@@ -2661,7 +2257,7 @@ function watchCurrentModeration(user){
   moderationUid=uid;currentModerationData=null;moderationLoadedUid="";moderationLoadErrorUid="";lastModerationBanned=null;
   renderModerationNotice();
   if(firebaseReady){
-    stopChatSubscription();
+    
     setSuspendedShell(true);
     if(routeKeyFromLocation()!=="#/out")go();
   }
@@ -2692,10 +2288,6 @@ function watchCurrentModeration(user){
     failClosedModerationAccess(uid,error);
   });
 }
-function updateAdminUI(){
-  const admin=isAdmin();$("#chatAdmin").hidden=!admin;
-  if(admin){$("#chatAdminInfo").textContent=isOwner()?"OWNER detectado por UID. Tu cuenta tiene administración permanente.":"Permisos administrativos verificados por UID y roles protegidos en Firestore.";}
-}
 
 // Cabecera, reloj y routing
 $("#ban").textContent=`+${"-".repeat(46)}+\n| ${NAME.padEnd(44)} |\n| ${"BBS/USENET REVIVAL  *  CARRIER 56000  *  8N1".padEnd(44)} |\n+${"-".repeat(46)}+`;
@@ -2703,7 +2295,7 @@ $("#nl").textContent=NAME;const ck=()=>{$("#clk").textContent=new Date().toLocal
 $("#ft").innerHTML=(configured?"Modo: ONLINE (Firebase)":"Modo: LOCAL (demo, solo este navegador)")+` · <a href="/setup">Configuración</a><br>Diseño adaptable para PC, tablets y teléfonos<br>MantiPobres · BBS/USENET Revival`;
 restoreLastRoute();
 addEventListener("hashchange",go);
-if(configured){await startFirebase();}else{setNetStatus("DEMO LOCAL",false);$("#chatCatbox").disabled=true;subscribeChat();}
+if(configured){await startFirebase();}else{setNetStatus("DEMO LOCAL",false);}
 go();
 </script>
 </body>
