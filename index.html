@@ -418,6 +418,8 @@ pre,code{max-width:100%}
 }
 
 .markdownHelp{display:block;margin:5px 0;color:#526773;font:10px/1.5 Verdana,Arial,sans-serif}
+
+.mdTimestamp{color:#526773;font-weight:600;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -605,6 +607,62 @@ function isModerationContentHidden(item){
   const until=raw?.toDate?raw.toDate():raw instanceof Date?raw:new Date(raw);
   return !Number.isFinite(until.getTime())||until.getTime()>Date.now();
 }
+function renderDiscordTimestamp(raw,style="f"){
+  const date=new Date(Number(raw)*1000);
+  if(!Number.isFinite(date.getTime()))return E("<t:"+raw+">");
+  const dateShort=date.toLocaleDateString("es-UY",{day:"2-digit",month:"2-digit",year:"numeric"});
+  const dateLong=date.toLocaleDateString("es-UY",{day:"numeric",month:"long",year:"numeric"});
+  const timeShort=date.toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"});
+  const timeLong=date.toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  let label="";
+  switch(String(style||"f")){
+    case "t":label=timeShort;break;
+    case "T":label=timeLong;break;
+    case "d":label=dateShort;break;
+    case "D":label=dateLong;break;
+    case "F":label=date.toLocaleDateString("es-UY",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+" "+timeShort;break;
+    case "R":{
+      const delta=date.getTime()-Date.now(),absolute=Math.abs(delta);
+      const units=[["second",1000],["minute",60000],["hour",3600000],["day",86400000],["month",2592000000],["year",31536000000]];
+      let unit=units[0];
+      for(const candidate of units)if(absolute>=candidate[1])unit=candidate;
+      const amount=Math.round(delta/unit[1]);
+      label=new Intl.RelativeTimeFormat("es-UY",{numeric:"auto"}).format(amount,unit[0]);
+      break;
+    }
+    default:label=dateLong+" "+timeShort;
+  }
+  return '<time class="mdTimestamp" datetime="'+date.toISOString()+'" title="'+E(date.toLocaleString("es-UY"))+'">'+E(label)+'</time>';
+}
+function renderAnsiCodeBlock(value){
+  const palette=["#222","#c44","#4a6","#ca4","#58c","#a6a","#4aa","#ddd"];
+  const bright=["#777","#f66","#6d8","#fd6","#79f","#d8d","#6dd","#fff"];
+  let bold=false,foreground=null,background=null,html="";
+  const parts=String(value||"").split(/\x1b\[([0-9;]*)m/g);
+  for(let i=0;i<parts.length;i++){
+    if(i%2===1){
+      const codes=parts[i]?parts[i].split(";").map(Number):[0];
+      for(const code of codes){
+        if(code===0){bold=false;foreground=null;background=null;}
+        else if(code===1)bold=true;
+        else if(code===22)bold=false;
+        else if(code===39)foreground=null;
+        else if(code===49)background=null;
+        else if(code>=30&&code<=37)foreground=palette[code-30];
+        else if(code>=40&&code<=47)background=palette[code-40];
+        else if(code>=90&&code<=97)foreground=bright[code-90];
+        else if(code>=100&&code<=107)background=bright[code-100];
+      }
+    }else if(parts[i]){
+      const styles=[];
+      if(foreground)styles.push("color:"+foreground);
+      if(background)styles.push("background-color:"+background);
+      if(bold)styles.push("font-weight:bold");
+      html+=styles.length?'<span style="'+styles.join(";")+'">'+E(parts[i])+'</span>':E(parts[i]);
+    }
+  }
+  return html;
+}
 function markdownInline(value,options={}){
   let source=String(value??"");
   const protectedParts=[];
@@ -619,16 +677,18 @@ function markdownInline(value,options={}){
       :code;
     return protect('<code class="mdInlineCode">'+E(safeCode)+'</code>');
   });
-  source=source.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|www\.[^\s)]+)(?:\s+["']([^"']*)["'])?\)/gi,(match,label,rawUrl,title)=>{
+  source=source.replace(/(?<!!)\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|www\.[^\s)]+)(?:\s+["']([^"']*)["'])?\)/gi,(match,label,rawUrl,title)=>{
     const href=safeWebUrl(rawUrl.startsWith("www.")?"https://"+rawUrl:rawUrl);
     if(!href)return match;
     return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank"'+(title?' title="'+E(title)+'"':'')+'>'+E(label)+'</a>');
   });
+  source=source.replace(/<t:(\d{9,12})(?::([tTdDfFR]))?>/g,(match,epoch,style)=>protect(renderDiscordTimestamp(epoch,style||"f")));
   source=source.replace(/<((?:https?:\/\/|www\.)[^>\s]+)>/gi,(match,rawUrl)=>{
     const href=safeWebUrl(rawUrl.startsWith("www.")?"https://"+rawUrl:rawUrl);
     if(!href)return match;
     return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank">'+E(rawUrl)+'</a>');
   });
+  source=source.replace(/\\([\\*_~|#>+\-.])/g,(match,character)=>protect(E(character)));
   let html=E(source);
   html=html.replace(/((?:https?:\/\/|www\.)[^\s<>"']+)/gi,raw=>{
     const clean=raw.replace(/[),.!?;:]+$/g,"");
@@ -694,13 +754,10 @@ function renderMarkdown(value,options={}){
       if(i<lines.length)i++;
       let codeText=code.join("\n");
       if(options.hideLinks)codeText=codeText.replace(/(?:https?:\/\/|www\.)[^\s<>"']+/gi,"[enlace oculto · inicia sesión]");
-      output.push('<pre class="mdCodeBlock"><code'+(language?' class="language-'+E(language)+'"':'')+'>'+E(codeText)+'</code></pre>');
+      output.push('<pre class="mdCodeBlock"><code'+(language?' class="language-'+E(language)+'"':'')+'>'+(language==="ansi"?renderAnsiCodeBlock(codeText):E(codeText))+'</code></pre>');
       continue;
     }
     if(!line.trim()){flushParagraph();i++;continue;}
-    if(/^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line)){
-      flushParagraph();output.push('<hr class="mdRule">');i++;continue;
-    }
     const heading=line.match(/^(#{1,3})\s+(.+?)\s*#*\s*$/);
     if(heading){
       flushParagraph();const level=heading[1].length;
@@ -713,7 +770,7 @@ function renderMarkdown(value,options={}){
       flushParagraph();
       const quote=[line.replace(/^\s*>>>\s?/,"")];
       i++;
-      while(i<lines.length&&lines[i].trim()){quote.push(lines[i].replace(/^\s*>\s?/,""));i++;}
+      while(i<lines.length){quote.push(lines[i].replace(/^\s*>\s?/,""));i++;}
       output.push('<blockquote class="mdQuote">'+quote.map(item=>markdownInline(item,options)).join("<br>")+'</blockquote>');
       continue;
     }
