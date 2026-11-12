@@ -10,7 +10,7 @@
 <meta name="application-name" content="MantiPobres">
 <meta property="og:type" content="website">
 <meta property="og:title" content="MantiPobres — comunidad BBS / Usenet">
-<meta property="og:description" content="Foro retro en español con cuentas, perfiles, temas y chat en directo.">
+<meta property="og:description" content="Foro retro en español con cuentas, perfiles y temas.">
 <meta property="og:url" content="https://mantipobres.web.app/">
 <meta name="twitter:card" content="summary">
 <title>MantiPobres</title>
@@ -338,6 +338,84 @@ input,textarea,select{max-width:100%}
   display:block;
   max-width:100%;
 }
+
+/* Markdown estilo Discord. */
+.mdParagraph{margin:5px 0;line-height:1.55}
+.mdHeading{margin:8px 0 5px;color:#064b70;line-height:1.25;font-family:Verdana,Arial,sans-serif}
+h1.mdHeading{font-size:1.45em;border-bottom:1px solid #b7c9d1;padding-bottom:4px}
+h2.mdHeading{font-size:1.25em;border-bottom:1px solid #d3dfe4;padding-bottom:3px}
+h3.mdHeading{font-size:1.08em}
+.mdSubtext{display:block;color:#667984;font-size:.9em;margin:2px 0 6px}
+.mdQuote{margin:7px 0;padding:7px 10px;border-left:3px solid #718c9b;background:#edf2f5;color:#253b48;line-height:1.5}
+.mdCodeBlock{max-width:100%;overflow:auto;margin:7px 0;padding:9px 10px;border:1px solid #aabac2;border-radius:3px;background:#e8edf0;color:#17252c;font:12px/1.5 Consolas,"Courier New",monospace;white-space:pre}
+.mdInlineCode{padding:1px 4px;border:1px solid #d0d9de;border-radius:3px;background:#e8edf0;color:#173b50;font:inherit}
+.mdSpoiler{background:#30343b;color:#30343b;border-radius:3px;padding:0 3px;cursor:pointer;transition:color .12s}
+.mdSpoiler:hover,.mdSpoiler:focus{color:#fff;outline:none}
+.mdRule{border:0;border-top:1px solid #b7c9d1;margin:9px 0}
+.p ul,.p ol{margin:5px 0 7px;padding-left:24px}
+.p li{margin:2px 0;line-height:1.45}
+.p>p:first-child{margin-top:0}
+.p>p:last-child{margin-bottom:0}
+
+/* El chat deja de aparecer y no se conecta al servidor. */
+#sr,#chatShortcutDialog{display:none!important}
+
+/* Diseño de una sola columna, adaptable a móvil y sin paneles laterales reservados. */
+body{display:block!important;width:calc(100% - 12px)!important;max-width:1120px!important;margin:6px auto!important}
+#w{display:block;width:100%!important;max-width:1120px!important;min-width:0!important;margin:0 auto!important}
+.sd#sl{display:none!important}
+#sr{display:none!important}
+#m{min-width:0;max-width:100%;overflow-x:auto;overflow-wrap:anywhere}
+#m table{max-width:100%}
+#m img,#m video,#m iframe{max-width:100%;height:auto}
+#nav{display:flex;align-items:center;flex-wrap:wrap;gap:5px 9px}
+#nav a{margin:0;white-space:normal}
+input,textarea,select{max-width:100%;min-width:0}
+pre,code{max-width:100%}
+@media(max-width:760px){
+  body{width:100%!important;margin:0!important;padding:0!important;background:#d5dbde}
+  #w{width:100%!important;max-width:none!important;margin:0!important;padding:5px!important;border-left:0;border-right:0;box-shadow:none}
+  #hd{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:8px}
+  #hd>#lg{width:100%;min-width:0}
+  #nm{font-size:clamp(27px,8vw,38px);line-height:1.1;overflow-wrap:anywhere}
+  #lg i{font-size:10px}
+  #ban{width:100%;max-width:100%;font-size:clamp(8px,2.4vw,10px);line-height:1.25;overflow-x:auto;padding:6px}
+  #st{font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+  #nav{gap:5px;padding:6px}
+  #nav a{display:inline-flex;align-items:center;min-height:34px;padding:5px 7px;border:1px solid #a9bcc5;background:linear-gradient(#fff,#e4eaed)}
+  #tk{white-space:normal;line-height:1.4}
+  #ann{margin-left:0;margin-right:0}
+  #m{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #m>table{width:100%;table-layout:auto}
+  #m td,#m th{padding:5px;overflow-wrap:anywhere;word-break:normal}
+  #m table td:first-child{max-width:40vw}
+  #m .p{font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+  #m .h{font-size:9px;line-height:1.4;overflow-wrap:anywhere}
+  #m input[type="text"],#m input[type="email"],#m input[type="password"],#m input[type="url"],#m input[type="number"],#m textarea,#m select{width:100%!important;min-width:0!important;max-width:100%!important;font-size:16px;padding:8px}
+  #m input[type="checkbox"],#m input[type="radio"]{width:auto!important}
+  #m button,#m .bt{min-height:36px;padding:8px 10px;max-width:100%;white-space:normal;text-align:center}
+  #m .commentForm textarea{min-height:120px}
+  #m .topicRating{align-items:flex-start;flex-direction:column}
+  #m .ratingControls{gap:5px}
+  #m .topicGalleryStage{grid-template-columns:30px minmax(0,1fr) 30px}
+  #m .topicGallerySlide{min-width:0;overflow-wrap:anywhere}
+  #m .topicGalleryRow{grid-template-columns:minmax(0,1fr)!important}
+  #m .profileAvatarBox,#m .profilePhotoActions,#m .modActions{align-items:stretch}
+  #m .catboxUploadPanel{align-items:stretch;flex-direction:column}
+  #m .catboxUploadPanel button{width:100%}
+  #m .mdCodeBlock{font-size:11px;max-width:100%;white-space:pre;overflow-x:auto}
+  #m .mdParagraph{overflow-wrap:anywhere}
+  #ft{padding:8px 4px;overflow-wrap:anywhere}
+}
+@media(max-width:420px){
+  #w{padding:3px!important}
+  #nm{font-size:27px}
+  #m table{font-size:10px}
+  #m td,#m th{padding:4px}
+  #m table td:first-child{max-width:32vw}
+  #m .topicGalleryStage{grid-template-columns:26px minmax(0,1fr) 26px;gap:3px;padding:4px}
+  #m .topicGalleryNav{min-width:24px;padding:2px}
+}
 </style>
 </head>
 <body>
@@ -351,7 +429,7 @@ input,textarea,select{max-width:100%}
   <div id="accountNotice" class="accountNotice" role="status" aria-live="polite" hidden></div>
   <div id="moderationNotice" class="moderationNotice" role="alert" aria-live="assertive" hidden></div>
   <!-- CARTEL: edita este texto directamente en el HTML -->
-  <marquee id="tk" scrollamount="4">&#9733; Bienvenido a MantiPobres &#9733; Regístrate para publicar &#9733; Respeta las reglas &#9733; Chat en vivo en la columna derecha &#9733;</marquee>
+  <marquee id="tk" scrollamount="4">&#9733; Bienvenido a MantiPobres &#9733; Regístrate para publicar &#9733; Respeta las reglas &#9733; Comunidad retro en español &#9733;</marquee>
 
   <!-- ANUNCIOS EDITABLES A MANO: duplica los bloques .an para añadir avisos -->
   <div id="ann"><h3><a href="/b/avisos" style="color:inherit;text-decoration:none">ANUNCIOS DEL STAFF</a></h3>
@@ -423,11 +501,11 @@ input,textarea,select{max-width:100%}
   <p><b>¿Puedo recuperar mi clave?</b><br>Sí. En la pantalla Entrar, escribe tu correo y pulsa «Recuperar contraseña por correo».</p>
   <p><b>¿Cómo cito un mensaje?</b><br>Abre un tema y pulsa [citar] bajo el mensaje.</p>
   <p><b>¿Cómo se suben los rangos?</b><br>Por mensajes: Novato, Miembro (5), Habitual (25) y Veterano (100).</p>
-  <p><b>¿Quién modera?</b><br>El administrador configurado por UID puede borrar temas, respuestas y mensajes del chat. Las reglas del foro solo las publica el staff.</p>
-  <p><b>¿Puedo entrar sin registrarme?</b><br>Puedes abrir la página, la FAQ, el registro y el acceso. Para ver temas, comentarios, perfiles, valoraciones, el chat, enlaces y archivos debes iniciar sesión con una cuenta registrada.</p>
+  <p><b>¿Quién modera?</b><br>El administrador configurado por UID puede borrar temas y respuestas. Las reglas del foro solo las publica el staff.</p>
+  <p><b>¿Puedo entrar sin registrarme?</b><br>Puedes leer los foros, temas y comentarios públicos sin iniciar sesión. Los enlaces y archivos se muestran a las cuentas registradas.</p>
   <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Apenas inicias sesión puedes editar tu propio perfil. En tu perfil, selecciona una imagen desde tu dispositivo, súbela a Catbox y pega el enlace que devuelve para guardar tu foto. No necesitas verificar el correo para cambiar el avatar.</p>
-  <p><b>¿Qué enlaces multimedia reconoce el chat?</b><br>Detecta varios enlaces por mensaje. Muestra imágenes y GIF directos de distintos alojamientos, reproductores de GIPHY, Tenor, YouTube, Vimeo, RedGIFs, Streamable, SoundCloud y Spotify, y tarjetas para enlaces de archivos o páginas externas. Si un alojamiento bloquea la vista previa, el enlace sigue apareciendo para abrirlo en su sitio original.</p>
-  <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Solo las cuentas registradas con sesión iniciada pueden ver el contenido de los foros y el chat, incluidos sus enlaces y archivos. También pueden compartir enlaces y subir archivos desde el chat o Configuración. Los enlaces externos siguen dependiendo de la privacidad del alojamiento que los sirve.</p>
+  <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Solo las cuentas registradas con sesión iniciada pueden ver enlaces y archivos de los foros. Los enlaces externos siguen dependiendo de la privacidad del alojamiento que los sirve.</p>
+  <p><b>¿Qué formato de texto admite el foro?</b><br>Puedes usar Markdown: títulos con #, negrita, cursiva, subrayado, tachado, spoilers, citas, listas, enlaces, código en línea y bloques de código.</p>
   <p><b>¿Cómo funcionan las invitaciones del staff?</b><br>Solo el propietario, co-owner o administrador puede generarlas desde Administración. Cada invitación concede un único rol a una cuenta con correo verificado, se usa una sola vez y queda bloqueada permanentemente. Las invitaciones vencen a los 7 días si nadie las utiliza.</p>
 </template>
 
@@ -525,18 +603,145 @@ function isModerationContentHidden(item){
   const until=raw?.toDate?raw.toDate():raw instanceof Date?raw:new Date(raw);
   return !Number.isFinite(until.getTime())||until.getTime()>Date.now();
 }
-const fmt = s => String(s ?? "").split("\n").map(line => {
-  const escaped = E(line);
-  const safeLine = escaped.startsWith("&gt;") ? '<span class="q">' + escaped + "</span>" : escaped;
-  return safeLine.replace(/(?:https?:\/\/|www\.)[^\s<>"']+/gi, raw => {
-    const clean = raw.replace(/[),.!?;:]+$/g, "");
-    const trailing = raw.slice(clean.length);
-    const decodedUrl = clean.replace(/&amp;/g, "&");
-    const href = decodedUrl.startsWith("www.") ? "https://" + decodedUrl : decodedUrl;
-    const safe = safeWebUrl(href);
-    return safe ? '<a href="' + E(safe) + '" rel="nofollow noopener noreferrer" target="_blank">' + clean + "</a>" + trailing : raw;
+function markdownInline(value,options={}){
+  let source=String(value??"");
+  const protectedParts=[];
+  const protect=html=>{
+    const marker="\uE000MD"+protectedParts.length+"\uE001";
+    protectedParts.push({marker,html});
+    return marker;
+  };
+  source=source.replace(/\x60([^\x60\n]+)\x60/g,(_,code)=>{
+    const safeCode=options.hideLinks
+      ?code.replace(/(?:https?:\/\/|www\.)[^\s<>"']+/gi,"[enlace oculto · inicia sesión]")
+      :code;
+    return protect('<code class="mdInlineCode">'+E(safeCode)+'</code>');
   });
-}).join("<br>");
+  source=source.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|www\.[^\s)]+)(?:\s+["']([^"']*)["'])?\)/gi,(match,label,rawUrl,title)=>{
+    const href=safeWebUrl(rawUrl.startsWith("www.")?"https://"+rawUrl:rawUrl);
+    if(!href)return match;
+    return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank"'+(title?' title="'+E(title)+'"':'')+'>'+E(label)+'</a>');
+  });
+  source=source.replace(/<((?:https?:\/\/|www\.)[^>\s]+)>/gi,(match,rawUrl)=>{
+    const href=safeWebUrl(rawUrl.startsWith("www.")?"https://"+rawUrl:rawUrl);
+    if(!href)return match;
+    return protect(options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank">'+E(rawUrl)+'</a>');
+  });
+  let html=E(source);
+  html=html.replace(/((?:https?:\/\/|www\.)[^\s<>"']+)/gi,raw=>{
+    const clean=raw.replace(/[),.!?;:]+$/g,"");
+    const trailing=raw.slice(clean.length);
+    const decoded=clean.replace(/&amp;/g,"&");
+    const href=safeWebUrl(decoded.startsWith("www.")?"https://"+decoded:decoded);
+    if(!href)return raw;
+    return (options.hideLinks?topicLoginGateHtml:'<a href="'+E(href)+'" rel="nofollow noopener noreferrer" target="_blank">'+clean+'</a>')+trailing;
+  });
+  html=html
+    .replace(/__(?!\s)(.+?)(?<!\s)__/g,"<u>$1</u>")
+    .replace(/\*\*(?!\s)(.+?)(?<!\s)\*\*/g,"<strong>$1</strong>")
+    .replace(/~~(?!\s)(.+?)(?<!\s)~~/g,"<s>$1</s>")
+    .replace(/\|\|(?!\s)(.+?)(?<!\s)\|\|/g,'<span class="mdSpoiler" tabindex="0" title="Revelar spoiler">$1</span>')
+    .replace(/\*(?!\s)(.+?)(?<!\s)\*/g,"<em>$1</em>")
+    .replace(/(?<![\w])_(?!\s)(.+?)(?<!\s)_(?![\w])/g,"<em>$1</em>");
+  for(const part of protectedParts)html=html.split(part.marker).join(part.html);
+  return html;
+}
+function renderMarkdownList(entries,options){
+  const first=entries[0];
+  const root={type:first.type,items:[]};
+  const stack=[{indent:-1,node:root,last:null}];
+  for(const entry of entries){
+    while(stack.length>1&&entry.indent<=stack[stack.length-1].indent)stack.pop();
+    let current=stack[stack.length-1];
+    if(entry.indent>current.indent&&current.last){
+      const child={type:entry.type,items:[]};
+      current.last.children.push(child);
+      stack.push({indent:entry.indent,node:child,last:null});
+      current=stack[stack.length-1];
+    }
+    const item={text:entry.text,children:[]};
+    current.node.items.push(item);
+    current.last=item;
+  }
+  const renderNode=node=>'<'+node.type+'>'+node.items.map(item=>'<li>'+markdownInline(item.text,options)+item.children.map(renderNode).join("")+'</li>').join("")+'</'+node.type+'>';
+  return renderNode(root);
+}
+function renderMarkdown(value,options={}){
+  const lines=String(value??"").replace(/\r\n?/g,"\n").split("\n");
+  const output=[];
+  let paragraph=[];
+  const flushParagraph=()=>{
+    if(!paragraph.length)return;
+    output.push('<p class="mdParagraph">'+paragraph.map(line=>markdownInline(line,options)).join("<br>")+'</p>');
+    paragraph=[];
+  };
+  const listMatch=line=>{
+    const match=String(line).match(/^([ \t]*)([-+*]|\d+[.)])\s+(.*)$/);
+    if(!match)return null;
+    return {indent:match[1].replace(/\t/g,"  ").length,type:/^\d/.test(match[2])?"ol":"ul",text:match[3]};
+  };
+  for(let i=0;i<lines.length;){
+    const line=lines[i];
+    const fence=line.match(/^\s*\x60{3,}\s*([a-z0-9_+-]{0,24})\s*$/i);
+    if(fence){
+      flushParagraph();
+      const language=fence[1].toLowerCase();
+      const code=[];
+      i++;
+      while(i<lines.length&&!/^\s*\x60{3,}\s*$/.test(lines[i])){code.push(lines[i]);i++;}
+      if(i<lines.length)i++;
+      let codeText=code.join("\n");
+      if(options.hideLinks)codeText=codeText.replace(/(?:https?:\/\/|www\.)[^\s<>"']+/gi,"[enlace oculto · inicia sesión]");
+      output.push('<pre class="mdCodeBlock"><code'+(language?' class="language-'+E(language)+'"':'')+'>'+E(codeText)+'</code></pre>');
+      continue;
+    }
+    if(!line.trim()){flushParagraph();i++;continue;}
+    if(/^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line)){
+      flushParagraph();output.push('<hr class="mdRule">');i++;continue;
+    }
+    const heading=line.match(/^(#{1,3})\s+(.+?)\s*#*\s*$/);
+    if(heading){
+      flushParagraph();const level=heading[1].length;
+      output.push('<h'+level+' class="mdHeading">'+markdownInline(heading[2],options)+'</h'+level+'>');
+      i++;continue;
+    }
+    const subtext=line.match(/^-#\s+(.+)$/);
+    if(subtext){flushParagraph();output.push('<small class="mdSubtext">'+markdownInline(subtext[1],options)+'</small>');i++;continue;}
+    if(/^\s*>>>/.test(line)){
+      flushParagraph();
+      const quote=[line.replace(/^\s*>>>\s?/,"")];
+      i++;
+      while(i<lines.length&&lines[i].trim()){quote.push(lines[i].replace(/^\s*>\s?/,""));i++;}
+      output.push('<blockquote class="mdQuote">'+quote.map(item=>markdownInline(item,options)).join("<br>")+'</blockquote>');
+      continue;
+    }
+    if(/^\s*>\s?/.test(line)){
+      flushParagraph();
+      const quote=[];
+      while(i<lines.length&&/^\s*>\s?/.test(lines[i])){quote.push(lines[i].replace(/^\s*>\s?/,""));i++;}
+      output.push('<blockquote class="mdQuote">'+quote.map(item=>markdownInline(item,options)).join("<br>")+'</blockquote>');
+      continue;
+    }
+    const firstList=listMatch(line);
+    if(firstList){
+      flushParagraph();
+      const entries=[firstList],baseIndent=firstList.indent,baseType=firstList.type;
+      i++;
+      while(i<lines.length){
+        const next=listMatch(lines[i]);
+        if(!next)break;
+        if(next.indent===baseIndent&&next.type!==baseType)break;
+        entries.push(next);i++;
+      }
+      output.push(renderMarkdownList(entries,options));
+      continue;
+    }
+    paragraph.push(line);i++;
+  }
+  flushParagraph();
+  return output.join("");
+}
+const fmt = value => renderMarkdown(value);
 function quoteFingerprint(author,text){
   let hash=2166136261;const value=String(author||"")+"\n"+String(text||"");
   for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619);}
@@ -771,18 +976,7 @@ async function loadCurrentStaffRole(user){
 const isRegisteredMember = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous);
 const isAnonymousForumVisitor = () => !!(configured && auth?.currentUser?.isAnonymous);
 const topicLoginGateHtml = '<div class="topicLoginGate"><a href="/login"> INICIA SESIÓN</a></div>';
-const fmtTopic = value => {
-  if(!isAnonymousForumVisitor())return fmt(value);
-  return String(value ?? "").split("\n").map(line => {
-    const escaped=E(line);
-    const safeLine=escaped.startsWith("&gt;")?'<span class="q">'+escaped+"</span>":escaped;
-    return safeLine.replace(/(?:https?:\/\/|www\.)[^\s<>"']+/gi,raw=>{
-      const clean=raw.replace(/[),.!?;:]+$/g,"");
-      const trailing=raw.slice(clean.length);
-      return topicLoginGateHtml+trailing;
-    });
-  }).join("<br>");
-};
+const fmtTopic = value => renderMarkdown(value,{hideLinks:isAnonymousForumVisitor()});
 const emailVerified = () => !!(auth?.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.emailVerified);
 // Solo se aceptan dominios de proveedores de correo reconocidos. Firestore aplica la misma lista.
 const ALLOWED_EMAIL_DOMAINS = new Set(["gmail.com","googlemail.com","outlook.com","outlook.es","outlook.fr","outlook.de","outlook.it","outlook.co.uk","outlook.com.ar","hotmail.com","hotmail.es","hotmail.fr","hotmail.de","hotmail.it","hotmail.co.uk","hotmail.com.ar","live.com","live.com.ar","live.co.uk","live.fr","live.de","msn.com","yahoo.com","yahoo.com.ar","yahoo.com.uy","yahoo.es","yahoo.co.uk","yahoo.fr","yahoo.de","yahoo.it","yahoo.ca","yahoo.com.br","yahoo.com.mx","yahoo.com.au","yahoo.co.in","ymail.com","rocketmail.com","proton.me","protonmail.com","protonmail.ch","pm.me","duck.com","icloud.com","me.com","mac.com","aol.com","aim.com","gmx.com","gmx.net","gmx.de","gmx.at","gmx.ch","gmx.us","mail.com","email.com","web.de","t-online.de","freenet.de","fastmail.com","fastmail.fm","fastmail.us","hey.com","hushmail.com","mailfence.com","posteo.de","mailbox.org","runbox.com","disroot.org","riseup.net","tuta.com","tuta.io","tutamail.com","tutanota.com","tutanota.de","keemail.me","zoho.com","zohomail.com","zoho.eu","zoho.in","yandex.com","yandex.ru","yandex.kz","yandex.by","yandex.com.tr","ya.ru","mail.ru","inbox.ru","list.ru","bk.ru","internet.ru","qq.com","foxmail.com","163.com","126.com","sina.com","sina.cn","sohu.com","yeah.net","naver.com","daum.net","hanmail.net","nate.com","rediffmail.com","rediff.com","wp.pl","onet.pl","interia.pl","o2.pl","seznam.cz","centrum.cz","volny.cz","libero.it","virgilio.it","tin.it","alice.it","free.fr","laposte.net","wanadoo.fr","orange.fr","sfr.fr","voila.fr","neuf.fr","uol.com.br","bol.com.br","ig.com.br","terra.com.br","globo.com","r7.com","comcast.net","xfinity.com","verizon.net","att.net","sbcglobal.net","bellsouth.net","charter.net","spectrum.net","cox.net","earthlink.net","frontier.com","optonline.net","roadrunner.com","twc.com","juno.com","netzero.net","windstream.net","shaw.ca","rogers.com","bell.net","telstra.com","optusnet.com.au","bigpond.com","adinet.com.uy"]);
@@ -2261,55 +2455,11 @@ function renderChat(items){
   if(nearBottom)box.scrollTop=box.scrollHeight;
 }
 function subscribeChat(){
-  if(chatUnsub){chatUnsub();chatUnsub=null;}
-  if(firebaseReady&&!isRegisteredMember()){
-    chatCache=[];
-    $("#sr").hidden=true;$("#chatBox").hidden=true;
-    $("#chatState").textContent="INICIA SESIÓN PARA VER EL CHAT";
-    $("#chatMessages").innerHTML='<div class="chatEmpty">El chat online es exclusivo para cuentas registradas. Inicia sesión para ver los mensajes.</div>';
-    $("#chatCatboxForm").hidden=true;
-    return;
-  }
-  if(firebaseReady&&moderationAccessState()!=="ready"){
-    $("#sr").hidden=true;$("#chatBox").hidden=true;
-    $("#chatState").textContent="VERIFICANDO ACCESO...";
-    $("#chatMessages").innerHTML='<div class="chatEmpty">Verificando cuenta...</div>';
-    return;
-  }
-  if(getActiveBanDetails()){
-    stopChatSubscription();
-    $("#sr").hidden=true;$("#chatBox").hidden=true;
-    $("#chatState").textContent="CHAT NO DISPONIBLE";
-    $("#chatMessages").innerHTML='<div class="chatEmpty">El chat no está disponible para esta cuenta.</div>';
-    return;
-  }
-  $("#sr").hidden=false;$("#chatBox").hidden=false;
-  if(!configured){
-    $("#chatState").textContent="DEMO LOCAL · no es un chat compartido";
-    renderChat(demo.chat||[]);
-    $("#chatHint").textContent="Modo demo: los mensajes solo se guardan en este navegador. Configura Firebase para chat en vivo. Enter envía · Shift+Enter nueva línea · ? atajos.";
-    return;
-  }
-  const q=query(collection(db,"chatMessages"),orderBy("ts","desc"),limit(CHAT_LIMIT));
-  $("#chatState").textContent="CONECTANDO AL CHAT...";
-  chatUnsub=onSnapshot(q,s=>{
-    chatCache=s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).reverse();
-    renderChat(chatCache);
-    $("#chatState").textContent=`● EN LÍNEA · ${chatCache.length} mensajes recientes · ${chatName()}`;
-  },e=>{
-    console.error("Error en la suscripción del chat:",e);
-    if(e?.code==="permission-denied"){
-      stopChatSubscription();
-      setSuspendedShell(true);
-      if($("#m"))$("#m").innerHTML='<div class="moderationLoading"><b>Verificando el acceso de tu cuenta...</b><p>El contenido permanece oculto hasta comprobar el estado de moderación.</p></div>';
-      refreshOwnModerationFromServer();
-      return;
-    }
-    chatCache=[];
-    $("#chatMessages").innerHTML='<div class="chatEmpty">No se pudo cargar el chat. Vuelve a intentarlo.</div>';
-    $("#chatState").textContent="ERROR DE CHAT · "+errText(e);
-  });
+  stopChatSubscription();
+  chatCache=[];
+  return;
 }
+
 async function uploadChatFile(file){
   requireVerifiedMember("subir archivos al chat");await assertCurrentUserNotBanned();
   const isImage=["image/jpeg","image/png","image/gif","image/webp"].includes(file.type);
