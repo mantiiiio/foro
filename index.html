@@ -2413,12 +2413,12 @@ async function startFirebase(){
         await loadCurrentStaffRole(user);
         watchCurrentModeration(user);
         if(!resolved){resolved=true;resolve();}
-        if(firebaseReady){renderAccountNotice();renderModerationNotice();if(isOwner())purgeLegacyChatAsOwner().catch(error=>console.error("No se pudo borrar el chat antiguo de Firestore:",error));if(isOwner())D.syncModerationVisibility().then(()=>migratePublicVisibilityAsOwner()).catch(error=>console.error("No se pudo completar la migración pública de MantiPobres:",error));go();}
+        if(firebaseReady){renderAccountNotice();renderModerationNotice();if(isOwner())purgeLegacyChatAsOwner().catch(error=>console.error("No se pudo borrar el chat antiguo de Firestore:",error));if(isOwner()){D.syncModerationVisibility().catch(error=>console.error("No se pudo sincronizar la visibilidad moderada:",error));migratePublicVisibilityAsOwner().catch(error=>console.error("No se pudo migrar el mantenimiento de los temas antiguos:",error));}go();}
       },e=>{if(!resolved){resolved=true;reject(e);}});
     });
     firebaseReady=true;authReady=true;Store=D;setNetStatus("ONLINE · FIREBASE",true);
     if(isOwner())purgeLegacyChatAsOwner().catch(error=>console.error("No se pudo borrar el chat antiguo de Firestore:",error));
-    if(isOwner())D.syncModerationVisibility().then(()=>migratePublicVisibilityAsOwner()).catch(error=>console.error("No se pudo completar la migración pública de MantiPobres:",error));else if(isStaff())D.syncModerationVisibility().catch(error=>console.error("No se pudo sincronizar la visibilidad del contenido moderado:",error));
+    if(isOwner()){D.syncModerationVisibility().catch(error=>console.error("No se pudo sincronizar la visibilidad moderada:",error));migratePublicVisibilityAsOwner().catch(error=>console.error("No se pudo migrar el mantenimiento de los temas antiguos:",error));}else if(isStaff())D.syncModerationVisibility().catch(error=>console.error("No se pudo sincronizar la visibilidad del contenido moderado:",error));
     renderAccountNotice();watchCurrentModeration(auth.currentUser);renderModerationNotice();
   }catch(e){console.error(e);setNetStatus("ERROR FIREBASE",false);}
 }
