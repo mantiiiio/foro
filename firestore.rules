@@ -36,12 +36,6 @@ service cloud.firestore {
     function moderationPath(uid) {
       return /databases/$(database)/documents/moderation/$(uid);
     }
-    function hasFreshChatRateLimit(uid, messageId) {
-      let path = /databases/$(database)/documents/userRateLimits/$(uid);
-      return existsAfter(path)
-        && getAfter(path).data.lastChatAt == request.time
-        && getAfter(path).data.lastChatMessageId == messageId;
-    }
     function hasFreshPostRateLimit(uid, postId) {
       let path = /databases/$(database)/documents/userRateLimits/$(uid);
       return existsAfter(path)
@@ -269,69 +263,29 @@ service cloud.firestore {
         && (gallery.size() < 29 || validTopicGalleryItem(gallery[28]))
         && (gallery.size() < 30 || validTopicGalleryItem(gallery[29]));
     }
-    function validChatMedia(media) {
-      return media is map
-        && media.keys().hasOnly(['url','path','type','name','size'])
-        && media.url is string
-        && media.url.matches('https://.*')
-        && media.path is string
-        && media.path.size() <= 300
-        && media.type is string
-        && media.type.matches('(image/(jpeg|png|gif|webp)|video/(mp4|webm)|application/(pdf|zip|x-zip-compressed)|text/(plain|csv))')
-        && media.name is string
-        && media.name.size() > 0
-        && media.name.size() <= 120
-        && media.size is int
-        && media.size > 0
-        && media.size <= 25 * 1024 * 1024;
-    }
+
 
     match /userRateLimits/{uid} {
       allow get: if signedIn() && request.auth.uid == uid;
       allow list: if false;
       allow create: if signedIn()
         && request.auth.uid == uid
-        && (
-          (
-            request.resource.data.keys().hasOnly(['lastChatAt','lastChatMessageId'])
-            && request.resource.data.lastChatAt == request.time
-            && request.resource.data.lastChatMessageId is string
-            && request.resource.data.lastChatMessageId.size() > 0
-            && request.resource.data.lastChatMessageId.size() <= 150
-          )
-          || (
-            request.resource.data.keys().hasOnly(['lastPostAt','lastPostId'])
-            && request.resource.data.lastPostAt == request.time
-            && request.resource.data.lastPostId is string
-            && request.resource.data.lastPostId.size() > 0
-            && request.resource.data.lastPostId.size() <= 150
-          )
-        );
+        && request.resource.data.keys().hasOnly(['lastPostAt','lastPostId'])
+        && request.resource.data.lastPostAt == request.time
+        && request.resource.data.lastPostId is string
+        && request.resource.data.lastPostId.size() > 0
+        && request.resource.data.lastPostId.size() <= 150;
       allow update: if signedIn()
         && request.auth.uid == uid
-        && (
-          (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastChatAt','lastChatMessageId'])
-            && request.resource.data.diff(resource.data).affectedKeys().hasAll(['lastChatAt','lastChatMessageId'])
-            && (!('lastChatAt' in resource.data) || (resource.data.lastChatAt is timestamp && resource.data.lastChatAt + duration.value(2, 's') <= request.time))
-            && request.resource.data.lastChatAt == request.time
-            && request.resource.data.lastChatMessageId is string
-            && request.resource.data.lastChatMessageId.size() > 0
-            && request.resource.data.lastChatMessageId.size() <= 150
-          )
-          || (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastPostAt','lastPostId'])
-            && request.resource.data.diff(resource.data).affectedKeys().hasAll(['lastPostAt','lastPostId'])
-            && (!('lastPostAt' in resource.data) || (resource.data.lastPostAt is timestamp && resource.data.lastPostAt + duration.value(3, 's') <= request.time))
-            && request.resource.data.lastPostAt == request.time
-            && request.resource.data.lastPostId is string
-            && request.resource.data.lastPostId.size() > 0
-            && request.resource.data.lastPostId.size() <= 150
-          )
-        );
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastPostAt','lastPostId'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasAll(['lastPostAt','lastPostId'])
+        && (!('lastPostAt' in resource.data) || (resource.data.lastPostAt is timestamp && resource.data.lastPostAt + duration.value(3, 's') <= request.time))
+        && request.resource.data.lastPostAt == request.time
+        && request.resource.data.lastPostId is string
+        && request.resource.data.lastPostId.size() > 0
+        && request.resource.data.lastPostId.size() <= 150;
       allow delete: if false;
     }
-
     match /moderation/{uid} {
       allow get: if signedIn() && (request.auth.uid == uid || (isStaff() && canParticipate()));
       allow list: if isStaff() && canParticipate();
@@ -641,57 +595,11 @@ service cloud.firestore {
       );
     }
 
+
     match /chatMessages/{messageId} {
-      allow read: if canReadCommunity() || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
-      allow create: if registered()
-        && canParticipate()
-        && hasFreshChatRateLimit(request.auth.uid, messageId)
-        && request.resource.data.keys().hasOnly(['uid','u','avatarUrl','x','media','ts','staffBadge'])
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.staffBadge == (isOwner() || exists(/databases/$(database)/documents/staff/$(request.auth.uid)))
-        && shortString(request.resource.data.u, 32)
-        && request.resource.data.avatarUrl is string
-        && request.resource.data.avatarUrl.size() <= 2048
-        && request.resource.data.x is string
-        && request.resource.data.x.size() <= 1500
-        && automodSafe(request.resource.data.x)
-        && request.resource.data.ts is int
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.u == request.resource.data.u
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('avatarUrl', '') == request.resource.data.avatarUrl
-        && (request.resource.data.x.size() > 0 || request.resource.data.media is map)
-        && (request.resource.data.media == null || validChatMedia(request.resource.data.media))
-        && (!containsLink(request.resource.data.x) || registered());
-      allow update: if (
-        ((isStaff() && canParticipate()) || (canHideOwnContentAfterAutoBan() && resource.data.uid == request.auth.uid))
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationHidden','moderationHiddenUntil'])
-        && request.resource.data.moderationHidden is bool
-        && (request.resource.data.moderationHiddenUntil == null || request.resource.data.moderationHiddenUntil is timestamp)
-      ) || (
-        registered()
-        && canParticipate()
-        && resource.data.uid == request.auth.uid
-        && resource.data.get('deleted', false) != true
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x'])
-        && request.resource.data.x is string
-        && request.resource.data.x.size() <= 1500
-        && automodSafe(request.resource.data.x)
-        && (request.resource.data.x.size() > 0 || resource.data.media is map)
-        && (!containsLink(request.resource.data.x) || registered())
-      ) || (
-        registered()
-        && canParticipate()
-        && (isAdmin() || resource.data.uid == request.auth.uid)
-        && resource.data.get('deleted', false) != true
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x','media','deleted','deletedBy','deletedAt','deletedByUid'])
-        && request.resource.data.x == ''
-        && request.resource.data.media == null
-        && request.resource.data.deleted == true
-        && request.resource.data.deletedBy == (isAdmin() ? 'administrador' : 'usuario')
-        && request.resource.data.deletedAt is int
-        && request.resource.data.deletedByUid == request.auth.uid
-      );
-      allow delete: if (isAdmin() && canParticipate()) || (registered() && canParticipate() && resource.data.uid == request.auth.uid);
+      // Colección retirada: solo el OWNER puede leer y borrar registros históricos.
+      allow read, delete: if isOwner();
+      allow create, update: if false;
     }
   }
 }
