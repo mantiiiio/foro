@@ -79,6 +79,11 @@ service cloud.firestore {
     function isPubliclyVisibleContent() {
       return resource.data.moderationHidden == false;
     }
+    // Los posts antiguos pueden no tener ya un tema padre; solo se bloquea escritura si el tema existe y es Reglas.
+    function postTopicAllowsWrites() {
+      let topicPath = /databases/$(database)/documents/topics/$(resource.data.tp);
+      return !exists(topicPath) || get(topicPath).data.b != 'reglas';
+    }
     function canModerateTarget(uid) {
       return isStaff()
         && canParticipate()
@@ -503,12 +508,12 @@ service cloud.firestore {
         && request.resource.data.moderationHiddenUntil == null
         && existsAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp))
         && getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas';
-      allow update: if get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas' && (
-(isAdmin() && canParticipate()) || (
+      allow update: if (isAdmin() && canParticipate() && postTopicAllowsWrites()) || (
         ((isStaff() && canParticipate()) || (canHideOwnContentAfterAutoBan() && resource.data.uid == request.auth.uid))
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationHidden','moderationHiddenUntil'])
         && request.resource.data.moderationHidden is bool
         && (request.resource.data.moderationHiddenUntil == null || request.resource.data.moderationHiddenUntil is timestamp)
+        && postTopicAllowsWrites()
       ) || (
         isStaff()
         && canParticipate()
@@ -518,6 +523,7 @@ service cloud.firestore {
         && request.resource.data.x.size() > 0
         && request.resource.data.x.size() <= 6000
         && automodSafe(request.resource.data.x)
+        && postTopicAllowsWrites()
       ) || (
         isStaff()
         && canParticipate()
@@ -530,6 +536,7 @@ service cloud.firestore {
         && request.resource.data.deletedAt is int
         && request.resource.data.deletedQuoteHash is string
         && request.resource.data.deletedQuoteHash.size() <= 16
+        && postTopicAllowsWrites()
       ) || (
         verifiedMember()
         && canParticipate()
@@ -555,10 +562,8 @@ service cloud.firestore {
         && request.resource.data.deletedAt is int
         && request.resource.data.deletedQuoteHash is string
         && request.resource.data.deletedQuoteHash.size() <= 16
-      )
       );
-      allow delete: if get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas' && (
-(isStaff() && canParticipate()) || (
+      allow delete: if (isStaff() && canParticipate() && postTopicAllowsWrites()) || (
         registered()
         && canParticipate()
         && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
@@ -566,7 +571,6 @@ service cloud.firestore {
           resource.data.uid == request.auth.uid
           || get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.uid == request.auth.uid
         )
-      )
       );
     }
 
