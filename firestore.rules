@@ -393,8 +393,9 @@ service cloud.firestore {
         && request.resource.data.moderationHiddenUntil == null
         && request.resource.data.ts is int
         && request.resource.data.lr is int
-        && (request.resource.data.b != 'reglas' || isStaff());
-      allow update: if (
+        && request.resource.data.b != 'reglas';
+      allow update: if resource.data.b != 'reglas' && (
+(
         registered()
         && canParticipate()
         && (isStaff() || resource.data.uid == request.auth.uid)
@@ -435,14 +436,16 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.get('deleted', false) == true
         && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.deletedByUid == request.auth.uid
         && (get(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.uid == request.auth.uid || isStaff())
+      )
       );
-      allow delete: if (isStaff() && canParticipate()) || (
+      allow delete: if resource.data.b != 'reglas' && (
+(isStaff() && canParticipate()) || (
         registered()
         && canParticipate()
         && resource.data.uid == request.auth.uid
         && resource.data.b != 'reglas'
+      )
       );
-
       match /ratings/{ratingUid} {
         allow read: if canReadCommunity();
         allow create: if registered()
@@ -497,8 +500,9 @@ service cloud.firestore {
         && request.resource.data.moderationHidden == false
         && request.resource.data.moderationHiddenUntil == null
         && existsAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp))
-        && (getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas' || isStaff());
-      allow update: if (isAdmin() && canParticipate()) || (
+        && getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas';
+      allow update: if get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas' && (
+(isAdmin() && canParticipate()) || (
         ((isStaff() && canParticipate()) || (canHideOwnContentAfterAutoBan() && resource.data.uid == request.auth.uid))
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationHidden','moderationHiddenUntil'])
         && request.resource.data.moderationHidden is bool
@@ -549,8 +553,10 @@ service cloud.firestore {
         && request.resource.data.deletedAt is int
         && request.resource.data.deletedQuoteHash is string
         && request.resource.data.deletedQuoteHash.size() <= 16
+      )
       );
-      allow delete: if (isStaff() && canParticipate()) || (
+      allow delete: if get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas' && (
+(isStaff() && canParticipate()) || (
         registered()
         && canParticipate()
         && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
@@ -558,6 +564,7 @@ service cloud.firestore {
           resource.data.uid == request.auth.uid
           || get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.uid == request.auth.uid
         )
+      )
       );
     }
 

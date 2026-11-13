@@ -489,3 +489,57 @@ test("solo el creador del tema o el staff puede activar o quitar el bloqueo de m
   await assertSucceeds(updateDoc(doc(moderator, "topics", "creator-topic"), { maintenanceLocked: false }));
   await assertFails(updateDoc(doc(alice, "topics", "creator-topic"), { maintenanceLocked: true, t: "Cambio no permitido" }));
 });
+
+
+test("Reglas es una página informativa: ni miembros, ni staff ni OWNER pueden publicar o modificar temas allí", async () => {
+  await seed({
+    ["users/"+OWNER_UID]: { u: "owner", ts: 1, rulesAcceptedAt: 1 },
+    "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 },
+    "users/mod-1": { u: "moderator", ts: 1, rulesAcceptedAt: 1 },
+    "staff/mod-1": { role: "moderator" },
+    "topics/legacy-rules-topic": {
+      b: "reglas", t: "Norma antigua", u: "alice", uid: "alice",
+      ts: 1, lr: 1, lu: "alice", n: 0,
+      staffBadge: false, lastStaffBadge: false,
+      moderationHidden: false, moderationHiddenUntil: null
+    },
+    "posts/legacy-rules-post": {
+      tp: "legacy-rules-topic", uid: "alice", u: "alice",
+      x: "Publicación anterior", ts: 1, staffBadge: false,
+      moderationHidden: false, moderationHiddenUntil: null
+    }
+  });
+  const alice = account("alice");
+  const moderator = account("mod-1");
+  const owner = account(OWNER_UID, { verified: false });
+  for (const [db, uid, username, staffBadge] of [
+    [alice, "alice", "alice", false],
+    [moderator, "mod-1", "moderator", true],
+    [owner, OWNER_UID, "owner", true]
+  ]) {
+    await assertFails(setDoc(doc(db, "topics", "new-rules-" + uid), {
+      b: "reglas", t: "No debe publicarse", u: username, uid,
+      ts: 2, lr: 2, lu: username, n: 0,
+      staffBadge, lastStaffBadge: staffBadge,
+      moderationHidden: false, moderationHiddenUntil: null
+    }));
+    const rateRef = doc(db, "userRateLimits", uid);
+    const postRef = doc(db, "posts", "new-rules-reply-" + uid);
+    const batch = writeBatch(db);
+    batch.set(rateRef, { lastPostAt: serverTimestamp(), lastPostId: postRef.id });
+    batch.set(postRef, {
+      tp: "legacy-rules-topic", u: username, uid,
+      x: "No se permiten respuestas", ts: 2, staffBadge,
+      moderationHidden: false, moderationHiddenUntil: null
+    });
+    await assertFails(batch.commit());
+  }
+  await assertFails(updateDoc(doc(alice, "topics", "legacy-rules-topic"), { maintenanceLocked: true }));
+  await assertFails(updateDoc(doc(moderator, "topics", "legacy-rules-topic"), { maintenanceLocked: true }));
+  await assertFails(updateDoc(doc(owner, "topics", "legacy-rules-topic"), { maintenanceLocked: true }));
+  await assertFails(updateDoc(doc(alice, "posts", "legacy-rules-post"), { x: "Texto editado" }));
+  await assertFails(updateDoc(doc(moderator, "posts", "legacy-rules-post"), { x: "Texto editado" }));
+  await assertFails(updateDoc(doc(owner, "posts", "legacy-rules-post"), { x: "Texto editado" }));
+  await assertFails(deleteDoc(doc(moderator, "posts", "legacy-rules-post")));
+  await assertFails(deleteDoc(doc(owner, "topics", "legacy-rules-topic")));
+});

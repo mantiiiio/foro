@@ -234,6 +234,8 @@ body{display:block!important;width:calc(100% - 12px)!important;max-width:1120px!
 }
 @media(max-width:420px){#w{padding:3px!important}#nm{font-size:27px}#m table{font-size:10px}#m td, #m th{padding:4px}#m table td:first-child{max-width:32vw}#m .topicGalleryStage{grid-template-columns:26px minmax(0,1fr) 26px;gap:3px;padding:4px}#m .topicGalleryNav{min-width:24px;padding:2px}
 }.markdownHelp{display:block;margin:5px 0;color:#526773;font:10px/1.5 Verdana,Arial,sans-serif}.mdTimestamp{color:#526773;font-weight:600;font-variant-numeric:tabular-nums}
+
+.communityRules{margin:8px 0;border:2px solid #006699;background:#f4f7f8;box-shadow:4px 4px 0 #aab6bb;color:#20323a}.communityRulesHeader{padding:clamp(15px,4vw,25px);background:linear-gradient(135deg,#06476b,#006699 65%,#00415e);color:#fff;border-bottom:3px solid var(--orange)}.communityRulesHeader>span{font:bold 10px Verdana,Arial,sans-serif;letter-spacing:2px;color:#b9dced}.communityRulesHeader h2{font:bold clamp(21px,4vw,30px) Impact,"Arial Black",sans-serif;letter-spacing:1px;margin:8px 0;color:#fff}.communityRulesHeader p{margin:6px 0 0;max-width:720px;line-height:1.55;color:#f2f8fb}.communityRulesList{counter-reset:community-rule;list-style:none;margin:0;padding:10px clamp(10px,3vw,22px)}.communityRulesList li{counter-increment:community-rule;position:relative;margin:0;padding:13px 10px 13px 48px;border-bottom:1px solid #cbd8dd;line-height:1.5}.communityRulesList li:last-child{border-bottom:0}.communityRulesList li:before{content:counter(community-rule);position:absolute;left:5px;top:12px;display:flex;align-items:center;justify-content:center;width:29px;height:29px;border:1px solid #7ba4b6;background:#e3eef2;color:#005078;font:bold 14px Verdana,Arial,sans-serif}.communityRulesList li b{color:#06476b;font-size:12px}.communityRulesList li p{margin:4px 0 0;color:#344a53}.communityRulesFooter{margin:0;padding:11px 15px;border-top:1px solid #b9cbd2;background:#e7eef1;color:#345;font-size:10px;text-align:center;line-height:1.5}
 </style>
 </head>
 <body>
@@ -270,7 +272,7 @@ body{display:block!important;width:calc(100% - 12px)!important;max-width:1120px!
   <p><b>¿Puedo recuperar mi clave?</b><br>Sí. En la pantalla Entrar, escribe tu correo y pulsa «Recuperar contraseña por correo».</p>
   <p><b>¿Cómo cito un mensaje?</b><br>Abre un tema y pulsa [citar] bajo el mensaje.</p>
   <p><b>¿Cómo se suben los rangos?</b><br>Por mensajes: Novato, Miembro (5), Habitual (25) y Veterano (100).</p>
-  <p><b>¿Quién modera?</b><br>El administrador configurado por UID puede borrar temas y respuestas. Las reglas del foro solo las publica el staff.</p>
+  <p><b>¿Dónde puedo leer las reglas?</b><br>En el apartado Reglas puedes consultar las normas básicas de la comunidad. Es una página informativa y no admite temas ni respuestas.</p>
   <p><b>¿Puedo entrar sin registrarme?</b><br>Puedes leer los foros, temas y comentarios públicos sin iniciar sesión. Los enlaces y archivos se muestran a las cuentas registradas.</p>
   <p><b>¿Puedo cambiar mi foto de perfil?</b><br>Sí. Apenas inicias sesión puedes editar tu propio perfil. En tu perfil, selecciona una imagen desde tu dispositivo, súbela a Catbox y pega el enlace que devuelve para guardar tu foto. No necesitas verificar el correo para cambiar el avatar.</p>
   <p><b>¿Quién puede compartir enlaces y archivos?</b><br>Solo las cuentas registradas con sesión iniciada pueden ver enlaces y archivos de los foros. Los enlaces externos siguen dependiendo de la privacidad del alojamiento que los sirve.</p>
@@ -1049,6 +1051,7 @@ const D = {
     }
   },
   async newT(b,t,x,gallery=[]){
+    if(b==="reglas")throw new Error("El apartado de reglas es informativo y no admite publicaciones.");
     if(OWNER_ONLY_TOPIC_BOARDS.has(b)&&!isOwner())throw new Error("Solo el OWNER puede crear temas en este foro.");
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
@@ -1276,7 +1279,7 @@ const Demo = {
   async topic(t){return demo.t.find(x=>x.id===t)||null;},
   async ratings(t){return uniqueTopicRatings(demo.t.find(x=>x.id===t)?.ratings||[]);},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
-  async newT(b,t,x,gallery=[]){const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30).map(item=>({type:item?.type,url:item?.type==="image"?safeHttps(item.url):item?.type==="link"?safeGalleryLinkUrl(item.url):"",caption:String(item?.caption||"").slice(0,80)})):[];if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");demo.t.push({id,b,t,u:demo.m,staffBadge:hasStaffBadge(),lastStaffBadge:hasStaffBadge(),gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:hasStaffBadge(),x,ts:n});saveDemo();return id;},
+  async newT(b,t,x,gallery=[]){if(b==="reglas")throw new Error("El apartado de reglas es informativo y no admite publicaciones.");const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30).map(item=>({type:item?.type,url:item?.type==="image"?safeHttps(item.url):item?.type==="link"?safeGalleryLinkUrl(item.url):"",caption:String(item?.caption||"").slice(0,80)})):[];if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");demo.t.push({id,b,t,u:demo.m,staffBadge:hasStaffBadge(),lastStaffBadge:hasStaffBadge(),gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:hasStaffBadge(),x,ts:n});saveDemo();return id;},
   async setTopicMaintenance(id,locked){const topic=demo.t.find(y=>y.id===id);if(!topic||(!isStaff()&&topic.u!==demo.m))throw new Error("Solo el creador del tema o el staff puede cambiar el mantenimiento.");topic.maintenanceLocked=!!locked;saveDemo();},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
   async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
@@ -1317,7 +1320,13 @@ const boardTopicPages=new Map();
 const boardTopicSearches=new Map();
 async function brd(m,id){
   const B=BL.find(x=>x[0]===id);if(!B)return m.innerHTML="Foro inexistente";
-  const T=await Store.topicsByBoard(id),isRules=id==="reglas";
+  const isRules=id==="reglas";
+  if(isRules){
+    setSeoMetadata("/b/reglas","Reglas de la comunidad — MantiPobres","Normas básicas de convivencia, respeto, privacidad y seguridad de MantiPobres.",true);
+    m.innerHTML="<section class=\"communityRules\">\n  <header class=\"communityRulesHeader\">\n    <span>MANTIPOBRES · COMUNIDAD</span>\n    <h2>Reglas de la comunidad</h2>\n    <p>Para que el foro sea un lugar agradable, útil y seguro para todos, te pedimos seguir estas normas básicas.</p>\n  </header>\n  <ol class=\"communityRulesList\">\n    <li><b>Respeto y buena convivencia</b><p>Trata a los demás con educación. No se permiten insultos, amenazas, provocaciones constantes ni ataques personales.</p></li>\n    <li><b>Sin acoso ni discriminación</b><p>No acoses, intimides ni discrimines a otras personas por sus características, opiniones o circunstancias.</p></li>\n    <li><b>Publica con orden</b><p>Elige la categoría adecuada, utiliza títulos claros y procura que cada tema trate sobre un asunto concreto. Evita duplicar publicaciones.</p></li>\n    <li><b>Evita el spam</b><p>No publiques mensajes repetidos, flood, publicidad no solicitada ni contenido engañoso.</p></li>\n    <li><b>Respeta la privacidad</b><p>No compartas contraseñas, datos personales, información privada ni conversaciones de otras personas sin su consentimiento.</p></li>\n    <li><b>Cuida la seguridad</b><p>No publiques enlaces de phishing, archivos maliciosos ni contenido diseñado para engañar o perjudicar a otros usuarios.</p></li>\n    <li><b>Usa contenido apropiado</b><p>No publiques contenido ilegal, amenazas, material que promueva la violencia ni contenido que pueda poner en riesgo a otras personas.</p></li>\n    <li><b>Respeta las decisiones de moderación</b><p>El staff puede mover, ocultar o retirar publicaciones y aplicar medidas cuando sea necesario para mantener el buen funcionamiento de la comunidad.</p></li>\n  </ol>\n  <p class=\"communityRulesFooter\">Este apartado es informativo y de solo lectura. No se pueden crear temas ni respuestas aquí.</p>\n</section>";
+    return;
+  }
+  const T=await Store.topicsByBoard(id);
   setSeoMetadata("/b/"+encodeURIComponent(id),B[2]+" — Foro MantiPobres","Debates y temas de "+B[2]+" en MantiPobres, comunidad retro en español.",true);
   const ownerOnlyBoard=OWNER_ONLY_TOPIC_BOARDS.has(id);
   const boardAccessNotice=ownerOnlyBoard?'<section class="notice"><b>Solo el OWNER puede crear temas en este foro.</b><p>Todos pueden leer las publicaciones. Las cuentas registradas pueden responder a los temas existentes.</p></section>':"";
@@ -1472,9 +1481,9 @@ async function thr(m,id){
   if(!t)return m.innerHTML="Tema inexistente";
   const [P,R]=await Promise.all([Store.posts(id),isRegisteredMember()?Store.ratings(id):Promise.resolve([])]);
   const B=BL.find(x=>x[0]===t.b)||["","","?"];
-  const name=Store.me(),locked=t.b==="reglas"&&!isStaff();
-  const canDeleteTopic=isStaff()||(t.b!=="reglas"&&(configured?auth?.currentUser?.uid===t.uid:name===t.u));
-  const canManageTopicMaintenance=isStaff()||(configured?auth?.currentUser?.uid===t.uid:!!name&&name===t.u);
+  const name=Store.me(),locked=t.b==="reglas";
+  const canDeleteTopic=!locked&&(isStaff()||(configured?auth?.currentUser?.uid===t.uid:name===t.u));
+  const canManageTopicMaintenance=!locked&&(isStaff()||(configured?auth?.currentUser?.uid===t.uid:!!name&&name===t.u));
   const canReply=!!name&&(!configured||emailVerified())&&!locked;
   const canRate=isRegisteredMember()&&!locked;
   const counts={},profiles={};
@@ -1512,7 +1521,7 @@ async function thr(m,id){
     '<table><tr><th width="120">Autor</th><th>Publicación / comentario</th></tr>'+
      P.map((p,i)=>{
        const ownPost=configured?!!auth?.currentUser&&p.uid===auth.currentUser.uid:!!Store.me()&&p.u===Store.me();
-        const canEditPost=!p.deleted&&(isStaff()||ownPost),canDeletePost=!p.deleted&&(isStaff()||ownPost);
+        const canEditPost=!locked&&!p.deleted&&(isStaff()||ownPost),canDeletePost=!locked&&!p.deleted&&(isStaff()||ownPost);
         const body=p.deleted?renderTopicPostBody(p,P):renderTopicPostBody(p,P)+renderTopicExternalMediaPreview(p.x||"");
         const authorLink=isRegisteredMember()?'<a href="/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a>':E(p.u);
         const authorStats=isRegisteredMember()?'<br>Mensajes: '+(counts[p.u]||0):'';
@@ -1665,6 +1674,7 @@ function clearTopicDraft(boardId){
   try{sessionStorage.removeItem(topicDraftStorageKey(boardId));}catch{}
 }
 function neu(m,id){
+  if(id==="reglas"){m.innerHTML='<section class="communityRules"><header class="communityRulesHeader"><h2>Reglas de la comunidad</h2></header><p class="communityRulesFooter">Este apartado es informativo y de solo lectura. No se pueden crear temas ni respuestas aquí.</p></section><p><a href="/b/reglas">Volver a las reglas</a></p>';return;}
   if(!Store.me())return location.hash="#/login";
   if(!canCreateTopicInBoard(id)){
     const ownerOnly=OWNER_ONLY_TOPIC_BOARDS.has(id);
