@@ -336,7 +336,7 @@ const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const BOARDS = [
-  ["Información", [["reglas","foro.reglas","Reglas y políticas","Léelas antes de publicar. Solo publica el staff"]]],
+  ["Información", [["reglas","foro.reglas","Reglas de la comunidad","Normas básicas · Página informativa y de solo lectura"]]],
   ["Staff", [["avisos","foro.avisos","Avisos del Staff","Comunicados oficiales del propietario"],["proyecto","foro.proyecto","Nuevo proyecto","Novedades y publicaciones oficiales del nuevo proyecto"]]],
   ["Comunidad", [["gen","es.charla.general","Charla general","Presentaciones y conversación libre"],["ot","alt.off-topic","Off-Topic","Lo que no encaja en otro lado"]]],
   ["Tecnología", [["pc","comp.sistemas","PC y Software","Dudas, tutoriales y programas"],["jue","alt.juegos","Juegos","Retro, PC y consolas"]]],
@@ -822,7 +822,7 @@ const isModerator = () => isAdmin() || currentStaffRole === "moderator" || !!(au
 const isStaff = () => isModerator();
 const hasStaffBadge = () => isOwner() || ["co_owner","admin","moderator","helper"].includes(currentStaffRole) || !!(auth?.currentUser && (ADMINS_UID.includes(auth.currentUser.uid) || MODERATORS_UID.includes(auth.currentUser.uid)));
 const OWNER_ONLY_TOPIC_BOARDS = new Set(["avisos","proyecto"]);
-const canCreateTopicInBoard = boardId => boardId==="reglas" ? isStaff() : OWNER_ONLY_TOPIC_BOARDS.has(boardId) ? isOwner() : true;
+const canCreateTopicInBoard = boardId => boardId!=="reglas" && (OWNER_ONLY_TOPIC_BOARDS.has(boardId) ? isOwner() : true);
 const staffTagHtml = enabled => enabled === true ? '<span class="staffBadge">[STAFF]</span>' : "";
 const canManageStaff = () => isAdmin();
 const canIssueStaffRole = role => (isOwner() && ["co_owner","admin","moderator","helper"].includes(role)) || (isAdmin() && !isOwner() && ["moderator","helper"].includes(role));
@@ -1023,8 +1023,8 @@ const D = {
     return {verified:auth.currentUser.emailVerified,grantedRole};
   },
   async out(){await signOut(auth);await signInAnonymously(auth);},
-  async topics(){try{const s=await getDocs(query(collection(db,"topics"),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas (topics): "+(error.code||error.message||"error desconocido"));}},
-  async topicsByBoard(boardId){try{const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas de la categoría "+boardId+": "+(error.code||error.message||"error desconocido"));}},
+  async topics(){try{const s=await getDocs(query(collection(db,"topics"),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>item.b!=="reglas"&&!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas (topics): "+(error.code||error.message||"error desconocido"));}},
+  async topicsByBoard(boardId){if(boardId==="reglas")return [];try{const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>item.b!=="reglas"&&!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas de la categoría "+boardId+": "+(error.code||error.message||"error desconocido"));}},
   async posts(t){try{const s=await getDocs(query(collection(db,"posts"),where("tp","==",t),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(a.ts||0)-(b.ts||0));}catch(error){throw new Error("No se pudieron leer las publicaciones del tema: "+(error.code||error.message||"error desconocido"));}},
   async topic(t){try{const s=await getDocFromServer(doc(db,"topics",t));if(!s.exists())return null;const item={id:s.id,...s.data()};return isModerationContentHidden(item)?null:item;}catch(error){throw new Error("No se pudo leer el tema desde Firebase: "+(error.code||error.message||"error desconocido"));}},
   async ratings(t){try{const s=await getDocs(collection(db,"topics",t,"ratings"));return uniqueTopicRatings(s.docs.map(d=>({id:d.id,...d.data(),uid:d.data().uid||d.id})));}catch(error){console.warn("No se pudieron cargar las valoraciones; se mostrarán sin votos.",error);return []; }},
@@ -1273,10 +1273,10 @@ const Demo = {
   async reg(n,p){if(demo.u[n])throw new Error("Ese usuario ya existe.");demo.u[n]={p:demoHash(p),ts:Date.now()};demo.m=n;saveDemo();},
   async login(n,p){if(!demo.u[n]||demo.u[n].p!==demoHash(p))throw new Error("Usuario o clave incorrectos.");demo.m=n;saveDemo();},
   async out(){demo.m="";saveDemo();},
-  async topics(){return [...demo.t].sort((a,b)=>b.lr-a.lr);},
-  async topicsByBoard(boardId){return demo.t.filter(t=>t.b===boardId).sort((a,b)=>b.lr-a.lr);},
+  async topics(){return [...demo.t].filter(t=>t.b!=="reglas").sort((a,b)=>b.lr-a.lr);},
+  async topicsByBoard(boardId){return boardId==="reglas"?[]:demo.t.filter(t=>t.b===boardId&&t.b!=="reglas").sort((a,b)=>b.lr-a.lr);},
   async posts(t){return demo.p.filter(p=>p.tp===t).sort((a,b)=>a.ts-b.ts);},
-  async topic(t){return demo.t.find(x=>x.id===t)||null;},
+  async topic(t){return demo.t.find(x=>x.id===t&&x.b!=="reglas")||null;},
   async ratings(t){return uniqueTopicRatings(demo.t.find(x=>x.id===t)?.ratings||[]);},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
   async newT(b,t,x,gallery=[]){if(b==="reglas")throw new Error("El apartado de reglas es informativo y no admite publicaciones.");const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,30).map(item=>({type:item?.type,url:item?.type==="image"?safeHttps(item.url):item?.type==="link"?safeGalleryLinkUrl(item.url):"",caption:String(item?.caption||"").slice(0,80)})):[];if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");demo.t.push({id,b,t,u:demo.m,staffBadge:hasStaffBadge(),lastStaffBadge:hasStaffBadge(),gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:hasStaffBadge(),x,ts:n});saveDemo();return id;},
@@ -1310,7 +1310,7 @@ async function idx(m){
   const [T,n]=await Promise.all([Store.topics(),isRegisteredMember()?Store.members():Promise.resolve(null)]);
   setSeoMetadata("/","MantiPobres — Foro retro en español","Foro retro en español estilo BBS/Usenet. Conversaciones, ayuda y comunidad.",true);
   let h=`<table><tr><th colspan="2">Foro</th><th width="60" class="c">Temas</th><th width="70" class="c">Mensajes</th><th width="200">Último mensaje</th></tr>`;
-  BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i">${id==="reglas"?"":""}</td><td><a href="/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
+  BOARDS.forEach(([c,bs])=>{h+=`<tr><td colspan="5" class="cat">${E(c)}</td></tr>`;bs.forEach(([id,g,t,d])=>{if(id==="reglas"){h+=`<tr><td width="36" class="b c i">📜</td><td><a href="/b/reglas"><b>Reglas de la comunidad</b></a><br><small><i>${E(g)}</i> &mdash; Normas básicas · Página informativa</small></td><td class="c">—</td><td class="c">—</td><td><small>Página fija · Solo lectura</small></td></tr>`;return;}const x=T.filter(y=>y.b===id),l=x[0];h+=`<tr><td width="36" class="b c i"></td><td><a href="/b/${id}"><b>${E(t)}</b></a><br><small><i>${E(g)}</i> &mdash; ${E(d)}</small></td><td class="c">${x.length}</td><td class="c">${x.reduce((a,y)=>a+(y.n||0)+1,0)}</td><td><small>${l?`${dt(l.lr)}<br><a href="/t/${l.id}">${E(l.t)}</a> por ${E(l.lu)}${staffTagHtml(l.lastStaffBadge ?? (l.lu===l.u ? l.staffBadge : false))}`:"&mdash;"}</small></td></tr>`;});});
   const recent=[...T].sort(compareTopicsStaffFirst).slice(0,15);
   m.innerHTML=h+`</table><table><tr><th colspan="3"> TEMAS RECIENTES · VOLVER A UNA CONVERSACIÓN</th></tr><tr><th>Tema</th><th>Foro</th><th>Actividad</th></tr>${recent.map(t=>{const board=BL.find(b=>b[0]===t.b);return `<tr><td> <a href="/t/${t.id}"><b>${E(t.t)}</b></a><br><small>por ${E(t.u)}${staffTagHtml(t.staffBadge)}</small></td><td><a href="/b/${t.b}">${E(board?.[2]||t.b)}</a></td><td><small>${t.n||0} comentarios<br>${dt(t.lr)} · ${E(t.lu||t.u)}${staffTagHtml(t.lastStaffBadge ?? (t.lu===t.u ? t.staffBadge : false))}</small></td></tr>`;}).join("")||`<tr><td colspan="3">Todavía no hay temas publicados.</td></tr>`}</table><table><tr><th>Estadísticas del foro</th></tr><tr><td><small>Los usuarios han publicado <b>${T.reduce((a,y)=>a+(y.n||0)+1,0)}</b> mensajes en <b>${T.length}</b> temas. ${n===null?"Inicia sesión para consultar los miembros registrados.":`Hay <b>${n}</b> miembros registrados.`}</small></td></tr></table>`;
   if(configured)watchRouteData(query(collection(db,"topics"),where("moderationHidden","==",false)),routeRenderId);
@@ -1330,7 +1330,6 @@ async function brd(m,id){
   setSeoMetadata("/b/"+encodeURIComponent(id),B[2]+" — Foro MantiPobres","Debates y temas de "+B[2]+" en MantiPobres, comunidad retro en español.",true);
   const ownerOnlyBoard=OWNER_ONLY_TOPIC_BOARDS.has(id);
   const boardAccessNotice=ownerOnlyBoard?'<section class="notice"><b>Solo el OWNER puede crear temas en este foro.</b><p>Todos pueden leer las publicaciones. Las cuentas registradas pueden responder a los temas existentes.</p></section>':"";
-  const rulesIntro=isRules?`<section class="notice"><h3>Normas de MantiPobres</h3><p>Estas normas se aplican a todos los foros. Al registrarte confirmas que las has leído y aceptado.</p><ol><li><b>Respeto:</b> trata a los demás con respeto. No se permiten insultos dirigidos, acoso, amenazas ni discriminación.</li><li><b>Sin spam:</b> evita mensajes repetidos, publicidad no solicitada, flood, phishing y enlaces maliciosos.</li><li><b>Publica con orden:</b> elige la categoría adecuada, usa títulos descriptivos y no dupliques temas.</li><li><b>Privacidad:</b> no publiques datos personales, contraseñas, conversaciones privadas ni información de terceros sin permiso.</li><li><b>Contenido:</b> no compartas material ilegal, peligroso o que infrinja derechos de otras personas.</li><li><b>Archivos:</b> no subas ejecutables ni archivos sospechosos. Los adjuntos públicos no deben contener información privada.</li><li><b>Moderación:</b> el staff puede retirar publicaciones o mensajes que incumplan estas normas para mantener la comunidad ordenada.</li></ol><small>La fecha de aceptación se guarda al crear tu cuenta.</small></section>`:"";
   let currentPage=boardTopicPages.get(id)||1;
   const initialSearch=boardTopicSearches.get(id)||"";
   function renderPagination(pageCount,resultCount,hasSearch){
@@ -1357,7 +1356,7 @@ async function brd(m,id){
     const pagination=renderPagination(pageCount,matchedTopics.length,hasSearch);
     const emptyMessage=hasSearch
       ? `No se encontraron temas que coincidan con «${E(searchValue.trim())}».`
-      : (isRules?"El staff todavía no publicó las reglas.":"Sin temas todavía. Crea el primero.");
+      : "Sin temas todavía. Crea el primero.";
     const results=m.querySelector("#boardTopicResults");
     if(!results)return;
     results.innerHTML=pagination+
@@ -1387,9 +1386,9 @@ async function brd(m,id){
     </div>
     <small id="boardTopicSearchStatus" aria-live="polite"></small>
   </section>`;
-  m.innerHTML=rulesIntro+boardAccessNotice+`<p><a href="/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${(!configured||isRegisteredMember())&&canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="/n/${id}">Nuevo tema</a>`:""}</p>`+
+  m.innerHTML=boardAccessNotice+`<p><a href="/">Índice</a> &raquo; <b>${E(B[2])}</b> <i>(${E(B[1])})</i> ${(!configured||isRegisteredMember())&&canCreateTopicInBoard(id)?`&nbsp; <a class="bt" href="/n/${id}">Nuevo tema</a>`:""}</p>`+
     searchMarkup+`<div id="boardTopicResults" aria-live="polite"></div>`+
-    (isRules?`<p><small>Este foro es de solo lectura para miembros. Solo el staff puede publicar.</small></p>`:"");
+    "";
   const searchInput=m.querySelector("#boardTopicSearchInput");
   searchInput?.addEventListener("input",()=>{
     boardTopicSearches.set(id,searchInput.value);
@@ -1479,6 +1478,7 @@ function bindTopicGallery(root,items){
 async function thr(m,id){
   const t=await Store.topic(id);
   if(!t)return m.innerHTML="Tema inexistente";
+  if(t.b==="reglas"){m.innerHTML='<section class="communityRules"><header class="communityRulesHeader"><h2>Reglas de la comunidad</h2></header><p class="communityRulesFooter">Las publicaciones antiguas de esta sección ya no están disponibles. Consulta las normas actuales en <a href="/b/reglas">Reglas de la comunidad</a>.</p></section>';return;}
   const [P,R]=await Promise.all([Store.posts(id),isRegisteredMember()?Store.ratings(id):Promise.resolve([])]);
   const B=BL.find(x=>x[0]===t.b)||["","","?"];
   const name=Store.me(),locked=t.b==="reglas";
