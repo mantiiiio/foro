@@ -458,7 +458,8 @@ service cloud.firestore {
           && request.resource.data.stars >= 1
           && request.resource.data.stars <= 5
           && request.resource.data.ts is int;
-        allow update: if registered()
+        allow update: if get(/databases/$(database)/documents/topics/$(topicId)).data.b != 'reglas'
+          && registered()
           && canParticipate()
           && request.auth.uid == ratingUid
           && resource.data.uid == request.auth.uid
@@ -467,7 +468,8 @@ service cloud.firestore {
           && request.resource.data.stars >= 1
           && request.resource.data.stars <= 5
           && request.resource.data.ts is int;
-        allow delete: if (isStaff() && canParticipate()) || (
+        allow delete: if get(/databases/$(database)/documents/topics/$(topicId)).data.b != 'reglas'
+          && ((isStaff() && canParticipate()) || (
           registered()
           && canParticipate()
           && (
@@ -476,7 +478,7 @@ service cloud.firestore {
             || (exists(/databases/$(database)/documents/topics/$(topicId))
               && get(/databases/$(database)/documents/topics/$(topicId)).data.uid == request.auth.uid)
           )
-        );
+        ));
       }
     }
 

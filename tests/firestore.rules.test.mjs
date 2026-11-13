@@ -507,7 +507,8 @@ test("Reglas es una página informativa: ni miembros, ni staff ni OWNER pueden p
       tp: "legacy-rules-topic", uid: "alice", u: "alice",
       x: "Publicación anterior", ts: 1, staffBadge: false,
       moderationHidden: false, moderationHiddenUntil: null
-    }
+    },
+    "topics/legacy-rules-topic/ratings/alice": { uid: "alice", stars: 5, ts: 1 }
   });
   const alice = account("alice");
   const moderator = account("mod-1");
@@ -542,4 +543,7 @@ test("Reglas es una página informativa: ni miembros, ni staff ni OWNER pueden p
   await assertFails(updateDoc(doc(owner, "posts", "legacy-rules-post"), { x: "Texto editado" }));
   await assertFails(deleteDoc(doc(moderator, "posts", "legacy-rules-post")));
   await assertFails(deleteDoc(doc(owner, "topics", "legacy-rules-topic")));
+  await assertFails(updateDoc(doc(alice, "topics", "legacy-rules-topic", "ratings", "alice"), { stars: 1, ts: 2 }));
+  await assertFails(deleteDoc(doc(moderator, "topics", "legacy-rules-topic", "ratings", "alice")));
+  await assertFails(setDoc(doc(alice, "topics", "legacy-rules-topic", "ratings", "another-user"), { uid: "another-user", stars: 3, ts: 2 }));
 });
