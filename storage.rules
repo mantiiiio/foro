@@ -1,10 +1,16 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // MantiPobres usa enlaces externos (Catbox). No se permiten subidas a Firebase Storage.
-    match /{allPaths=**} {
-      allow read: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    // Las únicas lecturas permitidas son las fotos de perfil. No hay subidas desde la app.
+    match /avatars/{uid}/{allPaths=**} {
+      allow read: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
       allow write: if false;
+    }
+
+    // El resto del bucket (incluidos adjuntos antiguos) queda privado y sin escrituras.
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
