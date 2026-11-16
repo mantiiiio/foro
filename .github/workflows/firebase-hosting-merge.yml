@@ -70,14 +70,26 @@ jobs:
               'async editOriginalPost(',
               'function openTopicOriginalPostEditor(',
               'data-edit-gallery-add',
-              "request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])"
           ]
           missing = [item for item in required if item not in source]
           if missing:
               raise SystemExit("Faltan funciones del buscador: " + ", ".join(missing))
           if 'from "./board-search.js"' in source:
               raise SystemExit("No se permite importar el buscador con una ruta relativa desde /b/ o /t/.")
-          print("Rutas absolutas, búsqueda por foro y búsqueda global verificadas.")
+          print("Rutas absolutas, búsqueda por foro, búsqueda global y editor de adjuntos verificados.")
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
+          rules = Path("firestore.rules").read_text(encoding="utf-8")
+          required = [
+              "request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])",
+              "request.resource.data.gallery is list",
+              "request.resource.data.gallery.size() <= 30"
+          ]
+          missing = [item for item in required if item not in rules]
+          if missing:
+              raise SystemExit("Falta el permiso controlado para editar adjuntos en Firestore: " + ", ".join(missing))
+          print("Permisos de edición de adjuntos verificados en firestore.rules.")
           PY
 
       - name: Verify the retired online chat UI is absent
