@@ -60,7 +60,7 @@ jobs:
               raise SystemExit("La política CSP permite scripts inline no autorizados.")
           if "'sha256-" + digest + "'" not in policy or "object-src 'none'" not in policy or "frame-ancestors 'none'" not in policy:
               raise SystemExit("La política CSP no contiene todas las restricciones obligatorias.")
-          config_path.write_text(json.dumps(config, indent=2) + "\\n", encoding="utf-8")
+          config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
           print("CSP estricta generada y vinculada al hash SHA-256 del script de esta versión.")
           PY
 
