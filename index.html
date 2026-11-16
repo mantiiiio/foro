@@ -1067,7 +1067,7 @@ const D = {
     if(OWNER_ONLY_TOPIC_BOARDS.has(b)&&!isOwner())throw new Error("Solo el OWNER puede crear temas en este foro.");
     await assertCurrentUserNotBanned();const n=Date.now(),u=me(),uid=auth.currentUser.uid,staffBadge=hasStaffBadge(),topicRef=doc(collection(db,"topics")),postRef=doc(collection(db,"posts")),rateRef=doc(db,"userRateLimits",uid),rateSnap=await getDoc(doc(db,"userRateLimits",uid)),last=rateSnap.exists()?rateSnap.data().lastPostAt:null,lastMs=last?.toMillis?last.toMillis():last instanceof Date?last.getTime():0;
     const elapsed=Date.now()-lastMs;if(lastMs&&elapsed>=0&&elapsed<3000)throw new Error("POST_RATE_LIMIT");
-    const cleanGallery=Array.isArray(gallery)?gallery.slice(0,10.map(item=>({type:item?.type,url:item?.type==="image"?safeHttps(item.url):item?.type==="link"?safeGalleryLinkUrl(item.url):"",caption:String(item?.caption||"").slice(0,80)})):[];
+    const cleanGallery=Array.isArray(gallery)?gallery.slice(0,10).map(item=>({type:item?.type,url:item?.type==="image"?safeHttps(item.url):item?.type==="link"?safeGalleryLinkUrl(item.url):"",caption:String(item?.caption||"").slice(0,80)})):[];
     if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");
     const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(topicRef,{b,t,u,uid,staffBadge,lastStaffBadge:staffBadge,gallery:cleanGallery,ts:n,lr:n,lu:u,n:0,maintenanceLocked:false,moderationHidden:false,moderationHiddenUntil:null});batch.set(postRef,{tp:topicRef.id,u,uid,staffBadge,x,ts:n,moderationHidden:false,moderationHiddenUntil:null});await batch.commit();return topicRef.id;
   },
@@ -1312,7 +1312,7 @@ const Demo = {
   async topic(t){return demo.t.find(x=>x.id===t&&x.b!=="reglas")||null;},
   async ratings(t){return uniqueTopicRatings(demo.t.find(x=>x.id===t)?.ratings||[]);},
   async rateTopic(t,stars){const topic=demo.t.find(x=>x.id===t);if(!topic)throw new Error("Tema inexistente.");topic.ratings=topic.ratings||[];topic.ratings=topic.ratings.filter(r=>r.uid!==demo.m);topic.ratings.push({uid:demo.m,stars:Number(stars)});saveDemo();},
-  async newT(b,t,x,gallery=[]){if(b==="reglas")throw new Error("El apartado de reglas es informativo y no admite publicaciones.");const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,10.map(item=>({type:item?.type,url:item?.type==="image"?safeHttps(item.url):item?.type==="link"?safeGalleryLinkUrl(item.url):"",caption:String(item?.caption||"").slice(0,80)})):[];if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");demo.t.push({id,b,t,u:demo.m,staffBadge:hasStaffBadge(),lastStaffBadge:hasStaffBadge(),gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:hasStaffBadge(),x,ts:n});saveDemo();return id;},
+  async newT(b,t,x,gallery=[]){if(b==="reglas")throw new Error("El apartado de reglas es informativo y no admite publicaciones.");const n=Date.now(),id=String(n),cleanGallery=Array.isArray(gallery)?gallery.slice(0,10).map(item=>({type:item?.type,url:item?.type==="image"?safeHttps(item.url):item?.type==="link"?safeGalleryLinkUrl(item.url):"",caption:String(item?.caption||"").slice(0,80)})):[];if(cleanGallery.some(item=>!["image","link"].includes(item.type)||!item.url))throw new Error("La galería contiene un elemento no válido.");demo.t.push({id,b,t,u:demo.m,staffBadge:hasStaffBadge(),lastStaffBadge:hasStaffBadge(),gallery:cleanGallery,ts:n,lr:n,lu:demo.m,n:0});demo.p.push({id:id+"p",tp:id,u:demo.m,staffBadge:hasStaffBadge(),x,ts:n});saveDemo();return id;},
   async setTopicMaintenance(id,locked){const topic=demo.t.find(y=>y.id===id);if(!topic||(!isStaff()&&topic.u!==demo.m))throw new Error("Solo el creador del tema o el staff puede cambiar el mantenimiento.");topic.maintenanceLocked=!!locked;saveDemo();},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
   async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
@@ -1442,7 +1442,7 @@ async function brd(m,id){
 }
 function cleanTopicGallery(items){
   if(!Array.isArray(items))return [];
-  return items.slice(0,10.map(item=>{
+  return items.slice(0,10).map(item=>{
     const type=item?.type;
     const url=type==="image"?safeHttps(item.url):type==="link"?safeGalleryLinkUrl(item.url):"";
     if(!url)return null;
@@ -1751,7 +1751,7 @@ function loadTopicDraft(boardId){
 function saveTopicDraft(boardId){
   const form=$("#nf"),items=$("#topicGalleryItems");
   if(!form||!items)return;
-  const gallery=Array.from(items.querySelectorAll(".topicGalleryRow")).slice(0,10.map(row=>({
+  const gallery=Array.from(items.querySelectorAll(".topicGalleryRow")).slice(0,10).map(row=>({
     type:row.querySelector("[data-gallery-type]")?.value==="link"?"link":"image",
     url:row.querySelector("[data-gallery-url]")?.value||"",
     caption:row.querySelector("[data-gallery-caption]")?.value||""
