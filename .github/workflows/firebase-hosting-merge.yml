@@ -203,8 +203,9 @@ jobs:
           OUTPUT = os.environ["GITHUB_OUTPUT"]
 
           def output(name, value):
+              safe_value = " ".join(str(value).splitlines()).replace("\\r", " ").replace("\\n", " ")
               with open(OUTPUT, "a", encoding="utf-8") as handle:
-                  handle.write(name + "=" + str(value).replace("\\n", " ").replace("\\r", " ") + "\\n")
+                  handle.write(name + "=" + safe_value + "\\n")
 
           try:
               credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
@@ -300,9 +301,9 @@ jobs:
           PY
 
       - name: Inject App Check site key and refresh CSP
-        if: \${{ steps.appcheck.outputs.ready == 'true' }}
+        if: ${{ steps.appcheck.outputs.ready == 'true' }}
         env:
-          APP_CHECK_SITE_KEY: \${{ steps.appcheck.outputs.site_key }}
+          APP_CHECK_SITE_KEY: ${{ steps.appcheck.outputs.site_key }}
         run: |
           python3 - <<'PY'
           import base64, hashlib, json, os, re
@@ -337,7 +338,7 @@ jobs:
           node --check /tmp/mantipobres-appcheck.mjs
 
       - name: Verify App Check client and final CSP integrity
-        if: \${{ steps.appcheck.outputs.ready == 'true' }}
+        if: ${{ steps.appcheck.outputs.ready == 'true' }}
         run: |
           python3 - <<'PY'
           import base64, hashlib, json
