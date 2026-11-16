@@ -150,7 +150,17 @@ body{
   margin:calc(clamp(14px,4vw,28px) * -1) calc(clamp(14px,4vw,28px) * -1) 16px!important;
   padding:13px!important;font-size:clamp(18px,4vw,25px)!important;
 }.banAccessPanel .banMeta{background:#fff!important;border:1px solid #c77!important;padding:10px!important;margin:10px 0!important}.banAccessPanel .moderationHistory{margin-top:8px!important}.banAccessPanel .moderationHistory li{margin:5px 0}.banAccessPanel .banActions a{background:#a40000!important;color:#fff!important;border:2px solid #780000!important;padding:8px 13px!important}/* Editor de galería disponible únicamente al crear un tema. */
-.topicGalleryComposer{border:1px solid #9bb2bd;background:#f4f7f8;margin:8px 0;padding:7px}.topicGalleryBar{display:flex;gap:6px;align-items:center}.topicGalleryBar button:first-child{flex:1;text-align:left;font-weight:bold}.topicGalleryHelp{margin:7px 0;padding:8px;border:1px dashed #b18b42;background:#fff8dc;color:#59451c;line-height:1.5}#topicGalleryItems{display:grid;gap:7px;margin:8px 0}.topicGalleryRow{display:grid;grid-template-columns:minmax(110px,145px) minmax(130px,1fr) minmax(120px,.8fr) auto;gap:6px;align-items:end;padding:7px;border:1px solid #b8c8ce;background:#fff}.topicGalleryField{display:flex;flex-direction:column;gap:3px;min-width:0}.topicGalleryField label{font-size:10px;font-weight:bold;color:#345}.topicGalleryField input, .topicGalleryField select{width:100%;min-width:0}.topicGalleryRemove{color:#a40000}.topicGalleryNote{display:block;margin-top:6px;color:#456;line-height:1.4}.topicGalleryViewer{margin:10px 0 14px;border:2px solid #006699;background:#f2f6f8;box-shadow:3px 3px 0 #b5c1c6}.topicGalleryViewer h3{margin:0;padding:7px 9px;color:#ffbd7b;background:linear-gradient(#2d86b8,#004d75);font-size:12px}.topicGalleryStage{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;gap:5px;align-items:center;padding:8px}.topicGalleryNav{min-width:34px;min-height:42px;font-size:22px;font-weight:bold}.topicGallerySlide{min-width:0;min-height:100px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:7px;padding:7px;background:#fff;border:1px solid #b8c8ce}.topicGalleryImageLink{display:block;max-width:100%;text-decoration:none}.topicGalleryImage{display:block;max-width:100%;max-height:420px;object-fit:contain;margin:auto;background:#edf1f3}.topicGalleryExternalLink{display:flex;flex-direction:column;gap:5px;max-width:100%;overflow-wrap:anywhere;padding:14px 18px;border:1px solid #9bb2bd;background:#f4f7f8;font-weight:bold}.topicGalleryExternalLink small{font-weight:normal;overflow-wrap:anywhere}.topicGalleryCaption{margin:0;padding:0 8px 4px;font-size:11px;color:#345;overflow-wrap:anywhere}.topicGalleryFooter{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 9px;border-top:1px solid #b8c8ce;background:#e5edf0}.topicGalleryDots{display:flex;gap:5px;flex-wrap:wrap}.topicGalleryDot{min-width:12px;width:12px;height:12px;padding:0;border-radius:50%;border:1px solid #006699;background:#fff}.topicGalleryDot[aria-current="true"]{background:#006699}
+.topicGalleryComposer{border:1px solid #9bb2bd;background:#f4f7f8;margin:8px 0;padding:7px}.topicGalleryBar{display:flex;gap:6px;align-items:center}.topicGalleryBar button:first-child{flex:1;text-align:left;font-weight:bold}.topicGalleryHelp{margin:7px 0;padding:8px;border:1px dashed #b18b42;background:#fff8dc;color:#59451c;line-height:1.5}#topicGalleryItems{display:grid;gap:7px;margin:8px 0}.topicGalleryRow{display:grid;grid-template-columns:minmax(110px,145px) minmax(130px,1fr) minmax(120px,.8fr) auto;gap:6px;align-items:end;padding:7px;border:1px solid #b8c8ce;background:#fff}.topicGalleryField{display:flex;flex-direction:column;gap:3px;min-width:0}.topicGalleryField label{font-size:10px;font-weight:bold;color:#345}.topicGalleryField input, .topicGalleryField select{width:100%;min-width:0}.topicGalleryRemove{color:#a40000}.topicGalleryNote{display:block;margin-top:6px;color:#456;line-height:1.4}
+.topicOriginalEditPanel{margin:10px 0;padding:10px;border:2px solid #006699;background:#f4f8fa;box-shadow:3px 3px 0 #bdcbd1;color:#234}
+.topicOriginalEditPanel>strong{display:block;margin-bottom:8px;color:#005078}
+.topicOriginalEditPanel label{display:block;margin:7px 0 4px;font-size:11px;font-weight:bold}
+.topicOriginalEditPanel textarea{display:block;width:100%;min-height:130px;box-sizing:border-box}
+.topicOriginalEditPanel .topicGalleryComposer{margin:9px 0}
+.topicOriginalEditPanel [data-edit-gallery-items]{display:grid;gap:7px;margin:8px 0}
+.topicOriginalEditActions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px}
+.topicOriginalEditStatus{display:block;flex-basis:100%;font-size:11px;color:#345}
+@media(max-width:620px){.topicOriginalEditPanel .topicGalleryRow{grid-template-columns:1fr 1fr}.topicOriginalEditPanel .topicGalleryRow .topicGalleryField:nth-child(2){grid-column:1/-1}}
+.topicGalleryViewer{margin:10px 0 14px;border:2px solid #006699;background:#f2f6f8;box-shadow:3px 3px 0 #b5c1c6}.topicGalleryViewer h3{margin:0;padding:7px 9px;color:#ffbd7b;background:linear-gradient(#2d86b8,#004d75);font-size:12px}.topicGalleryStage{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;gap:5px;align-items:center;padding:8px}.topicGalleryNav{min-width:34px;min-height:42px;font-size:22px;font-weight:bold}.topicGallerySlide{min-width:0;min-height:100px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:7px;padding:7px;background:#fff;border:1px solid #b8c8ce}.topicGalleryImageLink{display:block;max-width:100%;text-decoration:none}.topicGalleryImage{display:block;max-width:100%;max-height:420px;object-fit:contain;margin:auto;background:#edf1f3}.topicGalleryExternalLink{display:flex;flex-direction:column;gap:5px;max-width:100%;overflow-wrap:anywhere;padding:14px 18px;border:1px solid #9bb2bd;background:#f4f7f8;font-weight:bold}.topicGalleryExternalLink small{font-weight:normal;overflow-wrap:anywhere}.topicGalleryCaption{margin:0;padding:0 8px 4px;font-size:11px;color:#345;overflow-wrap:anywhere}.topicGalleryFooter{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 9px;border-top:1px solid #b8c8ce;background:#e5edf0}.topicGalleryDots{display:flex;gap:5px;flex-wrap:wrap}.topicGalleryDot{min-width:12px;width:12px;height:12px;padding:0;border-radius:50%;border:1px solid #006699;background:#fff}.topicGalleryDot[aria-current="true"]{background:#006699}
 @media(max-width:600px){.topicGalleryRow{grid-template-columns:1fr 1fr}.topicGalleryRemove{grid-column:1/-1}.topicGalleryStage{grid-template-columns:30px minmax(0,1fr) 30px;padding:5px}.topicGalleryNav{min-width:28px;padding:2px}.topicGalleryImage{max-height:260px}}/* Etiqueta de personal: arcoíris si el navegador admite texto con fondo recortado; rojo como alternativa. */
 .staffBadge{display:inline-block;margin-left:4px;white-space:nowrap;vertical-align:baseline;font:bold 9px Verdana,Arial,sans-serif;color:#c00000!important}
 @supports ((background-clip:text) or (-webkit-background-clip:text)){.staffBadge{background-image:linear-gradient(90deg,#ff2020 0%,#ff9a00 16%,#e8d400 32%,#20b850 48%,#168de2 64%,#6633cc 80%,#e52c91 100%);background-clip:text;-webkit-background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
@@ -1076,6 +1086,27 @@ const D = {
     const batch=writeBatch(db);batch.set(rateRef,{lastPostAt:serverTimestamp(),lastPostId:postRef.id},{merge:true});batch.set(postRef,{tp:t,u,uid,staffBadge,x,ts:n,moderationHidden:false,moderationHiddenUntil:null});batch.update(topicRef,{lr:n,lu:u,lastStaffBadge:staffBadge,n:increment(1),lastCreatedPostId:postRef.id});await batch.commit();
   },
   async editPost(id,x){requireVerifiedMember("editar tus publicaciones");await assertCurrentUserNotBanned();const value=String(x||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");await updateDoc(doc(db,"posts",id),{x:value});},
+  async editOriginalPost(postId,topicId,message,gallery){
+    if(!isStaff()&&!isOwner())requireVerifiedMember("editar publicaciones y archivos adjuntos");
+    await assertCurrentUserNotBanned();
+    const value=String(message||"").trim();
+    if(!value)throw new Error("El mensaje no puede quedar vacío.");
+    if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");
+    if(!Array.isArray(gallery)||gallery.length>30)throw new Error("La galería admite hasta 30 archivos o enlaces.");
+    const cleaned=cleanTopicGallery(gallery);
+    if(cleaned.length!==gallery.length)throw new Error("Hay un archivo adjunto con tipo o URL no válida. Revísalo antes de guardar.");
+    const topicRef=doc(db,"topics",topicId),postRef=doc(db,"posts",postId);
+    const [topicSnap,postSnap]=await Promise.all([getDocFromServer(topicRef),getDocFromServer(postRef)]);
+    if(!topicSnap.exists()||!postSnap.exists()||postSnap.data().tp!==topicId)throw new Error("No se encontró el tema o la publicación original.");
+    const topic=topicSnap.data(),post=postSnap.data(),uid=auth?.currentUser?.uid||"";
+    if(!isStaff()&&(topic.uid!==uid||post.uid!==uid))throw new Error("Solo el creador del tema o el staff puede editar sus archivos adjuntos.");
+    const batch=writeBatch(db);
+    batch.update(postRef,{x:value});
+    batch.update(topicRef,{gallery:cleaned});
+    await batch.commit();
+    const [savedTopic,savedPost]=await Promise.all([getDocFromServer(topicRef),getDocFromServer(postRef)]);
+    if(!savedTopic.exists()||!savedPost.exists()||savedPost.data().x!==value||JSON.stringify(savedTopic.data().gallery||[])!==JSON.stringify(cleaned))throw new Error("Firebase no confirmó los cambios de texto y archivos adjuntos. Recarga el tema e inténtalo otra vez.");
+  },
   async members(){try{const s=await getCountFromServer(collection(db,"users"));return s.data().count;}catch(error){console.warn("No se pudo cargar el contador de miembros; se muestra 0 temporalmente.",error);return 0;}},
   async cnt(n){try{const s=await getCountFromServer(query(collection(db,"posts"),where("u","==",n)));return s.data().count;}catch(error){console.warn("No se pudo cargar el contador de mensajes de "+n,error);return 0;}},
   async prof(n){try{const s=await getDocs(query(collection(db,"users"),where("u","==",n),limit(1)));return s.empty?null:{uid:s.docs[0].id,...s.docs[0].data()};}catch(error){console.warn("No se pudo cargar el perfil público de "+n,error);return null;}},
@@ -1282,6 +1313,7 @@ const Demo = {
   async setTopicMaintenance(id,locked){const topic=demo.t.find(y=>y.id===id);if(!topic||(!isStaff()&&topic.u!==demo.m))throw new Error("Solo el creador del tema o el staff puede cambiar el mantenimiento.");topic.maintenanceLocked=!!locked;saveDemo();},
   async reply(t,x){const n=Date.now(),o=demo.t.find(y=>y.id===t);o.lr=n;o.lu=demo.m;o.lastStaffBadge=false;o.n++;demo.p.push({id:String(n),tp:t,u:demo.m,staffBadge:false,x,ts:n});saveDemo();},
   async editPost(id,x){const post=demo.p.find(p=>p.id===id);if(!post||post.u!==demo.m)throw new Error("Solo puedes editar tus propias publicaciones.");post.x=String(x||"").trim();saveDemo();},
+  async editOriginalPost(postId,topicId,message,gallery){const topic=demo.t.find(item=>item.id===topicId),post=demo.p.find(item=>item.id===postId&&item.tp===topicId);if(!topic||!post)throw new Error("No se encontró el tema o la publicación original.");if(!isStaff()&&(topic.u!==demo.m||post.u!==demo.m))throw new Error("Solo el creador del tema o el staff puede editar sus archivos adjuntos.");const value=String(message||"").trim();if(!value)throw new Error("El mensaje no puede quedar vacío.");if(value.length>6000)throw new Error("El mensaje supera el máximo de 6000 caracteres.");if(!Array.isArray(gallery)||gallery.length>30)throw new Error("La galería admite hasta 30 archivos o enlaces.");const cleaned=cleanTopicGallery(gallery);if(cleaned.length!==gallery.length)throw new Error("Hay un archivo adjunto con tipo o URL no válida.");post.x=value;topic.gallery=cleaned;saveDemo();},
   async members(){return Object.keys(demo.u).length;},
   async cnt(n){return demo.p.filter(p=>p.u===n).length;},
   async prof(n){return demo.u[n]?{u:n,ts:demo.u[n].ts}:null;},
@@ -1474,6 +1506,83 @@ function bindTopicGallery(root,items){
   draw();
 }
 
+function openTopicOriginalPostEditor(root,trigger,post,topicId,currentGallery){
+  root.querySelector("[data-topic-original-editor]")?.remove();
+  const cell=trigger.closest("td");
+  if(!cell)return;
+  const gallery=cleanTopicGallery(currentGallery);
+  cell.insertAdjacentHTML("beforeend",`
+    <section class="topicOriginalEditPanel" data-topic-original-editor>
+      <strong>Editar publicación original y archivos adjuntos</strong>
+      <label for="topicOriginalEditText">Texto de la publicación</label>
+      <textarea id="topicOriginalEditText" maxlength="6000">${E(post.x||"")}</textarea>
+      <small class="markdownHelp">También puedes cambiar el texto y los enlaces que aparecen dentro del mensaje.</small>
+      <section class="topicGalleryComposer" aria-label="Editar archivos adjuntos">
+        <div class="topicGalleryBar"><b>Archivos adjuntos del tema</b></div>
+        <div data-edit-gallery-items></div>
+        <button type="button" data-edit-gallery-add>＋ Agregar archivo o enlace</button>
+        <small class="topicGalleryNote">Puedes cambiar el tipo, la dirección, la descripción, quitar elementos o agregar otros. Máximo 30. Las imágenes usan URL HTTPS; los enlaces aceptan HTTP, HTTPS o magnet: válido.</small>
+      </section>
+      <div class="topicOriginalEditActions">
+        <button type="button" class="bt" data-edit-original-save>Guardar cambios</button>
+        <button type="button" data-edit-original-cancel>Cancelar</button>
+        <small class="topicOriginalEditStatus" data-edit-original-status></small>
+      </div>
+    </section>`);
+  const panel=root.querySelector("[data-topic-original-editor]");
+  const rows=panel.querySelector("[data-edit-gallery-items]");
+  const status=panel.querySelector("[data-edit-original-status]");
+  let rowNumber=0;
+  function addRow(item=null){
+    if(rows.querySelectorAll(".topicGalleryRow").length>=30){status.textContent="La galería admite un máximo de 30 elementos.";return;}
+    const n=rowNumber++;
+    rows.insertAdjacentHTML("beforeend",`<div class="topicGalleryRow" data-edit-gallery-row="${n}">
+      <div class="topicGalleryField"><label>Tipo</label><select data-edit-gallery-type><option value="image">Imagen</option><option value="link">Enlace o archivo</option></select></div>
+      <div class="topicGalleryField"><label>URL del archivo</label><input data-edit-gallery-url type="text" maxlength="8192" inputmode="url" placeholder="https://... o magnet:?xt=urn:btih:..." required></div>
+      <div class="topicGalleryField"><label>Descripción</label><input data-edit-gallery-caption type="text" maxlength="80" placeholder="Descripción (opcional)"></div>
+      <button type="button" class="topicGalleryRemove" data-edit-gallery-remove>Quitar</button>
+    </div>`);
+    const row=rows.querySelector('[data-edit-gallery-row="'+n+'"]');
+    if(item){
+      row.querySelector("[data-edit-gallery-type]").value=item.type==="link"?"link":"image";
+      row.querySelector("[data-edit-gallery-url]").value=item.url||"";
+      row.querySelector("[data-edit-gallery-caption]").value=item.caption||"";
+    }
+    row.querySelector("[data-edit-gallery-remove]").addEventListener("click",()=>row.remove());
+    status.textContent="";
+  }
+  gallery.forEach(addRow);
+  panel.querySelector("[data-edit-gallery-add]").addEventListener("click",()=>addRow());
+  panel.querySelector("[data-edit-original-cancel]").addEventListener("click",()=>panel.remove());
+  panel.querySelector("[data-edit-original-save]").addEventListener("click",async event=>{
+    const button=event.currentTarget;
+    const message=panel.querySelector("#topicOriginalEditText").value.trim();
+    if(!message){status.textContent="El texto de la publicación no puede quedar vacío.";return;}
+    const nextGallery=[];
+    for(const row of rows.querySelectorAll(".topicGalleryRow")){
+      const type=row.querySelector("[data-edit-gallery-type]").value;
+      const raw=row.querySelector("[data-edit-gallery-url]").value.trim();
+      const caption=row.querySelector("[data-edit-gallery-caption]").value.trim();
+      const url=type==="image"?safeHttps(raw):safeGalleryLinkUrl(raw);
+      if(!url){
+        status.textContent=type==="image"?"La imagen necesita una URL HTTPS válida.":"El enlace necesita una URL HTTP/HTTPS o un magnet válido.";
+        row.querySelector("[data-edit-gallery-url]").focus();
+        return;
+      }
+      nextGallery.push({type,url,caption});
+    }
+    if(await autoModerationGate(message,"tema"))return;
+    button.disabled=true;status.textContent="Guardando texto y archivos adjuntos…";
+    try{
+      await Store.editOriginalPost(post.id,topicId,message,nextGallery);
+      status.textContent="Cambios guardados.";
+      await refreshRouteContent();
+    }catch(error){
+      status.textContent=errText(error);
+      button.disabled=false;
+    }
+  });
+}
 async function thr(m,id){
   const t=await Store.topic(id);
   if(!t)return m.innerHTML="Tema inexistente";
@@ -1524,7 +1633,7 @@ async function thr(m,id){
         const body=p.deleted?renderTopicPostBody(p,P):renderTopicPostBody(p,P)+renderTopicExternalMediaPreview(p.x||"");
         const authorLink=isRegisteredMember()?'<a href="/u/'+encodeURIComponent(p.u)+'">'+E(p.u)+'</a>':E(p.u);
         const authorStats=isRegisteredMember()?'<br>Mensajes: '+(counts[p.u]||0):'';
-        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b>'+authorLink+'</b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+authorStats+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">[editar]</a> ':"")+(canDeletePost&&i>0?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>'+(i===0&&galleryHtml?'<tr><td colspan="2">'+galleryHtml+'</td></tr>':"");
+        return '<tr><td class="b" valign="top">'+avatar(p.u,40,profiles[p.u]?.avatarUrl||"") +'<br><b>'+authorLink+'</b>'+staffTagHtml(p.staffBadge)+'<br><small>'+E(rank(counts[p.u]||0,p.u,p.uid))+authorStats+'</small></td><td><div class="h">From: '+E(p.u)+'<br>Newsgroups: '+E(B[1])+'<br>Subject: '+(i?"Re: ":"")+E(t.t)+'<br>Date: '+dt(p.ts)+' &nbsp; #'+(i+1)+(i===0?' · PUBLICACIÓN ORIGINAL':' · COMENTARIO')+'</div><div class="p">'+body+'</div><small>'+(canReply?'<a href="#" data-q="'+i+'">[citar]</a> ':"")+(canEditPost?'<a href="#" data-edit="'+i+'">['+(i===0?'editar texto y adjuntos':'editar')+']</a> ':"")+(canDeletePost&&i>0?'<a href="#" data-d="'+i+'">[borrar]</a>':"")+'</small></td></tr>'+(i===0&&galleryHtml?'<tr><td colspan="2">'+galleryHtml+'</td></tr>':"");
      }).join("")+
     '</table>'+
     (canReply
@@ -1581,12 +1690,17 @@ async function thr(m,id){
   });
   m.querySelectorAll("[data-edit]").forEach(a=>a.onclick=async e=>{
     e.preventDefault();
-    const post=P[Number(a.dataset.edit)];if(!post)return;
+    const post=P[Number(a.dataset.edit)],postIndex=Number(a.dataset.edit);
+    if(!post)return;
+    if(postIndex===0){
+      openTopicOriginalPostEditor(m,a,post,id,t.gallery||[]);
+      return;
+    }
     const edited=prompt("Edita tu publicación o comentario:",post.x||"");
     if(edited===null)return;
     if(!edited.trim()){alert("El mensaje no puede quedar vacío.");return;}
     a.textContent="[guardando…]";
-    try{if(await autoModerationGate(edited,"comentario"))return;await Store.editPost(post.id,edited);if(!configured)await refreshRouteContent();}
+    try{if(await autoModerationGate(edited,"comentario"))return;await Store.editPost(post.id,edited);await refreshRouteContent();}
     catch(z){alert(errText(z));a.textContent="[editar]";}
   });
   m.querySelectorAll("[data-d]").forEach(a=>a.onclick=async e=>{

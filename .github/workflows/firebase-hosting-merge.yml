@@ -66,7 +66,11 @@ jobs:
               'class="topicMaintenanceShell"',
               'class="topicMaintenanceBlur" inert',
               'Estamos teniendo problemas con el proyecto/tema.',
-              'link.removeAttribute("href")'
+              'link.removeAttribute("href")',
+              'async editOriginalPost(',
+              'function openTopicOriginalPostEditor(',
+              'data-edit-gallery-add',
+              "request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])"
           ]
           missing = [item for item in required if item not in source]
           if missing:

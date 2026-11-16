@@ -441,6 +441,13 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.get('deleted', false) == true
         && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.deletedByUid == request.auth.uid
         && (get(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.uid == request.auth.uid || isStaff())
+      ) || (
+        (canPublish() || isStaff())
+        && canParticipate()
+        && (isStaff() || resource.data.uid == request.auth.uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])
+        && request.resource.data.gallery is list
+        && request.resource.data.gallery.size() <= 30
       )
       );
       allow delete: if resource.data.b != 'reglas' && (

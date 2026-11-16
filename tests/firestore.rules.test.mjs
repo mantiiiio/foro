@@ -547,3 +547,39 @@ test("Reglas es una página informativa: ni miembros, ni staff ni OWNER pueden p
   await assertFails(deleteDoc(doc(moderator, "topics", "legacy-rules-topic", "ratings", "alice")));
   await assertFails(setDoc(doc(alice, "topics", "legacy-rules-topic", "ratings", "another-user"), { uid: "another-user", stars: 3, ts: 2 }));
 });
+
+
+test("el creador del tema y el staff pueden editar los archivos adjuntos, pero otros usuarios no", async () => {
+  await seed({
+    "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 },
+    "users/bob": { u: "bob", ts: 1, rulesAcceptedAt: 1 },
+    "staff/mod-1": { role: "moderator" },
+    "topics/topic-with-gallery": {
+      b: "gen", t: "Tema con archivos", u: "alice", uid: "alice",
+      ts: 1, lr: 1, lu: "alice", n: 0,
+      staffBadge: false, lastStaffBadge: false,
+      gallery: [{ type: "link", url: "https://example.com/old.zip", caption: "Antiguo" }],
+      maintenanceLocked: false, moderationHidden: false, moderationHiddenUntil: null
+    },
+    "posts/original-with-gallery": {
+      tp: "topic-with-gallery", u: "alice", uid: "alice",
+      x: "Texto original", ts: 1, staffBadge: false,
+      moderationHidden: false, moderationHiddenUntil: null
+    }
+  });
+  const alice = account("alice");
+  const bob = account("bob");
+  const moderator = account("mod-1");
+  const topicRef = doc(alice, "topics", "topic-with-gallery");
+  const replacement = [
+    { type: "image", url: "https://example.com/new-image.png", caption: "Imagen nueva" },
+    { type: "link", url: "magnet:?xt=urn:btih:abc123", caption: "Enlace nuevo" }
+  ];
+  await assertSucceeds(updateDoc(topicRef, { gallery: replacement }));
+  assert.deepEqual((await getDoc(topicRef)).data().gallery, replacement);
+  await assertFails(updateDoc(doc(bob, "topics", "topic-with-gallery"), { gallery: [] }));
+  await assertSucceeds(updateDoc(doc(moderator, "topics", "topic-with-gallery"), { gallery: [] }));
+  await assertFails(updateDoc(topicRef, { gallery: [], t: "No debe cambiar el título" }));
+  await assertFails(updateDoc(topicRef, { gallery: "No es una galería" }));
+  await assertFails(updateDoc(topicRef, { gallery: new Array(31).fill({ type: "link", url: "https://example.com" }) }));
+});
