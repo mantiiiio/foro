@@ -287,7 +287,7 @@ test("Firestore valida los tipos y las direcciones de cada adjunto al crear un t
     { type: "link", url: "https://example.com/" + "x".repeat(8192), caption: "No válido" }
   ])));
   await assertFails(setDoc(doc(alice, "topics", "too-many-items"), topicPayload(
-    new Array(31).fill({ type: "link", url: "https://example.com/archive.zip", caption: "Archivo" })
+    new Array(11).fill({ type: "link", url: "https://example.com/archive.zip", caption: "Archivo" })
   )));
 });
 test("solo el OWNER puede crear temas en Avisos del Staff y Nuevo proyecto", async () => {
@@ -601,7 +601,7 @@ test("el creador del tema y el staff pueden editar los archivos adjuntos, pero o
   await assertSucceeds(updateDoc(doc(moderator, "topics", "topic-with-gallery"), { gallery: [] }));
   await assertFails(updateDoc(topicRef, { gallery: [], t: "No debe cambiar el título" }));
   await assertFails(updateDoc(topicRef, { gallery: "No es una galería" }));
-  await assertFails(updateDoc(topicRef, { gallery: new Array(31).fill({ type: "link", url: "https://example.com", caption: "x" }) }));
+  await assertFails(updateDoc(topicRef, { gallery: new Array(11).fill({ type: "link", url: "https://example.com", caption: "x" }) }));
   await assertFails(updateDoc(topicRef, { gallery: [{ type: "link", url: "javascript:alert(1)", caption: "No válido" }] }));
   await assertFails(updateDoc(topicRef, { gallery: [{ type: "link", url: "ftp://example.com/file.zip", caption: "No válido" }] }));
   await assertFails(updateDoc(topicRef, { gallery: [{ type: "image", url: "http://example.com/image.png", caption: "No válido" }] }));

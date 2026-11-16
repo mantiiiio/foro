@@ -134,7 +134,7 @@ jobs:
           required = [
               "request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])",
               "request.resource.data.gallery is list",
-              "request.resource.data.gallery.size() <= 30",
+              "request.resource.data.gallery.size() <= 10",
               "function validGalleryEntry(entry)",
               "function validGalleryList(gallery)",
               "validGalleryList(request.resource.data.gallery)"
