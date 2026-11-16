@@ -167,7 +167,7 @@ test("las reglas de contenido no bloquean los enlaces al crear un tema y su prim
     staffBadge: true, lastStaffBadge: true,
     gallery: [
       { type: "link", url: mediafireUrl, caption: "Parche WinRAR" },
-      { type: "link", url: "ftp://files.example.com/archive.zip", caption: "Otro enlace externo" }
+      { type: "link", url: "https://files.example.com/archive.zip", caption: "Otro enlace externo" }
     ],
     moderationHidden: false, moderationHiddenUntil: null
   });
@@ -236,7 +236,7 @@ test("solo se pueden crear temas en categorías publicadas", async () => {
   }));
 });
 
-test("Firestore no valida los enlaces de la galería al crear un tema", async () => {
+test("Firestore valida los tipos y las direcciones de cada adjunto al crear un tema", async () => {
   await seed({
     "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 }
   });
@@ -254,21 +254,41 @@ test("Firestore no valida los enlaces de la galería al crear un tema", async ()
   await assertSucceeds(setDoc(doc(alice, "topics", "magnet-link"), topicPayload([
     { type: "link", url: "magnet:?xt=urn:btih:abc123", caption: "Torrent" }
   ])));
-  await assertSucceeds(setDoc(doc(alice, "topics", "magnet-as-image"), topicPayload([
-    { type: "image", url: "magnet:?xt=urn:btih:abc123", caption: "Dato de galería" }
-  ])));
-  await assertSucceeds(setDoc(doc(alice, "topics", "plain-link"), topicPayload([
-    { type: "link", url: "ftp://files.example.com/archivo.zip", caption: "Enlace externo" }
+  await assertSucceeds(setDoc(doc(alice, "topics", "https-image"), topicPayload([
+    { type: "image", url: "https://example.com/image.png", caption: "Imagen" }
   ])));
   await assertSucceeds(setDoc(doc(alice, "topics", "http-link"), topicPayload([
-    { type: "link", url: "http://example.com/archivo.torrent", caption: "Enlace HTTP" }
+    { type: "link", url: "http://example.com/archive.zip", caption: "Enlace HTTP" }
   ])));
   await assertSucceeds(setDoc(doc(alice, "topics", "https-link"), topicPayload([
-    { type: "link", url: "https://example.com/archivo.torrent", caption: "Enlace HTTPS" }
+    { type: "link", url: "https://example.com/archive.zip", caption: "Enlace HTTPS" }
   ])));
-  await assertSucceeds(setDoc(doc(alice, "topics", "javascript-link"), topicPayload([
-    { type: "link", url: "javascript:alert(1)", caption: "Valor de galería" }
+  await assertSucceeds(setDoc(doc(alice, "topics", "empty-gallery"), topicPayload([])));
+
+  await assertFails(setDoc(doc(alice, "topics", "javascript-link"), topicPayload([
+    { type: "link", url: "javascript:alert(1)", caption: "No válido" }
   ])));
+  await assertFails(setDoc(doc(alice, "topics", "ftp-link"), topicPayload([
+    { type: "link", url: "ftp://files.example.com/archive.zip", caption: "No válido" }
+  ])));
+  await assertFails(setDoc(doc(alice, "topics", "magnet-image"), topicPayload([
+    { type: "image", url: "magnet:?xt=urn:btih:abc123", caption: "No válido" }
+  ])));
+  await assertFails(setDoc(doc(alice, "topics", "extra-field"), topicPayload([
+    { type: "link", url: "https://example.com/archive.zip", caption: "No válido", onclick: "alert(1)" }
+  ])));
+  await assertFails(setDoc(doc(alice, "topics", "missing-caption"), topicPayload([
+    { type: "link", url: "https://example.com/archive.zip" }
+  ])));
+  await assertFails(setDoc(doc(alice, "topics", "oversized-caption"), topicPayload([
+    { type: "link", url: "https://example.com/archive.zip", caption: "x".repeat(81) }
+  ])));
+  await assertFails(setDoc(doc(alice, "topics", "oversized-url"), topicPayload([
+    { type: "link", url: "https://example.com/" + "x".repeat(8192), caption: "No válido" }
+  ])));
+  await assertFails(setDoc(doc(alice, "topics", "too-many-items"), topicPayload(
+    new Array(31).fill({ type: "link", url: "https://example.com/archive.zip", caption: "Archivo" })
+  )));
 });
 test("solo el OWNER puede crear temas en Avisos del Staff y Nuevo proyecto", async () => {
   await seed({
@@ -581,5 +601,8 @@ test("el creador del tema y el staff pueden editar los archivos adjuntos, pero o
   await assertSucceeds(updateDoc(doc(moderator, "topics", "topic-with-gallery"), { gallery: [] }));
   await assertFails(updateDoc(topicRef, { gallery: [], t: "No debe cambiar el título" }));
   await assertFails(updateDoc(topicRef, { gallery: "No es una galería" }));
-  await assertFails(updateDoc(topicRef, { gallery: new Array(31).fill({ type: "link", url: "https://example.com" }) }));
+  await assertFails(updateDoc(topicRef, { gallery: new Array(31).fill({ type: "link", url: "https://example.com", caption: "x" }) }));
+  await assertFails(updateDoc(topicRef, { gallery: [{ type: "link", url: "javascript:alert(1)", caption: "No válido" }] }));
+  await assertFails(updateDoc(topicRef, { gallery: [{ type: "link", url: "ftp://example.com/file.zip", caption: "No válido" }] }));
+  await assertFails(updateDoc(topicRef, { gallery: [{ type: "image", url: "http://example.com/image.png", caption: "No válido" }] }));
 });
