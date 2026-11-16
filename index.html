@@ -390,6 +390,9 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 const $ = s => document.querySelector(s);
+document.addEventListener("click",event=>{
+  if(event.target instanceof Element&&event.target.closest("[data-reload-page]"))location.reload();
+});
 const BL = BOARDS.flatMap(c => c[1]);
 const E = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const dt = t => { const d = typeof t === "number" ? new Date(t) : t?.toDate ? t.toDate() : new Date(t); return Number.isNaN(d.getTime()) ? "fecha desconocida" : d.toLocaleString("es-UY", {dateStyle:"medium",timeStyle:"short"}); };
@@ -2263,7 +2266,7 @@ async function go(){
     $("#moderationNotice").hidden=true;
     $("#nav").innerHTML='<b>VERIFICANDO ACCESO...</b> · <a href="/out">Cerrar sesión</a>';
     m.innerHTML=accessState==="error"
-      ?'<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, el contenido de la comunidad permanece oculto. Recarga la página o vuelve a iniciar sesión.</p><button type="button" onclick="location.reload()">Recargar</button></div>'
+      ?'<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, el contenido de la comunidad permanece oculto. Recarga la página o vuelve a iniciar sesión.</p><button type="button" data-reload-page>Recargar</button></div>'
       :'<div class="moderationLoading">Comprobando el estado de tu cuenta antes de mostrar el foro...</div>';
     return;
   }
@@ -2568,7 +2571,7 @@ function failClosedModerationAccess(uid,error){
   
   setSuspendedShell(true);
   if(routeKeyFromLocation()!=="#/out"&&$("#m")){
-    $("#m").innerHTML='<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, los foros, enlaces y archivos permanecen ocultos. Comprueba tu conexión y recarga la página.</p><button type="button" onclick="location.reload()">Recargar</button></div>';
+    $("#m").innerHTML='<div class="moderationLoading"><b>No se pudo verificar el estado de tu cuenta.</b><p>Por seguridad, los foros, enlaces y archivos permanecen ocultos. Comprueba tu conexión y recarga la página.</p><button type="button" data-reload-page>Recargar</button></div>';
   }
 }
 async function refreshOwnModerationFromServer(){
