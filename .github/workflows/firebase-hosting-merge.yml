@@ -190,7 +190,7 @@ jobs:
         run: |
           python3 -m pip install --quiet google-auth requests
           python3 - <<'PY'
-          import os, time
+          import os
           import google.auth
           from google.auth.transport.requests import Request
           import requests
@@ -216,31 +216,15 @@ jobs:
                   "Content-Type": "application/json"
               })
 
-              for api in ["recaptchaenterprise.googleapis.com", "firebaseappcheck.googleapis.com"]:
-                  response = session.post(
-                      f"https://serviceusage.googleapis.com/v1/projects/{PROJECT_ID}/services/{api}:enable",
-                      timeout=30
-                  )
-                  if response.status_code not in (200, 201, 409):
-                      raise RuntimeError(f"No se pudo habilitar {api} (HTTP {response.status_code}): {response.text[:500]}")
-                  operation = response.json()
-                  operation_name = operation.get("name")
-                  for _ in range(30):
-                      if not operation_name or operation.get("done", False):
-                          break
-                      time.sleep(2)
-                      poll = session.get("https://serviceusage.googleapis.com/v1/" + operation_name, timeout=30)
-                      if poll.ok:
-                          operation = poll.json()
-                      else:
-                          break
-                  if operation.get("error"):
-                      raise RuntimeError(f"Google no pudo habilitar {api}: {operation['error']}")
-
+              principal = getattr(credentials, "service_account_email", None) or getattr(credentials, "signer_email", None) or "no detectado"
+              output("principal_email", principal)
+              print("Cuenta de servicio de despliegue: " + principal)
+              print("Las APIs de reCAPTCHA Enterprise y Firebase App Check deben estar habilitadas por un propietario del proyecto.")
+              
               list_url = f"https://recaptchaenterprise.googleapis.com/v1/projects/{PROJECT_ID}/keys"
               listed = session.get(list_url, params={"pageSize": 100}, timeout=30)
               if not listed.ok:
-                  raise RuntimeError(f"No se pudieron consultar claves reCAPTCHA (HTTP {listed.status_code}): {listed.text[:500]}")
+                  raise RuntimeError(f"No se pudo consultar reCAPTCHA Enterprise (HTTP {listed.status_code}). Verifica que recaptchaenterprise.googleapis.com esté habilitada y que la cuenta de despliegue tenga roles/recaptchaenterprise.admin: {listed.text[:500]}")
               existing = next((
                   item for item in listed.json().get("keys", [])
                   if item.get("displayName") == DISPLAY_NAME
@@ -277,7 +261,7 @@ jobs:
                   timeout=30
               )
               if not configured.ok:
-                  raise RuntimeError(f"No se pudo registrar la clave en Firebase App Check (HTTP {configured.status_code}): {configured.text[:700]}")
+                  raise RuntimeError(f"No se pudo registrar la clave en Firebase App Check (HTTP {configured.status_code}). Habilita firebaseappcheck.googleapis.com y concede roles/firebaseappcheck.admin a la cuenta de despliegue: {configured.text[:700]}")
 
               service_name = f"projects/{PROJECT_NUMBER}/services/firestore.googleapis.com"
               monitoring = session.patch(
