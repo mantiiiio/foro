@@ -34,6 +34,56 @@ jobs:
           assert version == os.environ["GITHUB_SHA"], "El marcador local no coincide con el commit."
           PY
 
+      - name: Generate a strict Content Security Policy for this exact app build
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json
+          from pathlib import Path
+          source = Path("index.html").read_text(encoding="utf-8")
+          opening, closing = '<script type="module">', '</script>'
+          if opening not in source:
+              raise SystemExit("No se encontró el script de la aplicación para calcular su hash CSP.")
+          script = source.split(opening, 1)[1].split(closing, 1)[0]
+          digest = base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode("ascii")
+          config_path = Path("firebase.json")
+          config = json.loads(config_path.read_text(encoding="utf-8"))
+          header = next(
+              (item for group in config["hosting"]["headers"] if group["source"] == "**"
+               for item in group["headers"] if item["key"] == "Content-Security-Policy"),
+              None
+          )
+          if not header or "__MP_SCRIPT_HASH__" not in header["value"]:
+              raise SystemExit("No se encontró el marcador del hash CSP en firebase.json.")
+          header["value"] = header["value"].replace("__MP_SCRIPT_HASH__", "'sha256-" + digest + "'")
+          policy = header["value"]
+          if "script-src-attr 'none'" not in policy or "'unsafe-inline'" in policy.split("script-src ", 1)[1].split(";", 1)[0]:
+              raise SystemExit("La política CSP permite scripts inline no autorizados.")
+          if "'sha256-" + digest + "'" not in policy or "object-src 'none'" not in policy or "frame-ancestors 'none'" not in policy:
+              raise SystemExit("La política CSP no contiene todas las restricciones obligatorias.")
+          config_path.write_text(json.dumps(config, indent=2) + "\\n", encoding="utf-8")
+          print("CSP estricta generada y vinculada al hash SHA-256 del script de esta versión.")
+          PY
+
+
+
+      - name: Validate that CSP has no inline event handlers and the stamped script hash matches
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json
+          from pathlib import Path
+          source = Path("index.html").read_text(encoding="utf-8")
+          if 'onclick="' in source or 'onerror="' in source or 'onload="' in source:
+              raise SystemExit("Hay un manejador HTML inline que no funcionará bajo CSP.")
+          script = source.split('<script type="module">', 1)[1].split('</script>', 1)[0]
+          digest = base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode("ascii")
+          config = json.loads(Path("firebase.json").read_text(encoding="utf-8"))
+          policy = next(item["value"] for group in config["hosting"]["headers"] if group["source"] == "**"
+                        for item in group["headers"] if item["key"] == "Content-Security-Policy")
+          assert "'sha256-" + digest + "'" in policy, "El hash CSP no coincide con el script que se va a publicar."
+          assert "__MP_SCRIPT_HASH__" not in policy, "Quedó un marcador CSP sin reemplazar."
+          assert "script-src-attr 'none'" in policy and "object-src 'none'" in policy and "frame-ancestors 'none'" in policy
+          print("CSP comprobada: sin inline scripts ni manejadores HTML no autorizados.")
+          PY
 
       - name: Validate application JavaScript syntax
         run: |
@@ -84,12 +134,23 @@ jobs:
           required = [
               "request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])",
               "request.resource.data.gallery is list",
-              "request.resource.data.gallery.size() <= 30"
+              "request.resource.data.gallery.size() <= 30",
+              "function validGalleryEntry(entry)",
+              "function validGalleryList(gallery)",
+              "validGalleryList(request.resource.data.gallery)"
           ]
           missing = [item for item in required if item not in rules]
           if missing:
               raise SystemExit("Falta el permiso controlado para editar adjuntos en Firestore: " + ", ".join(missing))
           print("Permisos de edición de adjuntos verificados en firestore.rules.")
+          storage = Path("storage.rules").read_text(encoding="utf-8")
+          for marker in ["match /avatars/{uid}/{allPaths=**}", "allow write: if false;", "allow read, write: if false;"]:
+              if marker not in storage:
+                  raise SystemExit("Falta una restricción en storage.rules: " + marker)
+          firebase = __import__("json").loads(Path("firebase.json").read_text(encoding="utf-8"))
+          if firebase.get("storage", {}).get("rules") != "storage.rules":
+              raise SystemExit("Firebase Hosting/CLI no tiene vinculadas las reglas de Storage.")
+          print("Storage cerrado salvo lectura autenticada de avatares; despliegue de Storage configurado.")
           PY
 
       - name: Verify the retired online chat UI is absent
@@ -128,7 +189,7 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORO_66DD5 }}
 
       - name: Deploy Firestore rules before the live UI
-        run: firebase deploy --only firestore:rules --project foro-66dd5 --non-interactive
+        run: firebase deploy --only firestore:rules,storage --project foro-66dd5 --non-interactive
 
       - name: Deploy live site
         uses: FirebaseExtended/action-hosting-deploy@v0
