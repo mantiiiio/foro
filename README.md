@@ -60,7 +60,7 @@ Los roles no se conceden por nombre de usuario ni por texto del navegador. El pr
 
 Solo el propietario/co-owner/administrador ve el apartado **Administración**. El generador requiere elegir el rol y describir el propósito de cada invitación. Los tokens se generan con aleatoriedad criptográfica, se guarda únicamente SHA-256, vencen a los 7 días y se pueden usar una sola vez. Al reclamarse, el token queda bloqueado permanentemente y el rol se vincula al UID de Firebase. El titular debe usar una cuenta cuyo correo esté verificado. **Owner no es un rol emitible por token**: existe un único propietario y se configura directamente por UID. El token anterior de verificación genérica quedó retirado y no es válido para este sistema.
 
-El propietario único está configurado por UID en `index.html` y `firestore.rules`. Firebase Storage permanece desactivado y sus reglas en `storage.rules` no se despliegan mientras ese servicio no esté habilitado. El UID no es una contraseña. Nunca guardes contraseñas, tokens privados ni claves de servicio en el HTML o en el repositorio.
+El propietario único está configurado por UID en `index.html` y `firestore.rules`. Firebase Storage no se usa para subir archivos desde la web. Sus reglas sí se despliegan: bloquean todas las escrituras y solo permiten leer objetos antiguos de `avatars/` a cuentas registradas. El UID no es una contraseña. Nunca guardes contraseñas, tokens privados ni claves de servicio en el HTML o en el repositorio.
 
 ## GitHub Actions
 
@@ -70,7 +70,7 @@ Los workflows ya están creados en `.github/workflows/` y esperan el secreto pri
 firebase init hosting:github
 ```
 
-Selecciona `mantiiiio/foro` y la rama `main`. Si pregunta si debe sobrescribir los archivos YAML de workflows ya existentes, puedes aceptar; no reemplaces `index.html`. El CLI creará la cuenta de servicio, guardará su clave como secreto y escribirá los workflows correspondientes. Después, un push a `main` desplegará Hosting y las reglas de Firestore; los pull requests tendrán una URL de vista previa. El primer despliegue de Authentication y Hosting se hace desde tu CMD con `firebase deploy --only auth,firestore,hosting`; después, el workflow automático publica Hosting y las reglas de Firestore.
+Selecciona `mantiiiio/foro` y la rama `main`. Si pregunta si debe sobrescribir los archivos YAML de workflows ya existentes, puedes aceptar; no reemplaces `index.html`. El CLI creará la cuenta de servicio, guardará su clave como secreto y escribirá los workflows correspondientes. Después, un push a `main` desplegará Hosting y las reglas de Firestore y Storage; los pull requests tendrán una URL de vista previa. El primer despliegue de Authentication y Hosting se hace desde tu CMD con `firebase deploy --only auth,firestore,hosting`; después, el workflow automático publica Hosting y las reglas de Firestore.
 
 ## Multimedia y permisos
 
@@ -96,7 +96,7 @@ Firebase Storage permanece desactivado (`STORAGE_ENABLED=false`), así que no ha
 GitHub Actions publica Hosting y las reglas de Firestore en cada push a `main`. Si necesitas hacerlo manualmente, ejecuta desde la carpeta del proyecto:
 
 ```cmd
-firebase deploy --only firestore:rules --project foro-66dd5
+firebase deploy --only firestore:rules,storage --project foro-66dd5
 ```
 
 El Owner se identifica por el UID configurado en `index.html` y `firestore.rules`. Para conservar tu administración, inicia sesión con la cuenta original usando **Entrar** (no crees una cuenta nueva cada vez) y visita siempre el mismo dominio del foro.
