@@ -143,14 +143,10 @@ jobs:
           if missing:
               raise SystemExit("Falta el permiso controlado para editar adjuntos en Firestore: " + ", ".join(missing))
           print("Permisos de edición de adjuntos verificados en firestore.rules.")
-          storage = Path("storage.rules").read_text(encoding="utf-8")
-          for marker in ["match /avatars/{uid}/{allPaths=**}", "allow write: if false;", "allow read, write: if false;"]:
-              if marker not in storage:
-                  raise SystemExit("Falta una restricción en storage.rules: " + marker)
-          firebase = __import__("json").loads(Path("firebase.json").read_text(encoding="utf-8"))
-          if firebase.get("storage", {}).get("rules") != "storage.rules":
-              raise SystemExit("Firebase Hosting/CLI no tiene vinculadas las reglas de Storage.")
-          print("Storage cerrado salvo lectura autenticada de avatares; despliegue de Storage configurado.")
+          # Firebase Storage está deshabilitado en este proyecto y la aplicación no lo utiliza.
+          if "storage" in __import__("json").loads(Path("firebase.json").read_text(encoding="utf-8")):
+              raise SystemExit("No se debe desplegar Firebase Storage mientras el producto no esté habilitado.")
+          print("Storage no se utiliza ni se despliega; las subidas desde la aplicación están deshabilitadas.")
           PY
 
       - name: Verify the retired online chat UI is absent
@@ -189,7 +185,7 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORO_66DD5 }}
 
       - name: Deploy Firestore rules before the live UI
-        run: firebase deploy --only firestore:rules,storage --project foro-66dd5 --non-interactive
+        run: firebase deploy --only firestore:rules --project foro-66dd5 --non-interactive
 
       - name: Deploy live site
         uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0.11.0
