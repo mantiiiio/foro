@@ -298,6 +298,7 @@ body{display:block!important;width:calc(100% - 12px)!important;max-width:1120px!
 // NUNCA pongas aquí contraseñas, tokens privados ni claves de servicio.
 // ============================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js";
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, signOut, signInAnonymously, updateProfile,
@@ -331,6 +332,7 @@ const FB = {
   measurementId: "G-NC7LRR4M1F"
 };
 // Configura tu UID como propietario del foro. No uses tokens para conceder el rol de propietario.
+const APP_CHECK_SITE_KEY = "__MP_APP_CHECK_SITE_KEY__";
 const OWNER_UID = "YgTAVFNclBgScVybW82xE0jKJg32";
 const ADMINS_UID = []; // Compatibilidad para administradores antiguos; los nuevos roles se guardan en Firestore.
 const MODERATORS_UID = []; // Compatibilidad para moderadores antiguos.
@@ -2524,7 +2526,11 @@ function renderTopicExternalMediaPreview(text){
 // Inicio Firebase y sesión de invitado
 async function startFirebase(){
   try{
-    app=initializeApp(FB);auth=getAuth(app);db=getFirestore(app);
+    app=initializeApp(FB);
+    if(APP_CHECK_SITE_KEY && !APP_CHECK_SITE_KEY.startsWith("__")){
+      initializeAppCheck(app,{provider:new ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY),isTokenAutoRefreshEnabled:true});
+    }
+    auth=getAuth(app);db=getFirestore(app);
     if(STORAGE_ENABLED && FB.storageBucket)storage=getStorage(app);
     await setPersistence(auth,browserLocalPersistence);
     await new Promise((resolve,reject)=>{
