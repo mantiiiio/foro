@@ -1872,7 +1872,7 @@ function neu(m,id){
   if(savedDraft){
     $("#ti").value=String(savedDraft.title||"").slice(0,100);
     $("#tx").value=String(savedDraft.message||"").slice(0,6000);
-    const savedGallery=Array.isArray(savedDraft.gallery)?savedDraft.gallery.slice(0,10:[];
+    const savedGallery=Array.isArray(savedDraft.gallery)?savedDraft.gallery.slice(0,10):[];
     if(savedGallery.length){
       galleryEditor.hidden=false;
       $("#topicGalleryToggle").textContent="▾ Agregar imágenes o enlaces (opcional)";
