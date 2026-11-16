@@ -5,3 +5,13 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 *.log
+
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.pem
+*.p12
+*service-account*.json
+*serviceAccount*.json
