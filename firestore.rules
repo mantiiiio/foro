@@ -222,6 +222,7 @@ service cloud.firestore {
       return value is string && value.size() > 0 && value.size() <= max;
     }
     // Los adjuntos se validan en servidor; nunca se confía en la validación del navegador.
+    // Los adjuntos se validan en servidor; nunca se confía en la validación del navegador.
     function validGalleryEntry(entry) {
       return entry is map
         && entry.keys().hasOnly(['type','url','caption'])
@@ -233,7 +234,51 @@ service cloud.firestore {
         && entry.caption is string
         && entry.caption.size() <= 80
         && (
-          (entry.type == 'image' && entry.url.matches('^https://[^\\s]+
+          (entry.type == 'image' && entry.url.matches('^https://[^\\s]+$'))
+          || (
+            entry.type == 'link'
+            && (
+              entry.url.matches('^https?://[^\\s]+$')
+              || entry.url.matches('^magnet:\\?.*xt=urn:(btih|btmh):[A-Za-z0-9]+.*$')
+            )
+          )
+        );
+    }
+    function validGalleryList(gallery) {
+      return gallery is list
+        && gallery.size() <= 30
+        &&         (gallery.size() <= 0 || validGalleryEntry(gallery[0]))
+        &&         (gallery.size() <= 1 || validGalleryEntry(gallery[1]))
+        &&         (gallery.size() <= 2 || validGalleryEntry(gallery[2]))
+        &&         (gallery.size() <= 3 || validGalleryEntry(gallery[3]))
+        &&         (gallery.size() <= 4 || validGalleryEntry(gallery[4]))
+        &&         (gallery.size() <= 5 || validGalleryEntry(gallery[5]))
+        &&         (gallery.size() <= 6 || validGalleryEntry(gallery[6]))
+        &&         (gallery.size() <= 7 || validGalleryEntry(gallery[7]))
+        &&         (gallery.size() <= 8 || validGalleryEntry(gallery[8]))
+        &&         (gallery.size() <= 9 || validGalleryEntry(gallery[9]))
+        &&         (gallery.size() <= 10 || validGalleryEntry(gallery[10]))
+        &&         (gallery.size() <= 11 || validGalleryEntry(gallery[11]))
+        &&         (gallery.size() <= 12 || validGalleryEntry(gallery[12]))
+        &&         (gallery.size() <= 13 || validGalleryEntry(gallery[13]))
+        &&         (gallery.size() <= 14 || validGalleryEntry(gallery[14]))
+        &&         (gallery.size() <= 15 || validGalleryEntry(gallery[15]))
+        &&         (gallery.size() <= 16 || validGalleryEntry(gallery[16]))
+        &&         (gallery.size() <= 17 || validGalleryEntry(gallery[17]))
+        &&         (gallery.size() <= 18 || validGalleryEntry(gallery[18]))
+        &&         (gallery.size() <= 19 || validGalleryEntry(gallery[19]))
+        &&         (gallery.size() <= 20 || validGalleryEntry(gallery[20]))
+        &&         (gallery.size() <= 21 || validGalleryEntry(gallery[21]))
+        &&         (gallery.size() <= 22 || validGalleryEntry(gallery[22]))
+        &&         (gallery.size() <= 23 || validGalleryEntry(gallery[23]))
+        &&         (gallery.size() <= 24 || validGalleryEntry(gallery[24]))
+        &&         (gallery.size() <= 25 || validGalleryEntry(gallery[25]))
+        &&         (gallery.size() <= 26 || validGalleryEntry(gallery[26]))
+        &&         (gallery.size() <= 27 || validGalleryEntry(gallery[27]))
+        &&         (gallery.size() <= 28 || validGalleryEntry(gallery[28]))
+        &&         (gallery.size() <= 29 || validGalleryEntry(gallery[29]));
+    }
+
     // Filtro adicional en servidor para amenazas explícitas e insultos dirigidos.
     function automodSafe(value) {
       return value is string
