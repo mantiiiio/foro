@@ -43,6 +43,21 @@ jobs:
       - name: Generate a temporary lockfile for an exact audit snapshot
         run: npm install --package-lock-only --ignore-scripts --no-audit
 
+      - name: Verify the patched gRPC dependency is used everywhere
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
+          const grpc = Object.entries(lock.packages || {})
+            .filter(([path]) => path.endsWith("node_modules/@grpc/grpc-js"));
+          if (!grpc.length) throw new Error("No se encontró @grpc/grpc-js en el lockfile.");
+          const invalid = grpc.filter(([, item]) => item.version !== "1.14.7");
+          if (invalid.length) {
+            throw new Error("Se encontró @grpc/grpc-js distinto de 1.14.7: " + JSON.stringify(invalid));
+          }
+          console.log(`Correcto: ${grpc.length} instalación(es) de @grpc/grpc-js usan la versión corregida 1.14.7.`);
+          NODE
+
       - name: Run npm audit and report affected packages
         shell: bash
         run: |
@@ -69,8 +84,8 @@ jobs:
           const totals = report.metadata?.vulnerabilities || {};
           const vulnerabilities = Object.entries(report.vulnerabilities || {});
           console.log("Resumen de vulnerabilidades:", JSON.stringify(totals));
-          if (Number(totals.critical || 0) > 0) {
-            console.error("Se encontraron vulnerabilidades críticas.");
+          if (Number(totals.critical || 0) > 0 || Number(totals.high || 0) > 0) {
+            console.error("Se encontraron vulnerabilidades altas o críticas.");
             process.exit(1);
           }
           for (const [name, item] of vulnerabilities) {
