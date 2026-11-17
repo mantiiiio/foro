@@ -1784,7 +1784,10 @@ async function thr(m,id){
     e.preventDefault();
     const i=Number(a.dataset.d);
     if(i===0){
-      if(!confirm("¿Eliminar definitivamente este tema, su publicación inicial, todos sus comentarios y sus valoraciones? Esta acción no se puede deshacer."))return;
+      const deleteMessage=isStaff()
+       ?"¿Eliminar definitivamente este tema, su publicación inicial, todos sus comentarios y sus valoraciones? Esta acción no se puede deshacer."
+       :"¿Eliminar definitivamente este tema, su publicación inicial, los comentarios visibles y sus valoraciones? Las respuestas ya ocultas por moderación, si existen, permanecerán privadas para el staff.";
+     if(!confirm(deleteMessage))return;
       a.textContent="[eliminando tema…]";a.style.pointerEvents="none";
       try{await Store.deleteTopic(id);location.hash="#/b/"+encodeURIComponent(t.b);}
       catch(z){alert(errText(z));a.textContent="[eliminar tema]";a.style.pointerEvents="";}
