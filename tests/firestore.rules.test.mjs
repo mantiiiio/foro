@@ -134,6 +134,13 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
       ts: 2, lr: 2, lu: "alice", n: 1,
       moderationHidden: true, moderationHiddenUntil: null
     },
+    "topics/topic-locked": {
+      b: "gen", t: "Tema en mantenimiento", u: "alice", uid: "alice",
+      ts: 3, lr: 3, lu: "alice", n: 0,
+      maintenanceLocked: true,
+      moderationHidden: false, moderationHiddenUntil: null
+    },
+    "users/alice": { u: "alice", ts: 1, rulesAcceptedAt: 1 },
     "topics/legacy-topic": {
       b: "gen", t: "Tema anterior", u: "alice", uid: "alice",
       ts: 6, lr: 6, lu: "alice", n: 0
@@ -163,8 +170,50 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
   });
 
   const member = account("member");
+  const alice = account("alice");
   const moderator = account("mod-1");
 
+  // La interfaz puede ocultar estas acciones, pero las reglas del servidor también deben impedirlas.
+  await assertFails(deleteDoc(doc(alice, "posts", "post-hidden")));
+  await assertFails(updateDoc(doc(alice, "posts", "post-hidden"), {
+    x: "Intento de editar una respuesta moderada"
+  }));
+  await assertFails(deleteDoc(doc(alice, "posts", "post-in-hidden-topic")));
+  await assertFails(deleteDoc(doc(alice, "topics", "topic-hidden")));
+
+  const hiddenTopicReply = writeBatch(alice);
+  hiddenTopicReply.set(doc(alice, "userRateLimits", "alice"), {
+    lastPostAt: serverTimestamp(), lastPostId: "reply-to-hidden-topic"
+  }, { merge: true });
+  hiddenTopicReply.set(doc(alice, "posts", "reply-to-hidden-topic"), {
+    tp: "topic-hidden", u: "alice", uid: "alice",
+    x: "No debe poder responderse a un tema oculto", ts: 8,
+    staffBadge: false, moderationHidden: false, moderationHiddenUntil: null
+  });
+  hiddenTopicReply.update(doc(alice, "topics", "topic-hidden"), {
+    lr: 8, lu: "alice", n: 2, lastStaffBadge: false,
+    lastCreatedPostId: "reply-to-hidden-topic"
+  });
+  await assertFails(hiddenTopicReply.commit());
+
+  const lockedTopicReply = writeBatch(alice);
+  lockedTopicReply.set(doc(alice, "userRateLimits", "alice"), {
+    lastPostAt: serverTimestamp(), lastPostId: "reply-to-locked-topic"
+  }, { merge: true });
+  lockedTopicReply.set(doc(alice, "posts", "reply-to-locked-topic"), {
+    tp: "topic-locked", u: "alice", uid: "alice",
+    x: "No debe poder responderse a un tema bloqueado", ts: 9,
+    staffBadge: false, moderationHidden: false, moderationHiddenUntil: null
+  });
+  lockedTopicReply.update(doc(alice, "topics", "topic-locked"), {
+    lr: 9, lu: "alice", n: 1, lastStaffBadge: false,
+    lastCreatedPostId: "reply-to-locked-topic"
+  });
+  await assertFails(lockedTopicReply.commit());
+
+  await assertSucceeds(updateDoc(doc(alice, "posts", "post-public"), {
+    x: "Edición permitida en una respuesta visible de un tema público"
+  }));
   await assertSucceeds(getDoc(doc(member, "topics", "topic-public")));
   await assertSucceeds(getDoc(doc(member, "posts", "post-public")));
   await assertSucceeds(getDoc(doc(member, "topics", "legacy-topic")));
@@ -207,6 +256,8 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
   await assertSucceeds(getDocs(collection(moderator, "posts")));
   await assertSucceeds(getDocs(query(collection(moderator, "posts"), where("tp", "==", "topic-public"))));
   await assertSucceeds(getDocs(collection(moderator, "topics", "topic-hidden", "ratings")));
+  await assertSucceeds(deleteDoc(doc(moderator, "posts", "post-hidden")));
+  await assertSucceeds(deleteDoc(doc(moderator, "topics", "topic-hidden")));
 });
 
 test("una cuenta sin verificar puede leer el foro, pero no crear temas ni respuestas", async () => {

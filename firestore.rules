@@ -101,6 +101,17 @@ service cloud.firestore {
         && get(topicPath).data.get('moderationHidden', false) == false
         && get(topicPath).data.b != 'reglas';
     }
+    // Una cuenta normal puede editar o borrar contenido solamente si el tema padre
+    // sigue siendo visible y no está bloqueado por mantenimiento. Los posts históricos
+    // cuyo tema ya no existe conservan el tratamiento anterior.
+    function topicAllowsUserMutation(topicId) {
+      let topicPath = /databases/$(database)/documents/topics/$(topicId);
+      return !exists(topicPath) || (
+        get(topicPath).data.get('moderationHidden', false) == false
+        && get(topicPath).data.get('maintenanceLocked', false) == false
+        && get(topicPath).data.b != 'reglas'
+      );
+    }
     // Los posts antiguos pueden no tener ya un tema padre; solo se bloquea escritura si el tema existe y es Reglas.
     function postTopicAllowsWrites() {
       let topicPath = /databases/$(database)/documents/topics/$(resource.data.tp);
@@ -459,6 +470,19 @@ service cloud.firestore {
         && request.resource.data.ts is int
         && request.resource.data.lr is int
         && request.resource.data.b != 'reglas';
+      // Regla específica primero para que las validaciones costosas de otras ramas
+      // no agoten el presupuesto al editar una galería válida.
+      allow update: if resource.data.b != 'reglas'
+        && (canPublish() || isStaff())
+        && canParticipate()
+        && (isStaff() || (
+          resource.data.uid == request.auth.uid
+          && resource.data.get('moderationHidden', false) == false
+        ))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])
+        && request.resource.data.gallery is list
+        && request.resource.data.gallery.size() <= 10
+        && validGalleryList(request.resource.data.gallery);
       allow update: if resource.data.b != 'reglas' && (
 (
         registered()
@@ -474,6 +498,8 @@ service cloud.firestore {
       ) || (
         verifiedMember()
         && canParticipate()
+        && resource.data.get('moderationHidden', false) == false
+        && resource.data.get('maintenanceLocked', false) == false
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lr','lu','n','lastStaffBadge','lastCreatedPostId'])
         && request.resource.data.n == resource.data.n + 1
         && request.resource.data.lr is int
@@ -491,24 +517,19 @@ service cloud.firestore {
       ) || (
         registered()
         && canParticipate()
+        && resource.data.get('moderationHidden', false) == false
+        && resource.data.get('maintenanceLocked', false) == false
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['n','lastDeletedPostId'])
         && resource.data.n > 0
         && request.resource.data.n == resource.data.n - 1
         && request.resource.data.lastDeletedPostId is string
         && exists(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId))
         && get(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.tp == topicId
+        && get(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.get('moderationHidden', false) == false
         && get(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.get('deleted', false) != true
         && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.get('deleted', false) == true
         && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.deletedByUid == request.auth.uid
         && (get(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.uid == request.auth.uid || isStaff())
-      ) || (
-        (canPublish() || isStaff())
-        && canParticipate()
-        && (isStaff() || resource.data.uid == request.auth.uid)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])
-        && request.resource.data.gallery is list
-        && request.resource.data.gallery.size() <= 10
-        && validGalleryList(request.resource.data.gallery)
       )
       );
       allow delete: if resource.data.b != 'reglas' && (
@@ -516,6 +537,7 @@ service cloud.firestore {
         registered()
         && canParticipate()
         && resource.data.uid == request.auth.uid
+        && resource.data.get('moderationHidden', false) == false
         && resource.data.b != 'reglas'
       )
       );
@@ -577,7 +599,9 @@ service cloud.firestore {
         && request.resource.data.moderationHidden == false
         && request.resource.data.moderationHiddenUntil == null
         && existsAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp))
-        && getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas';
+        && getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.b != 'reglas'
+        && getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.get('moderationHidden', false) == false
+        && getAfter(/databases/$(database)/documents/topics/$(request.resource.data.tp)).data.get('maintenanceLocked', false) == false;
       allow update: if (isAdmin() && canParticipate() && postTopicAllowsWrites()) || (
         ((isStaff() && canParticipate()) || (canHideOwnContentAfterAutoBan() && resource.data.uid == request.auth.uid))
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationHidden','moderationHiddenUntil'])
@@ -611,8 +635,9 @@ service cloud.firestore {
         verifiedMember()
         && canParticipate()
         && resource.data.uid == request.auth.uid
+        && resource.data.get('moderationHidden', false) == false
+        && topicAllowsUserMutation(resource.data.tp)
         && resource.data.get('deleted', false) != true
-        && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x'])
         && request.resource.data.x is string
         && request.resource.data.x.size() > 0
@@ -622,7 +647,8 @@ service cloud.firestore {
         registered()
         && canParticipate()
         && resource.data.uid == request.auth.uid
-        && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
+        && resource.data.get('moderationHidden', false) == false
+        && topicAllowsUserMutation(resource.data.tp)
         && resource.data.get('deleted', false) != true
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x','deleted','deletedBy','deletedByUid','deletedAt','deletedQuoteHash'])
         && request.resource.data.x == ''
@@ -636,7 +662,8 @@ service cloud.firestore {
       allow delete: if (isStaff() && canParticipate() && postTopicAllowsWrites()) || (
         registered()
         && canParticipate()
-        && get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.b != 'reglas'
+        && resource.data.get('moderationHidden', false) == false
+        && topicAllowsUserMutation(resource.data.tp)
         && (
           resource.data.uid == request.auth.uid
           || get(/databases/$(database)/documents/topics/$(resource.data.tp)).data.uid == request.auth.uid
