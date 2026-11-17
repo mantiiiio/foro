@@ -60,6 +60,14 @@ jobs:
       - name: Run internal navigation unit tests
         run: npm run test:navigation
 
+      - name: Validate Cloudflare Worker and App Check test syntax
+        run: |
+          node --check cloudflare/appcheck-turnstile-worker.js
+          node --check tests/cloudflare-appcheck-worker.test.mjs
+
+      - name: Run Cloudflare App Check Worker unit tests
+        run: npm run test:app-check-worker
+
       - name: Run Firestore security tests in the local emulator
         run: firebase emulators:exec --only firestore --project demo-mantipobres-rules "npm run test:rules"
 
