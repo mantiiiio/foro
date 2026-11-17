@@ -82,13 +82,18 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
       x: "Respuesta oculta", ts: 4, staffBadge: false,
       moderationHidden: true, moderationHiddenUntil: null
     },
+    "posts/post-in-hidden-topic": {
+      tp: "topic-hidden", uid: "alice", u: "alice",
+      x: "Respuesta visible dentro de un tema oculto", ts: 5, staffBadge: false,
+      moderationHidden: false, moderationHiddenUntil: null
+    },
     "users/alice": { u: "alice", ts: 1 },
     "topics/topic-public/ratings/vote-1": { uid: "alice", stars: 5, ts: 1 }
   });
 
   const guest = account("guest", { provider: "anonymous" });
   const publicTopics = query(collection(guest, "topics"), where("moderationHidden", "==", false));
-  const publicPosts = query(collection(guest, "posts"), where("moderationHidden", "==", false));
+  const publicPosts = query(collection(guest, "posts"), where("tp", "==", "topic-public"), where("moderationHidden", "==", false));
 
   await assertSucceeds(getDoc(doc(guest, "topics", "topic-public")));
   await assertSucceeds(getDocs(publicTopics));
@@ -97,6 +102,9 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
   await assertSucceeds(getDocs(publicPosts));
   await assertFails(getDocs(collection(guest, "posts")));
   await assertFails(getDoc(doc(guest, "posts", "post-hidden")));
+  await assertFails(getDoc(doc(guest, "posts", "post-in-hidden-topic")));
+  const hiddenTopicPosts = query(collection(guest, "posts"), where("tp", "==", "topic-hidden"), where("moderationHidden", "==", false));
+  await assertFails(getDocs(hiddenTopicPosts));
   await assertFails(getDoc(doc(guest, "users", "alice")));
   await assertFails(getDoc(doc(guest, "topics", "topic-public", "ratings", "vote-1")));
 
