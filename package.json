@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test:rules": "node --test tests/firestore.rules.test.mjs",
-    "test:board-search": "node --test tests/board-search.test.mjs"
+    "test:board-search": "node --test tests/board-search.test.mjs",
+    "test:navigation": "node --test tests/app-navigation.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "6.0.0",
