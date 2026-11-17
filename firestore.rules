@@ -79,6 +79,15 @@ service cloud.firestore {
     function isPubliclyVisibleContent() {
       return resource.data.moderationHidden == false;
     }
+    // Un visitante anónimo no puede leer respuestas cuyo tema padre está oculto.
+    // Se conservan los posts históricos sin tema padre, pero no los vinculados a Reglas.
+    function postTopicAllowsPublicReads() {
+      let topicPath = /databases/$(database)/documents/topics/$(resource.data.tp);
+      return !exists(topicPath) || (
+        get(topicPath).data.moderationHidden == false
+        && get(topicPath).data.b != 'reglas'
+      );
+    }
     // Los posts antiguos pueden no tener ya un tema padre; solo se bloquea escritura si el tema existe y es Reglas.
     function postTopicAllowsWrites() {
       let topicPath = /databases/$(database)/documents/topics/$(resource.data.tp);
@@ -533,7 +542,7 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if canReadCommunity() || (publicReadOnlyVisitor() && isPubliclyVisibleContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
+      allow read: if canReadCommunity() || (publicReadOnlyVisitor() && isPubliclyVisibleContent() && postTopicAllowsPublicReads()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
       allow create: if canPublish()
         && canParticipate()
         && hasFreshPostRateLimit(request.auth.uid, postId)
