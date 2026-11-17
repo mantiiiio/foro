@@ -122,6 +122,59 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
   }));
 });
 
+test("el contenido oculto no es legible por miembros normales, pero sigue disponible para moderación", async () => {
+  await seed({
+    "topics/topic-public": {
+      b: "gen", t: "Tema público", u: "alice", uid: "alice",
+      ts: 1, lr: 1, lu: "alice", n: 1,
+      moderationHidden: false, moderationHiddenUntil: null
+    },
+    "topics/topic-hidden": {
+      b: "gen", t: "Tema oculto", u: "alice", uid: "alice",
+      ts: 2, lr: 2, lu: "alice", n: 1,
+      moderationHidden: true, moderationHiddenUntil: null
+    },
+    "posts/post-public": {
+      tp: "topic-public", uid: "alice", u: "alice",
+      x: "Respuesta pública", ts: 3, moderationHidden: false,
+      moderationHiddenUntil: null
+    },
+    "posts/post-hidden": {
+      tp: "topic-public", uid: "alice", u: "alice",
+      x: "Respuesta ocultada", ts: 4, moderationHidden: true,
+      moderationHiddenUntil: null
+    },
+    "posts/post-in-hidden-topic": {
+      tp: "topic-hidden", uid: "alice", u: "alice",
+      x: "Respuesta de tema oculto", ts: 5, moderationHidden: false,
+      moderationHiddenUntil: null
+    },
+    "topics/topic-hidden/ratings/vote-hidden": { uid: "alice", stars: 5, ts: 1 },
+    "staff/mod-1": { role: "moderator" }
+  });
+
+  const member = account("member");
+  const moderator = account("mod-1");
+
+  await assertSucceeds(getDoc(doc(member, "topics", "topic-public")));
+  await assertSucceeds(getDoc(doc(member, "posts", "post-public")));
+  await assertFails(getDoc(doc(member, "topics", "topic-hidden")));
+  await assertFails(getDoc(doc(member, "posts", "post-hidden")));
+  await assertFails(getDoc(doc(member, "posts", "post-in-hidden-topic")));
+  await assertFails(getDoc(doc(member, "topics", "topic-hidden", "ratings", "vote-hidden")));
+  await assertFails(setDoc(doc(member, "topics", "topic-hidden", "ratings", "member"), {
+    uid: "member", stars: 4, ts: 2
+  }));
+  await assertFails(updateDoc(doc(member, "topics", "topic-hidden", "ratings", "vote-hidden"), {
+    stars: 1, ts: 2
+  }));
+
+  await assertSucceeds(getDoc(doc(moderator, "topics", "topic-hidden")));
+  await assertSucceeds(getDoc(doc(moderator, "posts", "post-hidden")));
+  await assertSucceeds(getDoc(doc(moderator, "posts", "post-in-hidden-topic")));
+  await assertSucceeds(getDoc(doc(moderator, "topics", "topic-hidden", "ratings", "vote-hidden")));
+});
+
 test("una cuenta sin verificar puede leer el foro, pero no crear temas ni respuestas", async () => {
   await seed({
     "topics/topic-1": {
