@@ -177,6 +177,9 @@ jobs:
       - name: Run board search unit tests
         run: npm run test:board-search
 
+      - name: Run internal navigation unit tests
+        run: npm run test:navigation
+
       - name: Run Firestore security tests in the local emulator
         run: firebase emulators:exec --only firestore --project demo-mantipobres-rules "npm run test:rules"
 
@@ -187,7 +190,6 @@ jobs:
 
       - name: Create or reuse a reCAPTCHA Enterprise key and register Firebase App Check
         id: appcheck
-        continue-on-error: true
         run: |
           python3 -m pip install --quiet google-auth requests
           python3 - <<'PY'
@@ -206,7 +208,7 @@ jobs:
           def output(name, value):
               safe_value = " ".join(str(value).splitlines()).replace("\\r", " ").replace("\\n", " ")
               with open(OUTPUT, "a", encoding="utf-8") as handle:
-                  handle.write(name + "=" + safe_value + "\\n")
+                  handle.write(name + "=" + safe_value + "\n")
 
           try:
               credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
@@ -311,7 +313,7 @@ jobs:
           header["value"], count = re.subn(r"'sha256-[^']+'", "'sha256-" + digest + "'", header["value"], count=1)
           if count != 1:
               raise SystemExit("No se pudo recalcular el hash CSP.")
-          config_path.write_text(json.dumps(config, indent=2) + "\\n", encoding="utf-8")
+          config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
           print("Clave pública de App Check incorporada y hash CSP actualizado.")
           PY
           python3 - <<'PY'
