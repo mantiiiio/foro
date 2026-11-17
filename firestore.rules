@@ -470,6 +470,19 @@ service cloud.firestore {
         && request.resource.data.ts is int
         && request.resource.data.lr is int
         && request.resource.data.b != 'reglas';
+      // Regla específica primero para que las validaciones costosas de otras ramas
+      // no agoten el presupuesto al editar una galería válida.
+      allow update: if resource.data.b != 'reglas'
+        && (canPublish() || isStaff())
+        && canParticipate()
+        && (isStaff() || (
+          resource.data.uid == request.auth.uid
+          && resource.data.get('moderationHidden', false) == false
+        ))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])
+        && request.resource.data.gallery is list
+        && request.resource.data.gallery.size() <= 10
+        && validGalleryList(request.resource.data.gallery);
       allow update: if resource.data.b != 'reglas' && (
 (
         registered()
@@ -517,15 +530,6 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.get('deleted', false) == true
         && getAfter(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.deletedByUid == request.auth.uid
         && (get(/databases/$(database)/documents/posts/$(request.resource.data.lastDeletedPostId)).data.uid == request.auth.uid || isStaff())
-      ) || (
-        (canPublish() || isStaff())
-        && canParticipate()
-        && (isStaff() || resource.data.uid == request.auth.uid)
-        && (isStaff() || resource.data.get('moderationHidden', false) == false)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gallery'])
-        && request.resource.data.gallery is list
-        && request.resource.data.gallery.size() <= 10
-        && validGalleryList(request.resource.data.gallery)
       )
       );
       allow delete: if resource.data.b != 'reglas' && (
