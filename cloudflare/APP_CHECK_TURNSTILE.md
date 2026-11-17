@@ -1,6 +1,6 @@
 # Firebase App Check con Cloudflare Turnstile
 
-Esta integración permite emitir tokens reales de Firebase App Check después de validar una prueba de Cloudflare Turnstile. Está pensada para Firebase Hosting y Cloudflare Workers Free.
+Esta integración permite emitir tokens reales de Firebase App Check después de validar una prueba de Cloudflare Turnstile. Está diseñada para probarse primero en Cloudflare Workers Free, pero **no se garantiza que cada petición quepa en el límite gratuito de CPU**: Free limita cada petición a 10 ms de CPU (la espera de red no cuenta). La importación de la clave y las dos firmas RS256 pueden consumir parte de ese presupuesto. Tras desplegarla, revisa Workers & Pages → Metrics → CPU time; si aparecen errores 1102 / `exceededCpu`, no pagues ni actives enforcement: habrá que rediseñar la emisión o descartar esta opción gratuita.
 
 **Estado inicial:** el código del Worker y el cliente se pueden publicar sin activar App Check. El cliente solo inicializa el proveedor cuando se configura `APP_CHECK_WORKER_URL` en `index.html`. No actives la aplicación forzosa en Firebase hasta completar las pruebas y revisar las métricas.
 
