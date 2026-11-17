@@ -70,6 +70,10 @@ jobs:
           const totals = report.metadata?.vulnerabilities || {};
           const vulnerabilities = Object.entries(report.vulnerabilities || {});
           console.log("Resumen de vulnerabilidades:", JSON.stringify(totals));
+          if (Number(totals.critical || 0) > 0) {
+            console.error("Se encontraron vulnerabilidades críticas.");
+            process.exit(1);
+          }
           for (const [name, item] of vulnerabilities) {
             const via = (item.via || [])
               .filter(entry => entry && typeof entry === "object")
@@ -106,8 +110,4 @@ jobs:
           if [ "$audit_status" -gt 1 ]; then
             echo "npm audit terminó con un error de ejecución (código $audit_status)." >&2
             exit "$audit_status"
-          fi
-          if [ "${report_critical:-0}" -gt 0 ]; then
-            echo "Se encontraron vulnerabilidades críticas." >&2
-            exit 1
           fi
