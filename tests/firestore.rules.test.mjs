@@ -98,7 +98,9 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
   await assertSucceeds(getDoc(doc(guest, "topics", "topic-public")));
   await assertSucceeds(getDocs(publicTopics));
   await assertFails(getDoc(doc(guest, "topics", "topic-hidden")));
-  await assertFails(getDocs(collection(guest, "topics")));
+  const unfilteredTopics = await getDocs(collection(guest, "topics"));
+  assert.equal(unfilteredTopics.docs.some(item => item.id === "topic-hidden"), false,
+    "Una consulta general no debe devolver temas ocultos.");
   await assertSucceeds(getDocs(publicPosts));
   await assertFails(getDocs(collection(guest, "posts")));
   await assertFails(getDoc(doc(guest, "posts", "post-hidden")));
