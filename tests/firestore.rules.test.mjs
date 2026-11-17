@@ -134,6 +134,14 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
       ts: 2, lr: 2, lu: "alice", n: 1,
       moderationHidden: true, moderationHiddenUntil: null
     },
+    "topics/legacy-topic": {
+      b: "gen", t: "Tema anterior", u: "alice", uid: "alice",
+      ts: 6, lr: 6, lu: "alice", n: 0
+    },
+    "posts/legacy-post": {
+      tp: "legacy-topic", uid: "alice", u: "alice",
+      x: "Respuesta histórica", ts: 7
+    },
     "posts/post-public": {
       tp: "topic-public", uid: "alice", u: "alice",
       x: "Respuesta pública", ts: 3, moderationHidden: false,
@@ -159,6 +167,11 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
 
   await assertSucceeds(getDoc(doc(member, "topics", "topic-public")));
   await assertSucceeds(getDoc(doc(member, "posts", "post-public")));
+  await assertSucceeds(getDoc(doc(member, "topics", "legacy-topic")));
+  await assertSucceeds(getDoc(doc(member, "posts", "legacy-post")));
+  await assertSucceeds(setDoc(doc(member, "topics", "legacy-topic", "ratings", "member"), {
+    uid: "member", stars: 3, ts: 3
+  }));
   await assertSucceeds(getDoc(doc(member, "topics", "topic-public", "ratings", "vote-public")));
   await assertSucceeds(getDocs(query(collection(member, "topics"), where("moderationHidden", "==", false))));
   await assertSucceeds(getDocs(query(collection(member, "posts"), where("tp", "==", "topic-public"), where("moderationHidden", "==", false))));
