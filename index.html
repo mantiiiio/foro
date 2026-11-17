@@ -1156,7 +1156,30 @@ const D = {
     if(!savedTopic.exists()||!savedPost.exists()||savedPost.data().x!==value||JSON.stringify(savedTopic.data().gallery||[])!==JSON.stringify(cleaned))throw new Error("El servidor no confirmó los cambios de texto y archivos adjuntos. Recarga el tema e inténtalo otra vez.");
   },
   async members(){try{const s=await getCountFromServer(collection(db,"users"));return s.data().count;}catch(error){console.warn("No se pudo cargar el contador de miembros; se muestra 0 temporalmente.",error);return 0;}},
-  async cnt(n){try{const s=await getCountFromServer(query(collection(db,"posts"),where("u","==",n)));return s.data().count;}catch(error){console.warn("No se pudo cargar el contador de mensajes de "+n,error);return 0;}},
+  async cnt(n){
+    try{
+      // Firestore ya no permite contar toda la colección de respuestas con una consulta
+      // global: cada resultado debe pertenecer a un tema público y visible.
+      const visibleTopics=await this.topics();
+      const relevantTopics=visibleTopics.filter(topic=>topic.u===n||(Number(topic.n)||0)>0);
+      let total=0;
+      // Limita la concurrencia para no abrir una ráfaga de consultas cuando hay muchos temas.
+      for(let offset=0;offset<relevantTopics.length;offset+=8){
+        const group=relevantTopics.slice(offset,offset+8);
+        const counts=await Promise.all(group.map(topic=>getCountFromServer(query(
+          collection(db,"posts"),
+          where("tp","==",topic.id),
+          where("u","==",n),
+          where("moderationHidden","==",false)
+        ))));
+        total+=counts.reduce((sum,snapshot)=>sum+snapshot.data().count,0);
+      }
+      return total;
+    }catch(error){
+      console.warn("No se pudo cargar el contador de mensajes de "+n,error);
+      return 0;
+    }
+  },
   async prof(n){try{const s=await getDocs(query(collection(db,"users"),where("u","==",n),limit(1)));return s.empty?null:{uid:s.docs[0].id,...s.docs[0].data()};}catch(error){console.warn("No se pudo cargar el perfil público de "+n,error);return null;}},
   async profByUid(uid){const s=await getDoc(doc(db,"users",uid));return s.exists()?{uid:s.id,...s.data()}:null;},
   async moderation(uid){const s=await getDoc(doc(db,"moderation",uid));return s.exists()?{uid,...s.data()}:{uid,warnings:[],warningCount:0,status:"active",banUntil:null,banReason:""};},
@@ -1329,8 +1352,14 @@ const D = {
     const topic=topicSnap.data();
     if(!isStaff()&&topic.uid!==auth.currentUser.uid)throw new Error("Solo puedes eliminar tus propios temas.");
     if(topic.b==="reglas"&&!isStaff())throw new Error("Solo el staff puede eliminar temas de Reglas.");
+    // El staff puede limpiar todas las respuestas. El creador del tema solo
+    // consulta y elimina las visibles; los mensajes ocultos por moderación
+    // permanecen privados para el staff y no se exponen por esta operación.
+    const postsQuery=isStaff()
+      ?query(collection(db,"posts"),where("tp","==",id))
+      :query(collection(db,"posts"),where("tp","==",id),where("moderationHidden","==",false));
     const [postsSnap,ratingsSnap]=await Promise.all([
-      getDocs(query(collection(db,"posts"),where("tp","==",id))),
+      getDocs(postsQuery),
       getDocs(collection(db,"topics",id,"ratings"))
     ]);
     const children=[...postsSnap.docs,...ratingsSnap.docs];
@@ -1755,7 +1784,10 @@ async function thr(m,id){
     e.preventDefault();
     const i=Number(a.dataset.d);
     if(i===0){
-      if(!confirm("¿Eliminar definitivamente este tema, su publicación inicial, todos sus comentarios y sus valoraciones? Esta acción no se puede deshacer."))return;
+      const deleteMessage=isStaff()
+       ?"¿Eliminar definitivamente este tema, su publicación inicial, todos sus comentarios y sus valoraciones? Esta acción no se puede deshacer."
+       :"¿Eliminar definitivamente este tema, su publicación inicial, los comentarios visibles y sus valoraciones? Las respuestas ya ocultas por moderación, si existen, permanecerán privadas para el staff.";
+     if(!confirm(deleteMessage))return;
       a.textContent="[eliminando tema…]";a.style.pointerEvents="none";
       try{await Store.deleteTopic(id);location.hash="#/b/"+encodeURIComponent(t.b);}
       catch(z){alert(errText(z));a.textContent="[eliminar tema]";a.style.pointerEvents="";}
