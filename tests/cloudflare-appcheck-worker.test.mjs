@@ -97,9 +97,10 @@ test("rechaza orígenes no autorizados antes de hacer peticiones externas", asyn
   assert.equal(externalCalls, 0);
 });
 
-test("rechaza una prueba Turnstile inválida", async () => {
-  let exchangeCalled = false;
+test("rechaza una prueba Turnstile inválida sin pedir tokens a Google o Firebase", async () => {
+  const externalCalls = [];
   globalThis.fetch = async (url) => {
+    externalCalls.push(String(url));
     assert.equal(String(url), SITEVERIFY_URL);
     return Response.json({
       success: false,
@@ -116,7 +117,7 @@ test("rechaza una prueba Turnstile inválida", async () => {
   );
 
   assert.equal(response.status, 403);
-  assert.equal(exchangeCalled, false);
+  assert.deepEqual(externalCalls, [SITEVERIFY_URL]);
 });
 
 test("valida Turnstile y solicita a Firebase un App Check token auténtico", async () => {
