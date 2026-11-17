@@ -298,7 +298,7 @@ body{display:block!important;width:calc(100% - 12px)!important;max-width:1120px!
 // NUNCA pongas aquí contraseñas, tokens privados ni claves de servicio.
 // ============================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app-check.js";
+import { initializeAppCheck, CustomProvider } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app-check.js";
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, signOut, signInAnonymously, updateProfile,
@@ -333,7 +333,7 @@ const FB = {
   measurementId: "G-NC7LRR4M1F"
 };
 // Configura tu UID como propietario del foro. No uses tokens para conceder el rol de propietario.
-const APP_CHECK_SITE_KEY = "__MP_APP_CHECK_SITE_KEY__";
+const APP_CHECK_WORKER_URL = ""; // URL HTTPS del Cloudflare Worker; vacío = App Check desactivado.
 const OWNER_UID = "YgTAVFNclBgScVybW82xE0jKJg32";
 const ADMINS_UID = []; // Compatibilidad para administradores antiguos; los nuevos roles se guardan en Firestore.
 const MODERATORS_UID = []; // Compatibilidad para moderadores antiguos.
@@ -2597,12 +2597,173 @@ function renderTopicExternalMediaPreview(text){
   return isAnonymousForumVisitor()?"":externalMediaPreview(text);
 }
 
+// Proveedor personalizado: Cloudflare Turnstile validado en servidor y token emitido por Firebase.
+let cloudflareTurnstileScriptPromise=null;
+let appCheckSiteKeyPromise=null;
+let appCheckTokenPromise=null;
+
+function appCheckWorkerRoot(){
+  const configured=String(APP_CHECK_WORKER_URL||"").trim();
+  if(!configured)throw new Error("El proveedor App Check todavía no está configurado.");
+  const url=new URL(configured);
+  if(url.protocol!=="https:"||url.username||url.password||url.pathname!=="/"||url.search||url.hash){
+    throw new Error("La URL del proveedor App Check debe ser un origen HTTPS sin rutas.");
+  }
+  return url.origin;
+}
+
+async function fetchAppCheckWithTimeout(url,options={}){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),15000);
+  try{
+    return await fetch(url,{
+      ...options,
+      credentials:"omit",
+      cache:"no-store",
+      signal:controller.signal
+    });
+  }finally{
+    clearTimeout(timeout);
+  }
+}
+
+async function loadCloudflareTurnstile(){
+  if(window.turnstile?.render)return window.turnstile;
+  if(!cloudflareTurnstileScriptPromise){
+    cloudflareTurnstileScriptPromise=new Promise((resolve,reject)=>{
+      const script=document.createElement("script");
+      script.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async=true;
+      script.defer=true;
+      script.onload=()=>{
+        const api=window.turnstile;
+        if(!api?.ready||!api?.render||!api?.execute){
+          cloudflareTurnstileScriptPromise=null;
+          reject(new Error("La API de Turnstile no está disponible."));
+          return;
+        }
+        api.ready(()=>resolve(api));
+      };
+      script.onerror=()=>{
+        cloudflareTurnstileScriptPromise=null;
+        reject(new Error("No se pudo cargar Cloudflare Turnstile."));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return cloudflareTurnstileScriptPromise;
+}
+
+async function loadAppCheckTurnstileSiteKey(){
+  if(!appCheckSiteKeyPromise){
+    appCheckSiteKeyPromise=(async()=>{
+      const response=await fetchAppCheckWithTimeout(appCheckWorkerRoot()+"/config");
+      const result=await response.json().catch(()=>null);
+      if(!response.ok||typeof result?.siteKey!=="string"||result.siteKey.length<10){
+        throw new Error("El Worker no devolvió una sitekey Turnstile válida.");
+      }
+      return result.siteKey;
+    })().catch(error=>{
+      appCheckSiteKeyPromise=null;
+      throw error;
+    });
+  }
+  return appCheckSiteKeyPromise;
+}
+
+async function requestCloudflareTurnstileProof(siteKey){
+  const api=await loadCloudflareTurnstile();
+  const container=document.createElement("div");
+  container.id="mp-app-check-turnstile-"+Math.random().toString(36).slice(2);
+  container.style.position="fixed";
+  container.style.top="0";
+  container.style.left="0";
+  container.style.zIndex="2147483647";
+  document.body.appendChild(container);
+
+  return new Promise((resolve,reject)=>{
+    let widgetId=null,settled=false,timer=null;
+    const finish=(callback,value)=>{
+      if(settled)return;
+      settled=true;
+      if(timer)clearTimeout(timer);
+      if(widgetId!==null){
+        try{api.remove(widgetId);}catch{}
+      }
+      container.remove();
+      callback(value);
+    };
+
+    try{
+      widgetId=api.render("#"+container.id,{
+        sitekey:siteKey,
+        action:"app_check",
+        execution:"execute",
+        appearance:"interaction-only",
+        "response-field":false,
+        callback:token=>{
+          if(typeof token!=="string"||!token){
+            finish(reject,new Error("Turnstile no devolvió una prueba válida."));
+            return;
+          }
+          finish(resolve,token);
+        },
+        "error-callback":()=>finish(reject,new Error("Falló la verificación Turnstile.")),
+        "expired-callback":()=>finish(reject,new Error("La prueba Turnstile venció.")),
+        "timeout-callback":()=>finish(reject,new Error("La verificación Turnstile agotó el tiempo."))
+      });
+      timer=setTimeout(
+        ()=>finish(reject,new Error("La verificación Turnstile tardó demasiado.")),
+        120000
+      );
+      api.execute("#"+container.id);
+    }catch(error){
+      finish(reject,error);
+    }
+  });
+}
+
+function fetchTurnstileAppCheckToken(){
+  if(!appCheckTokenPromise){
+    appCheckTokenPromise=(async()=>{
+      const root=appCheckWorkerRoot();
+      const siteKey=await loadAppCheckTurnstileSiteKey();
+      const turnstileToken=await requestCloudflareTurnstileProof(siteKey);
+      const response=await fetchAppCheckWithTimeout(root+"/token",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({turnstileToken})
+      });
+      const result=await response.json().catch(()=>null);
+      const ttlMillis=Number(result?.ttlMillis);
+      if(
+        !response.ok||
+        typeof result?.token!=="string"||
+        !Number.isFinite(ttlMillis)||
+        ttlMillis<=0
+      ){
+        throw new Error("No se pudo obtener un token Firebase App Check.");
+      }
+      return {
+        token:result.token,
+        expireTimeMillis:Date.now()+ttlMillis
+      };
+    })().finally(()=>{
+      appCheckTokenPromise=null;
+    });
+  }
+  return appCheckTokenPromise;
+}
+
 // Inicio Firebase y sesión de invitado
 async function startFirebase(){
   try{
     app=initializeApp(FB);
-    if(APP_CHECK_SITE_KEY && !APP_CHECK_SITE_KEY.startsWith("__")){
-      initializeAppCheck(app,{provider:new ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY),isTokenAutoRefreshEnabled:true});
+    if(APP_CHECK_WORKER_URL.trim()){
+      initializeAppCheck(app,{
+        provider:new CustomProvider({getToken:fetchTurnstileAppCheckToken}),
+        isTokenAutoRefreshEnabled:true
+      });
     }
     auth=getAuth(app);db=getFirestore(app);
     if(STORAGE_ENABLED && FB.storageBucket)storage=getStorage(app);

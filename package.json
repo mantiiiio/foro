@@ -5,7 +5,8 @@
   "scripts": {
     "test:rules": "node --test tests/firestore.rules.test.mjs",
     "test:board-search": "node --test tests/board-search.test.mjs",
-    "test:navigation": "node --test tests/app-navigation.test.mjs"
+    "test:navigation": "node --test tests/app-navigation.test.mjs",
+    "test:app-check-worker": "node --test tests/cloudflare-appcheck-worker.test.mjs"
   },
   "overrides": {
     "@grpc/grpc-js": "1.14.7"

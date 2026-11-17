@@ -182,6 +182,9 @@ jobs:
       - name: Run internal navigation unit tests
         run: npm run test:navigation
 
+      - name: Run Cloudflare App Check Worker unit tests
+        run: npm run test:app-check-worker
+
       - name: Run Firestore security tests in the local emulator
         run: firebase emulators:exec --only firestore --project demo-mantipobres-rules "npm run test:rules"
 
@@ -190,160 +193,53 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FORO_66DD5 }}
 
-      - name: Create or reuse a reCAPTCHA Enterprise key and register Firebase App Check
-        id: appcheck
-        run: |
-          python3 -m pip install --quiet google-auth requests
-          python3 - <<'PY'
-          import os
-          import google.auth
-          from google.auth.transport.requests import Request
-          import requests
-
-          PROJECT_ID = "foro-66dd5"
-          PROJECT_NUMBER = "228134558657"
-          APP_ID = "1:228134558657:web:3c41529373384e9f582d40"
-          DISPLAY_NAME = "MantiPobres App Check Web Production"
-          DOMAINS = ["mantipobres.web.app", "foro-66dd5.web.app", "foro-66dd5.firebaseapp.com"]
-          OUTPUT = os.environ["GITHUB_OUTPUT"]
-
-          def output(name, value):
-              safe_value = " ".join(str(value).splitlines()).replace("\\r", " ").replace("\\n", " ")
-              with open(OUTPUT, "a", encoding="utf-8") as handle:
-                  handle.write(name + "=" + safe_value + "\n")
-
-          try:
-              credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
-              credentials.refresh(Request())
-              session = requests.Session()
-              session.headers.update({
-                  "Authorization": "Bearer " + credentials.token,
-                  "Content-Type": "application/json"
-              })
-
-              principal = getattr(credentials, "service_account_email", None) or getattr(credentials, "signer_email", None) or "no detectado"
-              output("principal_email", principal)
-              print("Cuenta de servicio de despliegue: " + principal)
-              print("Las APIs de reCAPTCHA Enterprise y Firebase App Check deben estar habilitadas por un propietario del proyecto.")
-              
-              list_url = f"https://recaptchaenterprise.googleapis.com/v1/projects/{PROJECT_ID}/keys"
-              listed = session.get(list_url, params={"pageSize": 100}, timeout=30)
-              if not listed.ok:
-                  raise RuntimeError(f"No se pudo consultar reCAPTCHA Enterprise (HTTP {listed.status_code}). Verifica que recaptchaenterprise.googleapis.com esté habilitada y que la cuenta de despliegue tenga roles/recaptchaenterprise.admin: {listed.text[:500]}")
-              existing = next((
-                  item for item in listed.json().get("keys", [])
-                  if item.get("displayName") == DISPLAY_NAME
-                  and item.get("webSettings", {}).get("integrationType") == "SCORE"
-                  and set(DOMAINS).issubset(set(item.get("webSettings", {}).get("allowedDomains", [])))
-              ), None)
-
-              if existing is None:
-                  created = session.post(
-                      list_url,
-                      json={
-                          "displayName": DISPLAY_NAME,
-                          "webSettings": {
-                              "allowedDomains": DOMAINS,
-                              "allowAmpTraffic": False,
-                              "integrationType": "SCORE"
-                          }
-                      },
-                      timeout=30
-                  )
-                  if created.status_code not in (200, 201):
-                      raise RuntimeError(f"No se pudo crear la clave reCAPTCHA (HTTP {created.status_code}): {created.text[:700]}")
-                  existing = created.json()
-
-              site_key = existing.get("name", "").rsplit("/", 1)[-1]
-              if not site_key:
-                  raise RuntimeError("Google no devolvió el identificador de la clave de sitio.")
-
-              config_name = f"projects/{PROJECT_NUMBER}/apps/{APP_ID}/recaptchaEnterpriseConfig"
-              configured = session.patch(
-                  "https://firebaseappcheck.googleapis.com/v1/" + config_name,
-                  params={"updateMask": "siteKey,tokenTtl"},
-                  json={"name": config_name, "siteKey": site_key, "tokenTtl": "3600s"},
-                  timeout=30
-              )
-              if not configured.ok:
-                  raise RuntimeError(f"No se pudo registrar la clave en Firebase App Check (HTTP {configured.status_code}). Habilita firebaseappcheck.googleapis.com y concede roles/firebaseappcheck.admin a la cuenta de despliegue: {configured.text[:700]}")
-
-              service_name = f"projects/{PROJECT_NUMBER}/services/firestore.googleapis.com"
-              monitoring = session.patch(
-                  "https://firebaseappcheck.googleapis.com/v1/" + service_name,
-                  params={"updateMask": "enforcementMode"},
-                  json={"name": service_name, "enforcementMode": "UNENFORCED"},
-                  timeout=30
-              )
-              if not monitoring.ok:
-                  raise RuntimeError(f"No se pudo poner Firestore en modo de supervisión (HTTP {monitoring.status_code}): {monitoring.text[:700]}")
-
-              output("ready", "true")
-              output("site_key", site_key)
-              output("mode", "UNENFORCED")
-              print("App Check registrado con reCAPTCHA Enterprise; Firestore queda inicialmente en supervisión.")
-          except Exception as error:
-              output("ready", "false")
-              output("reason", str(error)[:500])
-              print("No se pudo aprovisionar App Check automáticamente: " + str(error)[:1000])
-              print("El despliegue de Firestore y Hosting continuará sin enforcement de App Check.")
-          PY
-
-      - name: Inject App Check site key and refresh CSP
-        if: ${{ steps.appcheck.outputs.ready == 'true' }}
-        env:
-          APP_CHECK_SITE_KEY: ${{ steps.appcheck.outputs.site_key }}
+      - name: Validate optional Turnstile App Check integration and CSP
         run: |
           python3 - <<'PY'
-          import base64, hashlib, json, os, re
+          import json
           from pathlib import Path
-          index_path = Path("index.html")
-          source = index_path.read_text(encoding="utf-8")
-          site_key = os.environ["APP_CHECK_SITE_KEY"]
-          if not site_key or source.count("__MP_APP_CHECK_SITE_KEY__") != 1:
-              raise SystemExit("La clave de App Check es vacía o el marcador no aparece exactamente una vez.")
-          source = source.replace("__MP_APP_CHECK_SITE_KEY__", site_key)
-          index_path.write_text(source, encoding="utf-8")
-          script = source.split('<script type="module">', 1)[1].split('</script>', 1)[0]
-          digest = base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode("ascii")
-          config_path = Path("firebase.json")
-          config = json.loads(config_path.read_text(encoding="utf-8"))
-          header = next(
-              item for group in config["hosting"]["headers"] if group["source"] == "**"
-              for item in group["headers"] if item["key"] == "Content-Security-Policy"
-          )
-          header["value"], count = re.subn(r"'sha256-[^']+'", "'sha256-" + digest + "'", header["value"], count=1)
-          if count != 1:
-              raise SystemExit("No se pudo recalcular el hash CSP.")
-          config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
-          print("Clave pública de App Check incorporada y hash CSP actualizado.")
-          PY
-          python3 - <<'PY'
-          from pathlib import Path
+
           source = Path("index.html").read_text(encoding="utf-8")
-          script = source.split('<script type="module">', 1)[1].split('</script>', 1)[0]
-          Path("/tmp/mantipobres-appcheck.mjs").write_text(script, encoding="utf-8")
-          PY
-          node --check /tmp/mantipobres-appcheck.mjs
-
-      - name: Verify App Check client and final CSP integrity
-        if: ${{ steps.appcheck.outputs.ready == 'true' }}
-        run: |
-          python3 - <<'PY'
-          import base64, hashlib, json
-          from pathlib import Path
-          source = Path("index.html").read_text(encoding="utf-8")
-          assert "__MP_APP_CHECK_SITE_KEY__" not in source
-          assert "initializeAppCheck(app" in source and "ReCaptchaEnterpriseProvider" in source
-          script = source.split('<script type="module">', 1)[1].split('</script>', 1)[0]
-          digest = base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode("ascii")
           config = json.loads(Path("firebase.json").read_text(encoding="utf-8"))
-          policy = next(item["value"] for group in config["hosting"]["headers"] if group["source"] == "**"
-                        for item in group["headers"] if item["key"] == "Content-Security-Policy")
-          assert "'sha256-" + digest + "'" in policy
-          assert "https://www.google.com/recaptcha/" in policy
-          assert "https://www.recaptcha.net/recaptcha/" in policy
-          print("App Check, CSP y hash final verificados.")
+          worker = Path("cloudflare/appcheck-turnstile-worker.js").read_text(encoding="utf-8")
+          docs = Path("cloudflare/APP_CHECK_TURNSTILE.md").read_text(encoding="utf-8")
+
+          import re
+          from urllib.parse import urlparse
+
+          assert "__MP_APP_CHECK_SITE_KEY__" not in source
+          assert "CustomProvider" in source
+          assert "ReCaptchaEnterpriseProvider" not in source
+          url_match = re.search(r'const APP_CHECK_WORKER_URL = "([^"]*)";', source)
+          assert url_match, "No se encontró la configuración APP_CHECK_WORKER_URL."
+          worker_url = url_match.group(1)
+          if worker_url:
+              parsed = urlparse(worker_url)
+              assert parsed.scheme == "https" and parsed.netloc.endswith(".workers.dev")
+              assert parsed.path in ("", "/") and not parsed.query and not parsed.fragment
+          assert "initializeAppCheck(app" in source
+          assert "turnstileToken" in source
+
+          policy = next(
+              header["value"]
+              for group in config["hosting"]["headers"]
+              if group["source"] == "**"
+              for header in group["headers"]
+              if header["key"] == "Content-Security-Policy"
+          )
+          script_src = policy.split("script-src ", 1)[1].split(";", 1)[0]
+          connect_src = policy.split("connect-src ", 1)[1].split(";", 1)[0]
+          frame_src = policy.split("frame-src ", 1)[1].split(";", 1)[0]
+          assert "https://challenges.cloudflare.com" in script_src
+          assert "https://challenges.cloudflare.com" in connect_src
+          assert "https://*.workers.dev" in connect_src
+          assert "https://challenges.cloudflare.com" in frame_src
+          assert "firebaseappcheck.tokens.mint" in docs
+          assert "exchangeCustomToken" in worker
+          assert "siteverify" in worker.lower()
+          assert "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY" in worker
+
+          print("Integración Turnstile/App Check validada; permanece desactivada hasta configurar APP_CHECK_WORKER_URL.")
           PY
 
       - name: Deploy Firestore rules before the live UI
