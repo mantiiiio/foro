@@ -98,9 +98,7 @@ test("visitas anónimas pueden leer temas y comentarios visibles, pero no conten
   await assertSucceeds(getDoc(doc(guest, "topics", "topic-public")));
   await assertSucceeds(getDocs(publicTopics));
   await assertFails(getDoc(doc(guest, "topics", "topic-hidden")));
-  const unfilteredTopics = await getDocs(collection(guest, "topics"));
-  assert.equal(unfilteredTopics.docs.some(item => item.id === "topic-hidden"), false,
-    "Una consulta general no debe devolver temas ocultos.");
+  await assertFails(getDocs(collection(guest, "topics")));
   await assertSucceeds(getDocs(publicPosts));
   await assertFails(getDocs(collection(guest, "posts")));
   await assertFails(getDoc(doc(guest, "posts", "post-hidden")));
@@ -177,6 +175,10 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
   await assertSucceeds(getDoc(doc(member, "topics", "topic-public", "ratings", "vote-public")));
   await assertSucceeds(getDocs(query(collection(member, "topics"), where("moderationHidden", "==", false))));
   await assertSucceeds(getDocs(query(collection(member, "posts"), where("tp", "==", "topic-public"), where("moderationHidden", "==", false))));
+  await assertFails(getDocs(collection(member, "topics")));
+  await assertFails(getDocs(collection(member, "posts")));
+  await assertFails(getDocs(collection(member, "topics", "topic-hidden", "ratings")));
+  await assertSucceeds(getDocs(collection(member, "topics", "topic-public", "ratings")));
   await assertFails(getDocs(query(collection(member, "posts"), where("tp", "==", "topic-hidden"), where("moderationHidden", "==", false))));
   await assertFails(getDoc(doc(member, "topics", "topic-hidden")));
   await assertFails(getDoc(doc(member, "posts", "post-hidden")));
@@ -193,6 +195,9 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
   await assertSucceeds(getDoc(doc(moderator, "posts", "post-hidden")));
   await assertSucceeds(getDoc(doc(moderator, "posts", "post-in-hidden-topic")));
   await assertSucceeds(getDoc(doc(moderator, "topics", "topic-hidden", "ratings", "vote-hidden")));
+  await assertSucceeds(getDocs(collection(moderator, "topics")));
+  await assertSucceeds(getDocs(collection(moderator, "posts")));
+  await assertSucceeds(getDocs(collection(moderator, "topics", "topic-hidden", "ratings")));
 });
 
 test("una cuenta sin verificar puede leer el foro, pero no crear temas ni respuestas", async () => {
