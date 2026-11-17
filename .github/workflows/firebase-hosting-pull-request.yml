@@ -22,6 +22,47 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Set up Node.js for validation
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Validate application JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path("index.html").read_text(encoding="utf-8")
+          opening = '<script type="module">'
+          closing = '</script>'
+          if opening not in source:
+              raise SystemExit("No se encontró el script principal.")
+          script = source.split(opening, 1)[1].split(closing, 1)[0]
+          Path("/tmp/mantipobres-app.mjs").write_text(script, encoding="utf-8")
+          PY
+          node --check /tmp/mantipobres-app.mjs
+          node --check board-search.js
+          node --check app-navigation.js
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          json.loads(Path("firebase.json").read_text(encoding="utf-8"))
+          PY
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools@15.35.0
+
+      - name: Install security test dependencies
+        run: npm install --no-package-lock
+
+      - name: Run board search unit tests
+        run: npm run test:board-search
+
+      - name: Run internal navigation unit tests
+        run: npm run test:navigation
+
+      - name: Run Firestore security tests in the local emulator
+        run: firebase emulators:exec --only firestore --project demo-mantipobres-rules "npm run test:rules"
+
       - name: Deploy preview
         uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0.11.0
         with:

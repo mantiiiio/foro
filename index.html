@@ -319,6 +319,7 @@ import {
   normalizeTopicSearchText,
   searchTopicsByTitle
 } from "/board-search.js";
+import { resolveInternalAppPath } from "/app-navigation.js";
 
 const NAME = "MantiPobres";
 const MP_BUILD_ID = "__MP_BUILD_ID__";
@@ -393,7 +394,30 @@ document.addEventListener("visibilitychange",()=>{
 
 const $ = s => document.querySelector(s);
 document.addEventListener("click",event=>{
-  if(event.target instanceof Element&&event.target.closest("[data-reload-page]"))location.reload();
+  const element=event.target instanceof Element?event.target:null;
+  if(!element)return;
+  if(element.closest("[data-reload-page]")){
+    location.reload();
+    return;
+  }
+  if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+  const anchor=element.closest("a[href]");
+  if(!anchor||anchor.hasAttribute("download"))return;
+  const target=anchor.getAttribute("target");
+  if(target&&target.toLowerCase()!=="_self")return;
+  if(configured&&!firebaseReady)return;
+  const rawHref=anchor.getAttribute("href")||"";
+  if(rawHref.startsWith("#"))return;
+  const nextPath=resolveInternalAppPath(anchor.href,location.origin);
+  if(!nextPath)return;
+  const currentPath=location.pathname+location.search+location.hash;
+  if(nextPath===currentPath){
+    event.preventDefault();
+    return;
+  }
+  event.preventDefault();
+  history.pushState({mantipobresNavigation:true},"",nextPath);
+  go().catch(error=>console.error("No se pudo cambiar de ruta sin recargar:",error));
 });
 const BL = BOARDS.flatMap(c => c[1]);
 const E = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -891,6 +915,16 @@ async function hashAccessToken(value){
 function avatar(u,size=40,url=""){const safe=safeHttps(url);if(safe)return `<img class="ava" width="${size}" height="${size}" src="${E(safe)}" alt="Avatar de ${E(u||"usuario")}" loading="lazy" style="width:${size}px;height:${size}px;object-fit:cover;border:1px solid #006699;background:#fff;flex:none">`;let h=7,s="";for(const c of String(u||"?"))h=(h*31+c.charCodeAt(0))|0;for(let i=0;i<25;i++){const x=i%5,y=i/5|0;if((h >>> (y*3+Math.min(x,4-x)))&1)s+=`<rect x="${x*8}" y="${y*8}" width="8" height="8"/>`;}return `<svg class="ava" width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true" style="background:hsl(${(h>>>0)%360},60%,40%);border:1px solid #006699;flex:none"><g fill="#fff">${s}</g></svg>`;}
 
 let app=null, auth=null, db=null, storage=null, firebaseReady=false, authReady=false, currentUser=null;
+let guestSignInPromise=null;
+async function ensureGuestSession(){
+  if(auth?.currentUser)return auth.currentUser;
+  if(!guestSignInPromise){
+    guestSignInPromise=signInAnonymously(auth)
+      .then(credential=>credential.user)
+      .finally(()=>{guestSignInPromise=null;});
+  }
+  return guestSignInPromise;
+}
 const configured = FB.apiKey && !FB.apiKey.startsWith("PEGA_") && FB.projectId && FB.projectId !== "TU-PROYECTO" && FB.appId && !FB.appId.startsWith("PEGA_");
 
 function setNetStatus(text, ok=false){const n=$("#netState");n.textContent=text;n.style.color=ok?"#0f0":"#ff8a8a";}
@@ -958,7 +992,7 @@ const D = {
     
     if(String(token||"").trim()){
       try{await D.claimStaffInvite(token);}
-      catch(e){try{await signOut(auth);await signInAnonymously(auth);}catch{}throw e;}
+      catch(e){try{await signOut(auth);await ensureGuestSession();}catch{}throw e;}
     }
   },
   async claimStaffInvite(raw,alreadyHashed=false){
@@ -1045,7 +1079,7 @@ const D = {
     }
     return {verified:auth.currentUser.emailVerified,grantedRole};
   },
-  async out(){await signOut(auth);await signInAnonymously(auth);},
+  async out(){await signOut(auth);await ensureGuestSession();},
   async topics(){try{const s=await getDocs(query(collection(db,"topics"),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>item.b!=="reglas"&&!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas (topics): "+(error.code||error.message||"error desconocido"));}},
   async topicsByBoard(boardId){if(boardId==="reglas")return [];try{const s=await getDocs(query(collection(db,"topics"),where("b","==",boardId),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>item.b!=="reglas"&&!isModerationContentHidden(item)).sort((a,b)=>(b.lr||0)-(a.lr||0));}catch(error){throw new Error("No se pudieron leer los temas de la categoría "+boardId+": "+(error.code||error.message||"error desconocido"));}},
   async posts(t){try{const s=await getDocs(query(collection(db,"posts"),where("tp","==",t),where("moderationHidden","==",false)));return s.docs.map(d=>({id:d.id,...d.data()})).filter(item=>!isModerationContentHidden(item)).sort((a,b)=>(a.ts||0)-(b.ts||0));}catch(error){throw new Error("No se pudieron leer las publicaciones del tema: "+(error.code||error.message||"error desconocido"));}},
@@ -2541,13 +2575,21 @@ async function startFirebase(){
     auth=getAuth(app);db=getFirestore(app);
     if(STORAGE_ENABLED && FB.storageBucket)storage=getStorage(app);
     await setPersistence(auth,browserLocalPersistence);
+    // Espera a que Firebase termine de restaurar la cuenta persistida antes de
+    // decidir que hace falta crear una sesión anónima.
+    await auth.authStateReady();
+    if(!auth.currentUser)await ensureGuestSession();
     await new Promise((resolve,reject)=>{
-      let resolved=false, requestingGuest=false;
+      let resolved=false;
       onAuthStateChanged(auth,async user=>{
         currentUser=user;
         currentStaffRole="";
         if(!user){
-          if(!requestingGuest){requestingGuest=true;try{await signInAnonymously(auth);}catch(e){console.error(e);if(!resolved){resolved=true;reject(e);}}}
+          currentUser=null;
+          ensureGuestSession().catch(error=>{
+            console.error("No se pudo restaurar una sesión de invitado:",error);
+            if(!resolved){resolved=true;reject(error);}
+          });
           return;
         }
         await loadCurrentStaffRole(user);
@@ -2709,6 +2751,7 @@ $("#nl").textContent=NAME;const ck=()=>{$("#clk").textContent=new Date().toLocal
 $("#ft").innerHTML=(configured?"Estado: EN LÍNEA":"Estado: VISTA PREVIA")+` · <a href="/setup">Configuración</a><br>Diseño adaptable para PC, tablets y teléfonos<br>MantiPobres · Comunidad retro`;
 restoreLastRoute();
 addEventListener("hashchange",go);
+addEventListener("popstate",()=>go().catch(error=>console.error("No se pudo restaurar la ruta anterior:",error)));
 if(configured){await startFirebase();}else{setNetStatus("DEMO LOCAL",false);}
 go();
 </script>

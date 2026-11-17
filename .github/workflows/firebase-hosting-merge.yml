@@ -102,11 +102,13 @@ jobs:
           PY
           node --check /tmp/mantipobres-app.mjs
           node --check board-search.js
+          node --check app-navigation.js
           python3 - <<'PY'
           from pathlib import Path
           source = Path("index.html").read_text(encoding="utf-8")
           required = [
               'from "/board-search.js"',
+              'from "/app-navigation.js"',
               'id="globalTopicSearch"',
               'async function srch(',
               'search:srch',
@@ -177,6 +179,9 @@ jobs:
       - name: Run board search unit tests
         run: npm run test:board-search
 
+      - name: Run internal navigation unit tests
+        run: npm run test:navigation
+
       - name: Run Firestore security tests in the local emulator
         run: firebase emulators:exec --only firestore --project demo-mantipobres-rules "npm run test:rules"
 
@@ -187,7 +192,6 @@ jobs:
 
       - name: Create or reuse a reCAPTCHA Enterprise key and register Firebase App Check
         id: appcheck
-        continue-on-error: true
         run: |
           python3 -m pip install --quiet google-auth requests
           python3 - <<'PY'
@@ -206,7 +210,7 @@ jobs:
           def output(name, value):
               safe_value = " ".join(str(value).splitlines()).replace("\\r", " ").replace("\\n", " ")
               with open(OUTPUT, "a", encoding="utf-8") as handle:
-                  handle.write(name + "=" + safe_value + "\\n")
+                  handle.write(name + "=" + safe_value + "\n")
 
           try:
               credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
@@ -311,7 +315,7 @@ jobs:
           header["value"], count = re.subn(r"'sha256-[^']+'", "'sha256-" + digest + "'", header["value"], count=1)
           if count != 1:
               raise SystemExit("No se pudo recalcular el hash CSP.")
-          config_path.write_text(json.dumps(config, indent=2) + "\\n", encoding="utf-8")
+          config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
           print("Clave pública de App Check incorporada y hash CSP actualizado.")
           PY
           python3 - <<'PY'
@@ -362,6 +366,12 @@ jobs:
             -o /tmp/mantipobres-board-search.js
           grep -Eiq '^content-type:.*(javascript|ecmascript)' /tmp/mantipobres-search-headers.txt
           grep -Fq 'normalizeTopicSearchText' /tmp/mantipobres-board-search.js
+          curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
+            -D /tmp/mantipobres-navigation-headers.txt \
+            "https://mantipobres.web.app/app-navigation.js?verify=$GITHUB_SHA" \
+            -o /tmp/mantipobres-app-navigation.js
+          grep -Eiq '^content-type:.*(javascript|ecmascript)' /tmp/mantipobres-navigation-headers.txt
+          grep -Fq 'resolveInternalAppPath' /tmp/mantipobres-app-navigation.js
           curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
             "https://mantipobres.web.app/b/gen?verify=$GITHUB_SHA" \
             -o /tmp/mantipobres-forum-route.html
