@@ -149,6 +149,7 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
       x: "Respuesta de tema oculto", ts: 5, moderationHidden: false,
       moderationHiddenUntil: null
     },
+    "topics/topic-public/ratings/vote-public": { uid: "alice", stars: 4, ts: 1 },
     "topics/topic-hidden/ratings/vote-hidden": { uid: "alice", stars: 5, ts: 1 },
     "staff/mod-1": { role: "moderator" }
   });
@@ -158,6 +159,10 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
 
   await assertSucceeds(getDoc(doc(member, "topics", "topic-public")));
   await assertSucceeds(getDoc(doc(member, "posts", "post-public")));
+  await assertSucceeds(getDoc(doc(member, "topics", "topic-public", "ratings", "vote-public")));
+  await assertSucceeds(getDocs(query(collection(member, "topics"), where("moderationHidden", "==", false))));
+  await assertSucceeds(getDocs(query(collection(member, "posts"), where("tp", "==", "topic-public"), where("moderationHidden", "==", false))));
+  await assertFails(getDocs(query(collection(member, "posts"), where("tp", "==", "topic-hidden"), where("moderationHidden", "==", false))));
   await assertFails(getDoc(doc(member, "topics", "topic-hidden")));
   await assertFails(getDoc(doc(member, "posts", "post-hidden")));
   await assertFails(getDoc(doc(member, "posts", "post-in-hidden-topic")));
