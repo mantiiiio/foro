@@ -102,11 +102,13 @@ jobs:
           PY
           node --check /tmp/mantipobres-app.mjs
           node --check board-search.js
+          node --check app-navigation.js
           python3 - <<'PY'
           from pathlib import Path
           source = Path("index.html").read_text(encoding="utf-8")
           required = [
               'from "/board-search.js"',
+              'from "/app-navigation.js"',
               'id="globalTopicSearch"',
               'async function srch(',
               'search:srch',
@@ -364,6 +366,12 @@ jobs:
             -o /tmp/mantipobres-board-search.js
           grep -Eiq '^content-type:.*(javascript|ecmascript)' /tmp/mantipobres-search-headers.txt
           grep -Fq 'normalizeTopicSearchText' /tmp/mantipobres-board-search.js
+          curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
+            -D /tmp/mantipobres-navigation-headers.txt \
+            "https://mantipobres.web.app/app-navigation.js?verify=$GITHUB_SHA" \
+            -o /tmp/mantipobres-app-navigation.js
+          grep -Eiq '^content-type:.*(javascript|ecmascript)' /tmp/mantipobres-navigation-headers.txt
+          grep -Fq 'resolveInternalAppPath' /tmp/mantipobres-app-navigation.js
           curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
             "https://mantipobres.web.app/b/gen?verify=$GITHUB_SHA" \
             -o /tmp/mantipobres-forum-route.html
