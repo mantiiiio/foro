@@ -204,10 +204,19 @@ jobs:
           worker = Path("cloudflare/appcheck-turnstile-worker.js").read_text(encoding="utf-8")
           docs = Path("cloudflare/APP_CHECK_TURNSTILE.md").read_text(encoding="utf-8")
 
+          import re
+          from urllib.parse import urlparse
+
           assert "__MP_APP_CHECK_SITE_KEY__" not in source
           assert "CustomProvider" in source
           assert "ReCaptchaEnterpriseProvider" not in source
-          assert 'const APP_CHECK_WORKER_URL = "";' in source
+          url_match = re.search(r'const APP_CHECK_WORKER_URL = "([^"]*)";', source)
+          assert url_match, "No se encontró la configuración APP_CHECK_WORKER_URL."
+          worker_url = url_match.group(1)
+          if worker_url:
+              parsed = urlparse(worker_url)
+              assert parsed.scheme == "https" and parsed.netloc.endswith(".workers.dev")
+              assert parsed.path in ("", "/") and not parsed.query and not parsed.fragment
           assert "initializeAppCheck(app" in source
           assert "turnstileToken" in source
 
