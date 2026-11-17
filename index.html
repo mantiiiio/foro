@@ -297,23 +297,23 @@ body{display:block!important;width:calc(100% - 12px)!important;max-width:1120px!
 // 2) El propietario único está configurado por UID; los permisos reales se verifican en Firebase Rules.
 // NUNCA pongas aquí contraseñas, tokens privados ni claves de servicio.
 // ============================================================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app-check.js";
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, signOut, signInAnonymously, updateProfile,
   setPersistence, browserLocalPersistence, sendEmailVerification,
   sendPasswordResetEmail, reload, deleteUser, getIdToken
-} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocFromServer, getDocs, getCountFromServer, addDoc, setDoc, serverTimestamp,
   updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot,
   writeBatch, increment, runTransaction
-} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 import {
   getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL,
   deleteObject
-} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-storage.js";
+} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-storage.js";
 import {
   compareTopicsAlphabetically,
   normalizeTopicSearchText,

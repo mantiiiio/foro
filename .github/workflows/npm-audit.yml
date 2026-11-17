@@ -1,0 +1,127 @@
+name: Audit npm dependencies
+
+on:
+  push:
+    branches:
+      - main
+      - maintenance/firebase-sdk-13-3
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/npm-audit.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/npm-audit.yml"
+  schedule:
+    - cron: "23 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit npm dependency tree
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Generate a temporary lockfile for an exact audit snapshot
+        run: npm install --package-lock-only --ignore-scripts --no-audit
+
+      - name: Verify the patched gRPC dependency is used everywhere
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
+          const grpc = Object.entries(lock.packages || {})
+            .filter(([path]) => path.endsWith("node_modules/@grpc/grpc-js"));
+          if (!grpc.length) throw new Error("No se encontró @grpc/grpc-js en el lockfile.");
+          const invalid = grpc.filter(([, item]) => item.version !== "1.14.7");
+          if (invalid.length) {
+            throw new Error("Se encontró @grpc/grpc-js distinto de 1.14.7: " + JSON.stringify(invalid));
+          }
+          console.log(`Correcto: ${grpc.length} instalación(es) de @grpc/grpc-js usan la versión corregida 1.14.7.`);
+          NODE
+
+      - name: Run npm audit and report affected packages
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > /tmp/npm-audit.json
+          audit_status=$?
+          set -e
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+
+          let report;
+          try {
+            report = JSON.parse(readFileSync("/tmp/npm-audit.json", "utf8"));
+          } catch (error) {
+            console.error("No se pudo interpretar la respuesta de npm audit:", error.message);
+            process.exit(1);
+          }
+
+          if (report.error) {
+            console.error("npm audit devolvió un error:", JSON.stringify(report.error));
+            process.exit(1);
+          }
+
+          const totals = report.metadata?.vulnerabilities || {};
+          const vulnerabilities = Object.entries(report.vulnerabilities || {});
+          console.log("Resumen de vulnerabilidades:", JSON.stringify(totals));
+          if (Number(totals.critical || 0) > 0 || Number(totals.high || 0) > 0) {
+            console.error("Se encontraron vulnerabilidades altas o críticas.");
+            process.exit(1);
+          }
+          for (const [name, item] of vulnerabilities) {
+            const via = (item.via || []).map(entry => {
+              if (typeof entry === "string") return entry;
+              return [entry?.name, entry?.title, entry?.url, entry?.range].filter(Boolean).join(" — ");
+            }).filter(Boolean);
+            const fix = item.fixAvailable === true
+              ? "actualización disponible"
+              : item.fixAvailable && typeof item.fixAvailable === "object"
+                ? `actualizar ${item.fixAvailable.name || name} a ${item.fixAvailable.version || "otra versión"}${item.fixAvailable.isSemVerMajor ? " (cambio mayor)" : ""}`
+                : "sin corrección automática declarada";
+            console.log(`- ${name}: ${item.severity}; directa=${item.isDirect}; rango=${item.range}; ${fix}; efectos=${JSON.stringify(item.effects || [])}; nodos=${JSON.stringify(item.nodes || [])}`);
+            for (const detail of via) console.log(`    ${detail}`);
+          }
+
+          const summary = [
+            "# Auditoría npm",
+            "",
+            `Críticas: ${totals.critical || 0} · Altas: ${totals.high || 0} · Moderadas: ${totals.moderate || 0} · Bajas: ${totals.low || 0}`,
+            "",
+            ...vulnerabilities.map(([name, item]) => `- **${name}** — ${item.severity}; rango ${item.range}; ${item.fixAvailable ? "hay actualización sugerida" : "sin actualización automática"}`)
+          ].join("\n");
+          process.stdout.write(summary + "\n");
+          NODE
+          node --input-type=module <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          import { readFileSync } from "node:fs";
+          const report = JSON.parse(readFileSync("/tmp/npm-audit.json", "utf8"));
+          const totals = report.metadata?.vulnerabilities || {};
+          const rows = Object.entries(report.vulnerabilities || {});
+          console.log("# Auditoría npm");
+          console.log("");
+          console.log(`Críticas: ${totals.critical || 0} · Altas: ${totals.high || 0} · Moderadas: ${totals.moderate || 0} · Bajas: ${totals.low || 0}`);
+          for (const [name, item] of rows) console.log(`- **${name}** — ${item.severity}; ${item.range}; fixAvailable=${JSON.stringify(item.fixAvailable)}`);
+          NODE
+          if [ "$audit_status" -gt 1 ]; then
+            echo "npm audit terminó con un error de ejecución (código $audit_status)." >&2
+            exit "$audit_status"
+          fi
