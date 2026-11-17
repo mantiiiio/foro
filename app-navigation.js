@@ -18,8 +18,10 @@ const APP_ROUTES = new Set([
  */
 export function resolveInternalAppPath(href, origin) {
   try {
+    const value=String(href||"").trim();
+    if(!value)return null;
     const base = new URL(origin);
-    const target = new URL(String(href || ""), base);
+    const target = new URL(value, base);
 
     if (target.origin !== base.origin) return null;
     if (target.protocol !== "http:" && target.protocol !== "https:") return null;
