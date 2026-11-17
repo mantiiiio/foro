@@ -88,6 +88,13 @@ service cloud.firestore {
         && get(topicPath).data.b != 'reglas'
       );
     }
+    // Las valoraciones solo están disponibles mientras el tema sea visible y no sea Reglas.
+    function topicAllowsCommunityInteraction(topicId) {
+      let topicPath = /databases/$(database)/documents/topics/$(topicId);
+      return exists(topicPath)
+        && get(topicPath).data.moderationHidden == false
+        && get(topicPath).data.b != 'reglas';
+    }
     // Los posts antiguos pueden no tener ya un tema padre; solo se bloquea escritura si el tema existe y es Reglas.
     function postTopicAllowsWrites() {
       let topicPath = /databases/$(database)/documents/topics/$(resource.data.tp);
@@ -422,7 +429,7 @@ service cloud.firestore {
     }
 
     match /topics/{topicId} {
-      allow read: if canReadCommunity() || (publicReadOnlyVisitor() && isPubliclyVisibleContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
+      allow read: if (canReadCommunity() && (isStaff() || isPubliclyVisibleContent())) || (publicReadOnlyVisitor() && isPubliclyVisibleContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
       allow create: if canPublish()
         && canParticipate()
         && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n','staffBadge','lastStaffBadge','gallery','maintenanceLocked','moderationHidden','moderationHiddenUntil'])
@@ -506,18 +513,18 @@ service cloud.firestore {
       )
       );
       match /ratings/{ratingUid} {
-        allow read: if canReadCommunity();
+        allow read: if canReadCommunity() && (isStaff() || topicAllowsCommunityInteraction(topicId));
         allow create: if registered()
           && canParticipate()
           && request.auth.uid == ratingUid
-          && get(/databases/$(database)/documents/topics/$(topicId)).data.b != 'reglas'
+          && topicAllowsCommunityInteraction(topicId)
           && request.resource.data.keys().hasOnly(['uid','stars','ts'])
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.stars is int
           && request.resource.data.stars >= 1
           && request.resource.data.stars <= 5
           && request.resource.data.ts is int;
-        allow update: if get(/databases/$(database)/documents/topics/$(topicId)).data.b != 'reglas'
+        allow update: if topicAllowsCommunityInteraction(topicId)
           && registered()
           && canParticipate()
           && request.auth.uid == ratingUid
@@ -527,10 +534,10 @@ service cloud.firestore {
           && request.resource.data.stars >= 1
           && request.resource.data.stars <= 5
           && request.resource.data.ts is int;
-        allow delete: if get(/databases/$(database)/documents/topics/$(topicId)).data.b != 'reglas'
-          && ((isStaff() && canParticipate()) || (
+        allow delete: if ((isStaff() && canParticipate() && get(/databases/$(database)/documents/topics/$(topicId)).data.b != 'reglas') || (
           registered()
           && canParticipate()
+          && topicAllowsCommunityInteraction(topicId)
           && (
             request.auth.uid == ratingUid
             || resource.data.get('uid', '') == request.auth.uid
@@ -542,7 +549,7 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if canReadCommunity() || (publicReadOnlyVisitor() && isPubliclyVisibleContent() && postTopicAllowsPublicReads()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
+      allow read: if (canReadCommunity() && (isStaff() || (isPubliclyVisibleContent() && postTopicAllowsPublicReads()))) || (publicReadOnlyVisitor() && isPubliclyVisibleContent() && postTopicAllowsPublicReads()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
       allow create: if canPublish()
         && canParticipate()
         && hasFreshPostRateLimit(request.auth.uid, postId)
