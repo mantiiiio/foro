@@ -74,16 +74,16 @@ jobs:
             process.exit(1);
           }
           for (const [name, item] of vulnerabilities) {
-            const via = (item.via || [])
-              .filter(entry => entry && typeof entry === "object")
-              .map(entry => [entry.title, entry.url].filter(Boolean).join(" — "))
-              .filter(Boolean);
+            const via = (item.via || []).map(entry => {
+              if (typeof entry === "string") return entry;
+              return [entry?.name, entry?.title, entry?.url, entry?.range].filter(Boolean).join(" — ");
+            }).filter(Boolean);
             const fix = item.fixAvailable === true
               ? "actualización disponible"
               : item.fixAvailable && typeof item.fixAvailable === "object"
                 ? `actualizar ${item.fixAvailable.name || name} a ${item.fixAvailable.version || "otra versión"}${item.fixAvailable.isSemVerMajor ? " (cambio mayor)" : ""}`
                 : "sin corrección automática declarada";
-            console.log(`- ${name}: ${item.severity}; directa=${item.isDirect}; rango=${item.range}; ${fix}`);
+            console.log(`- ${name}: ${item.severity}; directa=${item.isDirect}; rango=${item.range}; ${fix}; efectos=${JSON.stringify(item.effects || [])}; nodos=${JSON.stringify(item.nodes || [])}`);
             for (const detail of via) console.log(`    ${detail}`);
           }
 
