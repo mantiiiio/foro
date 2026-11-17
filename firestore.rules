@@ -77,8 +77,13 @@ service cloud.firestore {
       return signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
     function isPubliclyVisibleContent() {
-      // Los registros anteriores a moderación no tienen el campo; se consideran visibles.
+      // Los registros anteriores a moderación no tienen el campo; se consideran visibles al abrirlos directamente.
       return resource.data.get('moderationHidden', false) == false;
+    }
+    // Para consultas de colección exigimos el campo explícito: el cliente debe filtrar moderationHidden == false.
+    function isPubliclyListableContent() {
+      return resource.data.keys().hasAll(['moderationHidden'])
+        && resource.data.moderationHidden == false;
     }
     // No se exponen respuestas cuyo tema padre está oculto o pertenece al foro Reglas.
     // Se conservan las respuestas históricas que ya no tengan tema padre.
@@ -430,7 +435,8 @@ service cloud.firestore {
     }
 
     match /topics/{topicId} {
-      allow read: if (canReadCommunity() && (isStaff() || isPubliclyVisibleContent())) || (publicReadOnlyVisitor() && isPubliclyVisibleContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
+      allow get: if (canReadCommunity() && (isStaff() || isPubliclyVisibleContent())) || (publicReadOnlyVisitor() && isPubliclyVisibleContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
+      allow list: if (canReadCommunity() && isStaff()) || ((canReadCommunity() || publicReadOnlyVisitor()) && isPubliclyListableContent()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
       allow create: if canPublish()
         && canParticipate()
         && request.resource.data.keys().hasOnly(['b','t','u','uid','ts','lr','lu','n','staffBadge','lastStaffBadge','gallery','maintenanceLocked','moderationHidden','moderationHiddenUntil'])
@@ -514,7 +520,8 @@ service cloud.firestore {
       )
       );
       match /ratings/{ratingUid} {
-        allow read: if canReadCommunity() && (isStaff() || topicAllowsCommunityInteraction(topicId));
+        allow get: if canReadCommunity() && (isStaff() || topicAllowsCommunityInteraction(topicId));
+        allow list: if canReadCommunity() && (isStaff() || topicAllowsCommunityInteraction(topicId));
         allow create: if registered()
           && canParticipate()
           && request.auth.uid == ratingUid
@@ -550,7 +557,8 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if (canReadCommunity() && (isStaff() || (isPubliclyVisibleContent() && postTopicAllowsVisibleReads()))) || (publicReadOnlyVisitor() && isPubliclyVisibleContent() && postTopicAllowsVisibleReads()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
+      allow get: if (canReadCommunity() && (isStaff() || (isPubliclyVisibleContent() && postTopicAllowsVisibleReads()))) || (publicReadOnlyVisitor() && isPubliclyVisibleContent() && postTopicAllowsVisibleReads()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
+      allow list: if (canReadCommunity() && isStaff()) || ((canReadCommunity() || publicReadOnlyVisitor()) && isPubliclyListableContent() && postTopicAllowsVisibleReads()) || (registered() && hasActiveBan() && resource.data.uid == request.auth.uid);
       allow create: if canPublish()
         && canParticipate()
         && hasFreshPostRateLimit(request.auth.uid, postId)
