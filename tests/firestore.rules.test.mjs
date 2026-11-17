@@ -175,6 +175,14 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
   await assertSucceeds(getDoc(doc(member, "topics", "topic-public", "ratings", "vote-public")));
   await assertSucceeds(getDocs(query(collection(member, "topics"), where("moderationHidden", "==", false))));
   await assertSucceeds(getDocs(query(collection(member, "posts"), where("tp", "==", "topic-public"), where("moderationHidden", "==", false))));
+  const visibleAuthorPosts = await getDocs(query(collection(member, "posts"),
+    where("tp", "==", "topic-public"), where("u", "==", "alice"), where("moderationHidden", "==", false)));
+  assert.equal(visibleAuthorPosts.size, 1, "El contador por tema solo debe incluir respuestas visibles.");
+  const visiblePostsForTopicDeletion = await getDocs(query(collection(member, "posts"),
+    where("tp", "==", "topic-public"), where("moderationHidden", "==", false)));
+  assert.equal(visiblePostsForTopicDeletion.size, 1, "El creador puede limpiar las respuestas visibles de su tema.");
+  await assertFails(getDocs(query(collection(member, "posts"), where("tp", "==", "topic-public"))));
+  await assertFails(getDocs(query(collection(member, "posts"), where("u", "==", "alice"))));
   await assertFails(getDocs(collection(member, "topics")));
   await assertFails(getDocs(collection(member, "posts")));
   await assertFails(getDocs(collection(member, "topics", "topic-hidden", "ratings")));
@@ -197,6 +205,7 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
   await assertSucceeds(getDoc(doc(moderator, "topics", "topic-hidden", "ratings", "vote-hidden")));
   await assertSucceeds(getDocs(collection(moderator, "topics")));
   await assertSucceeds(getDocs(collection(moderator, "posts")));
+  await assertSucceeds(getDocs(query(collection(moderator, "posts"), where("tp", "==", "topic-public"))));
   await assertSucceeds(getDocs(collection(moderator, "topics", "topic-hidden", "ratings")));
 });
 
