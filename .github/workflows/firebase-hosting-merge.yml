@@ -378,14 +378,32 @@ jobs:
           grep -Fq 'from "/board-search.js"' /tmp/mantipobres-forum-route.html
       - name: Verify public sitemap and robots after deployment
         run: |
-          curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error -D /tmp/mantipobres-version-headers.txt "https://mantipobres.web.app/build-version.json?verify=$GITHUB_SHA" -o /tmp/mantipobres-version.json
-          grep -Eiq '^cache-control:.*no-store' /tmp/mantipobres-version-headers.txt
           python3 - <<'PY'
-          import json, os
-          from pathlib import Path
-          version = json.loads(Path("/tmp/mantipobres-version.json").read_text())["version"]
-          assert version == os.environ["GITHUB_SHA"], f"Versión publicada {version} != commit {os.environ['GITHUB_SHA']}"
-          print(f"Versión automática verificada: {version}")
+          import json, os, time, urllib.request
+          commit = os.environ["GITHUB_SHA"]
+          url = f"https://mantipobres.web.app/build-version.json?verify={commit}"
+          published = None
+          for attempt in range(1, 13):
+              request = urllib.request.Request(
+                  url + f"&attempt={attempt}",
+                  headers={"Cache-Control": "no-cache", "Pragma": "no-cache"}
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=15) as response:
+                      cache_control = response.headers.get("Cache-Control", "")
+                      if "no-store" not in cache_control.lower():
+                          raise RuntimeError("build-version.json no devuelve Cache-Control: no-store")
+                      published = json.load(response).get("version")
+              except Exception as error:
+                  published = f"error de lectura: {error}"
+              if published == commit:
+                  print(f"Versión automática verificada: {published}")
+                  break
+              if attempt < 12:
+                  print(f"Hosting todavía sirve {published}; reintentando ({attempt}/12).")
+                  time.sleep(5)
+          else:
+              raise SystemExit(f"Versión publicada {published} != commit esperado {commit}")
           PY
           curl --retry 5 --retry-all-errors --retry-delay 3 --fail --silent --show-error \
             -D /tmp/mantipobres-sitemap-headers.txt \
