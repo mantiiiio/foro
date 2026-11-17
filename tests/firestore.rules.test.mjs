@@ -214,9 +214,6 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
   await assertSucceeds(updateDoc(doc(alice, "posts", "post-public"), {
     x: "Edición permitida en una respuesta visible de un tema público"
   }));
-  await assertSucceeds(deleteDoc(doc(moderator, "posts", "post-hidden")));
-  await assertSucceeds(deleteDoc(doc(moderator, "topics", "topic-hidden")));
-
   await assertSucceeds(getDoc(doc(member, "topics", "topic-public")));
   await assertSucceeds(getDoc(doc(member, "posts", "post-public")));
   await assertSucceeds(getDoc(doc(member, "topics", "legacy-topic")));
@@ -259,6 +256,8 @@ test("el contenido oculto no es legible por miembros normales, pero sigue dispon
   await assertSucceeds(getDocs(collection(moderator, "posts")));
   await assertSucceeds(getDocs(query(collection(moderator, "posts"), where("tp", "==", "topic-public"))));
   await assertSucceeds(getDocs(collection(moderator, "topics", "topic-hidden", "ratings")));
+  await assertSucceeds(deleteDoc(doc(moderator, "posts", "post-hidden")));
+  await assertSucceeds(deleteDoc(doc(moderator, "topics", "topic-hidden")));
 });
 
 test("una cuenta sin verificar puede leer el foro, pero no crear temas ni respuestas", async () => {
