@@ -302,7 +302,7 @@ import { initializeAppCheck, CustomProvider } from "https://www.gstatic.com/fire
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, signOut, signInAnonymously, updateProfile,
-  setPersistence, browserLocalPersistence, sendEmailVerification,
+  sendEmailVerification,
   sendPasswordResetEmail, reload, deleteUser, getIdToken
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import {
@@ -355,8 +355,28 @@ const BOARDS = [
   ["Foro", [["sug","foro.ayuda","Ayuda y sugerencias","Reportes y dudas sobre este foro"]]]
 ];
 
-// Detecta nuevas publicaciones y actualiza automáticamente las pestañas que quedaron abiertas.
+// Detecta nuevas versiones, pero nunca recarga una pestaña por su cuenta.
+// Así no interrumpe publicaciones, formularios, adjuntos ni otras tareas del usuario.
 let mpBuildCheckRunning=false;
+let mpUpdateNoticeShown=false;
+function showUpdateAvailable(){
+  if(mpUpdateNoticeShown||!document.body)return;
+  mpUpdateNoticeShown=true;
+  const notice=document.createElement("div");
+  notice.id="mpUpdateNotice";
+  notice.setAttribute("role","status");
+  notice.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:8px 0;padding:9px 11px;border:2px solid #b58a28;background:#fff8dc;color:#513d0b;font:11px Verdana,Arial,sans-serif;box-shadow:2px 2px 0 #d7c58a";
+  notice.innerHTML='<span><b>Hay una nueva versión de MantiPobres.</b> Recarga solo cuando termines de escribir, publicar o subir archivos.</span><button type="button">Actualizar ahora</button>';
+  const nav=document.getElementById("nav");
+  if(nav?.parentNode)nav.parentNode.insertBefore(notice,nav.nextSibling);
+  else document.body.insertBefore(notice,document.body.firstChild);
+  notice.querySelector("button")?.addEventListener("click",()=>{
+    if(!window.confirm("¿Actualizar MantiPobres ahora? Guarda o termina cualquier publicación o carga antes de continuar."))return;
+    try{saveRouteScroll(activeRouteKey);}catch{}
+    try{saveTopicDraftForRoute(activeRouteKey);}catch{}
+    location.reload();
+  });
+}
 async function checkForNewBuild(){
   if(mpBuildCheckRunning||document.visibilityState!=="visible")return;
   mpBuildCheckRunning=true;
@@ -369,16 +389,8 @@ async function checkForNewBuild(){
     if(!response.ok)return;
     const release=await response.json();
     if(typeof release.version!=="string"||!release.version||release.version===MP_BUILD_ID)return;
-    const active=document.activeElement;
-    const editing=active instanceof HTMLElement&&(
-      active.isContentEditable
-      ||active.matches("textarea,select,input:not([type=button]):not([type=submit]):not([type=reset])")
-    );
-    if(editing){
-      setNetStatus("NUEVA VERSIÓN · TERMINA DE ESCRIBIR",false);
-      return;
-    }
-    location.reload();
+    showUpdateAvailable();
+    setNetStatus("NUEVA VERSIÓN DISPONIBLE",false);
   }catch(error){
     console.debug("No se pudo comprobar si hay una versión nueva:",error);
   }finally{
@@ -984,7 +996,9 @@ const D = {
   async login(identifier,p,token=""){
     const value=identifier.trim().toLowerCase();
     const email=value.includes("@")?value:`${value}@foro.local`;
-    await setPersistence(auth,browserLocalPersistence);
+    // La persistencia local es el valor predeterminado de Firebase Auth en navegadores.
+    // No repetir setPersistence al iniciar sesión: puede limpiar el estado compartido
+    // y cerrar la sesión en otras pestañas que ya estaban abiertas.
     const credential = await signInWithEmailAndPassword(auth,email,p);
     await reload(credential.user);
     currentUser = auth.currentUser;
@@ -2767,7 +2781,9 @@ async function startFirebase(){
     }
     auth=getAuth(app);db=getFirestore(app);
     if(STORAGE_ENABLED && FB.storageBucket)storage=getStorage(app);
-    await setPersistence(auth,browserLocalPersistence);
+    // Firebase Auth usa persistencia local por defecto en navegadores.
+    // No volver a llamar setPersistence en cada carga: puede limpiar la sesión
+    // compartida entre pestañas y hacer que las otras pestañas parezcan desconectadas.
     // Espera a que Firebase termine de restaurar la cuenta persistida antes de
     // decidir que hace falta crear una sesión anónima.
     await auth.authStateReady();
