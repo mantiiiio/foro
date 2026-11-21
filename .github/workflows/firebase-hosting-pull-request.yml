@@ -60,6 +60,9 @@ jobs:
       - name: Run internal navigation unit tests
         run: npm run test:navigation
 
+      - name: Run cross-tab authentication persistence tests
+        run: npm run test:auth-persistence
+
       - name: Validate Cloudflare Worker and App Check test syntax
         run: |
           node --check cloudflare/appcheck-turnstile-worker.js
