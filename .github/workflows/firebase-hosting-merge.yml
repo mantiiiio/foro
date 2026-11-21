@@ -182,6 +182,9 @@ jobs:
       - name: Run internal navigation unit tests
         run: npm run test:navigation
 
+      - name: Run cross-tab authentication persistence tests
+        run: npm run test:auth-persistence
+
       - name: Run Cloudflare App Check Worker unit tests
         run: npm run test:app-check-worker
 
